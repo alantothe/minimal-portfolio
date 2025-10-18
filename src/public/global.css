@@ -29,8 +29,6 @@ body {
 
 /* Aside */
 aside {
-  background: #1a1a1a;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   padding: 1rem 0;
   margin-right: 1rem;
   width: 50%;
@@ -85,19 +83,6 @@ p {
   margin-bottom: 1rem;
 }
 
-/* Footer */
-footer {
-  background: #333;
-  color: white;
-  text-align: center;
-  padding: 2rem 0;
-  margin-top: 3rem;
-}
-
-footer p {
-  margin: 0;
-  opacity: 0.8;
-}
 
 /* Responsive design */
 @media (max-width: 768px) {

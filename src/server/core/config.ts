@@ -11,7 +11,7 @@ export const serverConfig: ServerConfig = {
   static: {
     publicPath: '/public/',
     featuresPath: '/features/',
-    allowedExtensions: ['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg'] as const
+    allowedExtensions: ['.css', '.js', '.ts', '.png', '.jpg', '.jpeg', '.gif', '.svg'] as const
   }
 };
 

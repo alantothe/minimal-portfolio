@@ -1,0 +1,12 @@
+/* Blog page specific styles */
+main h1 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+main p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #555;
+    max-width: 600px;
+}

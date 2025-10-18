@@ -11,36 +11,42 @@ body {
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   line-height: 1.6;
-  color: #333;
-  background-color: #f8f9fa;
+  color: #e0e0e0;
+  background-color: #2c2c2c;
 }
 
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-  min-height: 100vh;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  min-height: 100vh;
+  max-width: 940px;
+  width: 100%;
+  padding-top: 130px;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
-/* Header */
-header {
-  background: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+/* Aside */
+aside {
+  background: #1a1a1a;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   padding: 1rem 0;
-  margin-bottom: 2rem;
+  margin-right: 1rem;
+  width: 50%;
+  flex-shrink: 0;
 }
 
 nav {
   display: flex;
-  gap: 1rem;
-  justify-content: center;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 1rem;
 }
 
 .nav-link {
   text-decoration: none;
-  color: #333;
+  color: #e0e0e0;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   transition: all 0.2s ease;
@@ -48,14 +54,15 @@ nav {
 }
 
 .nav-link:hover {
-  background-color: #f0f0f0;
+  background-color: #404040;
   transform: translateY(-1px);
 }
 
 /* Main content */
 main {
-  flex: 1;
+  width: 50%;
   padding: 2rem 0;
+  min-width: 0;
 }
 
 h1 {
@@ -63,7 +70,7 @@ h1 {
   font-weight: 700;
   text-align: center;
   margin-bottom: 1rem;
-  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

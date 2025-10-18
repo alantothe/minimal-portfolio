@@ -10,7 +10,7 @@
 }
 /* Navigation active state */
 .nav-link.active {
-    background-color: #3d404c;
+    background-color: #404040;
     color: white;
     border-radius: 6px;
 }

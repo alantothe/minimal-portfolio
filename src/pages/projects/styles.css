@@ -1,12 +1,1 @@
 /* Projects page specific styles */
-main h1 {
-    color: #ffffff;
-    margin-bottom: 1rem;
-}
-
-main p {
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: #b0b0b0;
-    max-width: 600px;
-}

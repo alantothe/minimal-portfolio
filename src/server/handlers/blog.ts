@@ -1,20 +1,23 @@
+import { LayoutRenderer } from '../core/layoutRenderer.ts';
+
+const renderer = new LayoutRenderer();
+
 export async function blogHandler(): Promise<Response> {
   try {
-    const template = Bun.file('./src/pages/blog/page.html');
-    
-    if (!(await template.exists())) {
-      throw new Error('Blog page template not found');
-    }
-    
-    const html = await template.text();
-    
+    const content = await renderer.loadPageContent('blog');
+    const html = await renderer.render({
+      title: 'Blog - Portfolio',
+      content,
+      activePage: 'blog',
+    });
+
     return new Response(html, {
       headers: {
-        "Content-Type": "text/html",
+        'Content-Type': 'text/html',
       },
     });
   } catch (error) {
-    console.error('Error loading blog page:', error);
+    console.error('Error rendering blog page:', error);
     return new Response('Internal Server Error', { status: 500 });
   }
 }

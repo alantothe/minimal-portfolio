@@ -1,6 +1,3 @@
-/**
- * Custom error types for the server
- */
 
 export class ServerError extends Error {
   constructor(

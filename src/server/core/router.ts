@@ -1,10 +1,16 @@
 import { NotFoundError, ServerError, createErrorResponse } from './errors.ts';
-import type { Route } from './types.ts';
+
+type RouteHandler = (() => Promise<Response>) | ((url: URL) => () => Promise<Response>);
+
+export interface Route {
+  path: string;
+  handler: RouteHandler;
+}
 
 export class Router {
   private routes: Route[] = [];
 
-  addRoute(path: string, handler: () => Promise<Response>) {
+  addRoute(path: string, handler: RouteHandler) {
     // Normalize path - ensure it starts with / and doesn't end with / (except root)
     const normalizedPath = path === '/' ? '/' : path.replace(/\/$/, '');
     this.routes.push({ path: normalizedPath, handler });
@@ -20,12 +26,21 @@ export class Router {
 
   async handleRequest(url: URL): Promise<Response> {
     const normalizedPathname = this.normalizePathname(url.pathname);
-    
+
     try {
       // Find matching route
       for (const route of this.routes) {
         if (route.path === normalizedPathname) {
-          return await route.handler();
+          // Check if handler needs URL (has parameter)
+          const handler = route.handler;
+          if (handler.length > 0) {
+            // Handler expects URL, call it with URL to get the actual handler
+            const urlHandler = (handler as (url: URL) => () => Promise<Response>)(url);
+            return await urlHandler();
+          } else {
+            // Simple handler, call directly
+            return await (handler as () => Promise<Response>)();
+          }
         }
       }
 
@@ -35,7 +50,7 @@ export class Router {
       if (error instanceof NotFoundError) {
         return createErrorResponse(error);
       }
-      
+
       // Handle unexpected errors
       console.error('Unexpected error in router:', error);
       const serverError = new ServerError('An unexpected error occurred');

@@ -19,3 +19,18 @@ export interface Route {
   path: string;
   handler: () => Promise<Response>;
 }
+
+export interface RequestContext {
+  url: URL;
+  method: string;
+  headers: Headers;
+}
+
+export type RouteHandler = (context: RequestContext) => Promise<Response>;
+
+export interface StaticFileInfo {
+  path: string;
+  exists: boolean;
+  size?: number;
+  type?: string;
+}

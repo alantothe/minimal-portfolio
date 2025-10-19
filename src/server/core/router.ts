@@ -20,7 +20,7 @@ export class Router {
 
   async handleRequest(url: URL): Promise<Response> {
     const normalizedPathname = this.normalizePathname(url.pathname);
-
+    
     try {
       // Find matching route
       for (const route of this.routes) {
@@ -35,7 +35,7 @@ export class Router {
       if (error instanceof NotFoundError) {
         return createErrorResponse(error);
       }
-
+      
       // Handle unexpected errors
       console.error('Unexpected error in router:', error);
       const serverError = new ServerError('An unexpected error occurred');

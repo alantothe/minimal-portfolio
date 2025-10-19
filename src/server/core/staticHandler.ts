@@ -10,15 +10,10 @@ export class StaticHandler {
    * Checks if the request is for a static file
    */
   isStaticRequest(pathname: string): boolean {
-    // Check if it matches known static paths
-    const isStaticPath = pathname.startsWith(serverConfig.static.publicPath) ||
-                        pathname.startsWith(serverConfig.static.pagesPath) ||
-                        pathname.startsWith(serverConfig.static.layoutPath);
-
-    // Or if it has an allowed extension (for root-level files like spa-router.ts)
-    const hasStaticExtension = serverConfig.static.allowedExtensions.some((ext: string) => pathname.endsWith(ext));
-
-    return isStaticPath || hasStaticExtension;
+    return pathname.startsWith(serverConfig.static.publicPath) ||
+           pathname.startsWith(serverConfig.static.pagesPath) ||
+           pathname.startsWith(serverConfig.static.layoutPath) ||
+           serverConfig.static.allowedExtensions.some((ext: string) => pathname.endsWith(ext));
   }
 
   /**
@@ -28,21 +23,15 @@ export class StaticHandler {
     if (pathname.startsWith(serverConfig.static.publicPath)) {
       return `/src${pathname}`;
     }
-
+    
     if (pathname.startsWith(serverConfig.static.pagesPath)) {
       return `/src${pathname}`;
     }
-
+    
     if (pathname.startsWith(serverConfig.static.layoutPath)) {
       return `/src${pathname}`;
     }
-
-    // For root-level files (e.g., /spa-router.ts)
-    // Check if file has static extension
-    if (serverConfig.static.allowedExtensions.some((ext: string) => pathname.endsWith(ext))) {
-      return `/src${pathname}`;
-    }
-
+    
     // Default to public directory
     return `/src${serverConfig.static.publicPath}${pathname}`;
   }

@@ -1,6 +1,6 @@
 export async function projectsHandler(): Promise<Response> {
   try {
-    const template = Bun.file('./src/features/projects/page.html');
+    const template = Bun.file('./src/pages/projects/page.html');
     
     if (!(await template.exists())) {
       throw new Error('Projects page template not found');

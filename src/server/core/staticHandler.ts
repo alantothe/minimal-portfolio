@@ -11,7 +11,8 @@ export class StaticHandler {
    */
   isStaticRequest(pathname: string): boolean {
     return pathname.startsWith(serverConfig.static.publicPath) ||
-           pathname.startsWith(serverConfig.static.featuresPath) ||
+           pathname.startsWith(serverConfig.static.pagesPath) ||
+           pathname.startsWith(serverConfig.static.layoutPath) ||
            serverConfig.static.allowedExtensions.some((ext: string) => pathname.endsWith(ext));
   }
 
@@ -23,7 +24,11 @@ export class StaticHandler {
       return `/src${pathname}`;
     }
     
-    if (pathname.startsWith(serverConfig.static.featuresPath)) {
+    if (pathname.startsWith(serverConfig.static.pagesPath)) {
+      return `/src${pathname}`;
+    }
+    
+    if (pathname.startsWith(serverConfig.static.layoutPath)) {
       return `/src${pathname}`;
     }
     

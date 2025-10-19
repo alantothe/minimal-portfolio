@@ -10,7 +10,8 @@ export const serverConfig: ServerConfig = {
   // Static file handling
   static: {
     publicPath: '/public/',
-    featuresPath: '/features/',
+    pagesPath: '/pages/',
+    layoutPath: '/layout/',
     allowedExtensions: ['.css', '.js', '.ts', '.png', '.jpg', '.jpeg', '.gif', '.svg'] as const
   }
 };

@@ -1,6 +1,6 @@
 export async function blogHandler(): Promise<Response> {
   try {
-    const template = Bun.file('./src/features/blog/page.html');
+    const template = Bun.file('./src/pages/blog/page.html');
     
     if (!(await template.exists())) {
       throw new Error('Blog page template not found');

@@ -1,6 +1,6 @@
 export async function homeHandler(): Promise<Response> {
   try {
-    const template = Bun.file('./src/features/home/page.html');
+    const template = Bun.file('./src/pages/home/page.html');
     
     if (!(await template.exists())) {
       throw new Error('Home page template not found');

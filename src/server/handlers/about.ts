@@ -1,6 +1,6 @@
 export async function aboutHandler(): Promise<Response> {
   try {
-    const template = Bun.file('./src/features/about/page.html');
+    const template = Bun.file('./src/pages/about/page.html');
     
     if (!(await template.exists())) {
       throw new Error('About page template not found');

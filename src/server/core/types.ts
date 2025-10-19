@@ -10,7 +10,8 @@ export interface ServerConfig {
 
 export interface StaticConfig {
   publicPath: string;
-  featuresPath: string;
+  pagesPath: string;
+  layoutPath: string;
   allowedExtensions: readonly string[];
 }
 

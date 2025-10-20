@@ -17,7 +17,7 @@ async function loadPageData(pageName: string): Promise<any> {
   // Only home page has data config for now
   if (pageName === 'home') {
     try {
-      const configFile = Bun.file('./src/pages/home/data/config.js');
+      const configFile = Bun.file('./src/pages/home/data/config.ts');
       const configCode = await configFile.text();
 
       // Use eval to execute the module code and extract the export

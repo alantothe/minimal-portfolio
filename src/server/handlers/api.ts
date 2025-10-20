@@ -11,6 +11,54 @@ interface PageData {
 }
 
 /**
+ * load page-specific data configuration
+ */
+async function loadPageData(pageName: string): Promise<any> {
+  // Only home page has data config for now
+  if (pageName === 'home') {
+    try {
+      const configFile = Bun.file('./src/pages/home/data/config.js');
+      const configCode = await configFile.text();
+
+      // Use eval to execute the module code and extract the export
+      // Create a module-like context
+      const moduleContext = { exports: {}, siteConfig: null };
+      const wrappedCode = configCode.replace('export const siteConfig', 'siteConfig');
+
+      // Execute in a function scope to capture siteConfig
+      const func = new Function('siteConfig', wrappedCode + '\nreturn siteConfig;');
+      const siteConfig = func();
+
+      return siteConfig;
+    } catch (error) {
+      console.error('Error loading page data:', error);
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Replace template placeholders with actual data
+ */
+function processTemplate(html: string, data: any): string {
+  if (!data) return html;
+
+  // Simple template replacement: {{key.path}}
+  return html.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
+    const keys = path.trim().split('.');
+    let value = data;
+
+    for (const key of keys) {
+      value = value?.[key];
+      if (value === undefined) return match; // Keep original if not found
+    }
+
+    return String(value);
+  });
+}
+
+/**
  * load page content from content fragment files
  */
 async function loadPageContent(pageName: string): Promise<PageData> {
@@ -45,7 +93,13 @@ async function loadPageContent(pageName: string): Promise<PageData> {
     throw new Error('Page content not found');
   }
 
-  const content = await pageFile.text();
+  let content = await pageFile.text();
+
+  // Load and process page data
+  const pageData = await loadPageData(pageName);
+  if (pageData) {
+    content = processTemplate(content, pageData);
+  }
 
   return {
     content: content.trim(),

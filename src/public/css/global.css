@@ -43,6 +43,12 @@ body {
     flex-shrink: 0;
 }
 
+.logo-img {
+  display: block;
+  width: 60px;
+  height: auto;
+}
+
 nav {
   display: flex;
   flex-direction: column;

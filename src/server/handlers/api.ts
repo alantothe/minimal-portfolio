@@ -3,6 +3,8 @@
  * returns only the main content and metadata, not full html
  */
 
+import { getMonthlyCommitCount } from '../services/github.ts';
+
 interface PageData {
   content: string;
   title: string;
@@ -29,7 +31,17 @@ async function loadPageData(pageName: string): Promise<any> {
       const func = new Function('siteConfig', wrappedCode + '\nreturn siteConfig;');
       const siteConfig = func();
 
-      return siteConfig;
+      // Fetch real-time GitHub commit count
+      const githubCommits = await getMonthlyCommitCount();
+
+      // Merge with config data, using real GitHub data if available (fallback to config value)
+      return {
+        ...siteConfig,
+        metrics: {
+          ...siteConfig.metrics,
+          githubCommits: githubCommits > 0 ? githubCommits : siteConfig.metrics.githubCommits
+        }
+      };
     } catch (error) {
       console.error('Error loading page data:', error);
       return null;

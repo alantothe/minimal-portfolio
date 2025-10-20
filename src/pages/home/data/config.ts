@@ -11,10 +11,11 @@ export const siteConfig = {
     intro: `Hi there, I'm Alan. I'm a <strong>Founding Engineer at Questurian</strong>, building platforms that help travelers explore the world.`,
     bio: `I built this space to showcase my projects and share my process. The site is intentionally minimal, just my work and occasional thoughts on what I'm exploring. Take a look around — if you have questions or want to chat about something, feel free to <span id="copy-email" data-email="${"author.email"}">reach out.<span id="copy-tooltip">Email copied to clipboard</span></span>`,
   },
+  // server api calls will populate these values - do not change these values
   metrics: {
-    githubCommits: 42,
-    blogPostCount: 12,
-    totalViews: 12345,
+    githubCommits: 0,
+    blogPostCount: 0,
+    totalViews: 0,
   },
 };
 

@@ -8,8 +8,8 @@ export const siteConfig = {
   },
   professional: {
     title: "Founding Engineer at Questurian",
+    intro: `Hi there, I'm Alan. I'm a <strong>Founding Engineer at Questurian</strong>, building platforms that help travelers explore the world.`,
     bio: `I built this space to showcase my projects and share my process. The site is intentionally minimal, just my work and occasional thoughts on what I'm exploring. Take a look around — if you have questions or want to chat about something, feel free to <span id="copy-email" data-email="${"alan@example.com"}">reach out.<span id="copy-tooltip">Email copied to clipboard</span></span>`,
-    intro:"",
   },
   metrics: {
     githubCommits: 42,

@@ -12,7 +12,7 @@ export const serverConfig: ServerConfig = {
     publicPath: '/public/',
     pagesPath: '/pages/',
     layoutPath: '/layout/',
-    allowedExtensions: ['.css', '.js', '.ts', '.png', '.jpg', '.jpeg', '.gif', '.svg'] as const
+    allowedExtensions: ['.css', '.js', '.ts', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.md'] as const
   }
 };
 

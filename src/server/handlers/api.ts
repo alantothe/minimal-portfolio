@@ -165,3 +165,40 @@ export function createApiHandler(url: URL) {
     }
   };
 }
+
+/**
+ * Bulk API endpoint that loads all 4 pages at once for instant tab switching
+ */
+export async function createBulkPagesHandler(): Promise<Response> {
+  try {
+    const pageNames = ['home', 'about', 'projects', 'blog'];
+    const allPages: Record<string, any> = {};
+
+    // Load all pages in parallel
+    await Promise.all(
+      pageNames.map(async (pageName) => {
+        const pageData = await loadPageContent(pageName);
+        allPages[pageName] = pageData;
+      })
+    );
+
+    return new Response(
+      JSON.stringify({ pages: allPages }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      }
+    );
+  } catch (error) {
+    console.error('Error in bulk pages handler:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+}

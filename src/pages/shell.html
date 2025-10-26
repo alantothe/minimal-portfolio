@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="/public/css/global.css">
     <!-- Page-specific CSS will be added dynamically -->
     <link rel="stylesheet" id="page-css" href="">
+    <style>
+        .page-container {
+            display: none;
+        }
+        .page-container.active {
+            display: block;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -22,9 +30,13 @@
             </nav>
         </aside>
 
-        <!-- This is where page content will be dynamically loaded -->
-        <main id="app-content" class="content" >
-            <!-- Content loads here -->
+        <!-- Pre-loaded page containers - toggled instantly on navigation -->
+        <main id="app-content" class="content">
+            <div id="home-page" class="page-container active"></div>
+            <div id="about-page" class="page-container"></div>
+            <div id="projects-page" class="page-container"></div>
+            <div id="blog-page" class="page-container"></div>
+            <div id="blog-post-page" class="page-container"></div>
         </main>
 
     </div>

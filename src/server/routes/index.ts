@@ -1,6 +1,6 @@
 import { Router } from '../core/router.ts';
 import { shellHandler } from '../handlers/shell.ts';
-import { createApiHandler } from '../handlers/api.ts';
+import { createApiHandler, createBulkPagesHandler } from '../handlers/api.ts';
 import { blogListHandler, createBlogPostHandler } from '../handlers/blog.ts';
 
 export function setupRoutes(router: Router): void {
@@ -13,6 +13,9 @@ export function setupRoutes(router: Router): void {
 
   //fetches content fragments
   router.addRoute('/api/page', createApiHandler);
+
+  // Bulk pages endpoint - load all 4 tabs at once for instant switching
+  router.addRoute('/api/pages', createBulkPagesHandler);
 
   // Blog API routes
   router.addRoute('/api/blog/list', blogListHandler);

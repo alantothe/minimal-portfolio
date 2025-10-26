@@ -8,9 +8,13 @@
 
 class SPARouter {
   isNavigating = false;
+  pagesLoaded = false;
+  pagesData = null;
+
   constructor() {
     this.init();
   }
+
   init() {
     this.attachNavListeners();
     this.attachBlogPostListener();
@@ -19,21 +23,60 @@ class SPARouter {
         if (event.state.page === 'blog-post' && event.state.slug) {
           this.loadBlogPost(event.state.slug, false);
         } else if (event.state.page) {
-          this.loadPage(event.state.page, false);
+          this.switchPage(event.state.page, false);
         }
       }
     });
-    const initialPath = window.location.pathname;
-    const blogPostMatch = initialPath.match(/^\/blog\/([^/]+)$/);
 
-    if (blogPostMatch) {
-      const slug = blogPostMatch[1];
-      window.history.replaceState({ page: 'blog-post', slug }, "", initialPath);
-      this.loadBlogPost(slug, false);
-    } else {
-      const initialPage = this.getPageFromPath(initialPath);
-      window.history.replaceState({ page: initialPage }, "", initialPath);
-      this.loadPage(initialPage, false);
+    // Pre-load all pages on init
+    this.preloadAllPages().then(() => {
+      const initialPath = window.location.pathname;
+      const blogPostMatch = initialPath.match(/^\/blog\/([^/]+)$/);
+
+      if (blogPostMatch) {
+        const slug = blogPostMatch[1];
+        window.history.replaceState({ page: 'blog-post', slug }, "", initialPath);
+        this.loadBlogPost(slug, false);
+      } else {
+        const initialPage = this.getPageFromPath(initialPath);
+        window.history.replaceState({ page: initialPage }, "", initialPath);
+        this.switchPage(initialPage, false);
+      }
+    });
+  }
+
+  /**
+   * Pre-load all 4 pages at startup
+   */
+  async preloadAllPages() {
+    try {
+      const response = await fetch('/api/pages');
+      if (!response.ok) {
+        throw new Error(`Failed to load pages: ${response.statusText}`);
+      }
+      const data = await response.json();
+      this.pagesData = data.pages;
+
+      // Populate all page containers with pre-loaded content
+      Object.entries(this.pagesData).forEach(([pageName, pageData]) => {
+        const containerId = `${pageName}-page`;
+        const container = document.getElementById(containerId);
+        if (container && pageData.content) {
+          container.innerHTML = pageData.content;
+
+          // Execute inline scripts (needed for blog listing)
+          const scripts = container.querySelectorAll('script');
+          scripts.forEach(oldScript => {
+            const newScript = document.createElement('script');
+            newScript.textContent = oldScript.textContent;
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+          });
+        }
+      });
+
+      this.pagesLoaded = true;
+    } catch (error) {
+      console.error("[SPA Router] Error pre-loading pages:", error);
     }
   }
   attachNavListeners() {
@@ -50,56 +93,48 @@ class SPARouter {
       }
     });
   }
+
   getPageFromPath(pathname) {
     if (pathname === "/" || pathname === "/home")
       return "home";
     return pathname.replace("/", "");
   }
+
   async navigate(page, path) {
     if (this.isNavigating) {
       return;
     }
     window.history.pushState({ page }, "", path);
-    await this.loadPage(page, true);
+    await this.switchPage(page, true);
   }
-  async loadPage(pageName, addTransition) {
+
+  /**
+   * Switch between pre-loaded pages with instant visibility toggle
+   */
+  async switchPage(pageName, addTransition) {
     this.isNavigating = true;
     try {
-      const contentElement = document.getElementById("app-content");
-      if (contentElement && addTransition) {
-        contentElement.style.opacity = "0";
-        contentElement.style.transition = "opacity 0.15s ease-out";
-        await new Promise((resolve) => setTimeout(resolve, 150));
-      }
-      const response = await fetch(`/api/page?name=${pageName}`);
-      if (!response.ok) {
-        throw new Error(`Failed to load page: ${response.statusText}`);
-      }
-      const data = await response.json();
-      if (contentElement) {
-        contentElement.innerHTML = data.content;
+      // Hide all page containers
+      document.querySelectorAll('.page-container').forEach(container => {
+        container.classList.remove('active');
+      });
 
-        // Execute inline scripts (needed for blog listing)
-        const scripts = contentElement.querySelectorAll('script');
-        scripts.forEach(oldScript => {
-          const newScript = document.createElement('script');
-          newScript.textContent = oldScript.textContent;
-          oldScript.parentNode.replaceChild(newScript, oldScript);
-        });
+      // Show the requested page
+      const pageContainer = document.getElementById(`${pageName}-page`);
+      if (pageContainer) {
+        pageContainer.classList.add('active');
       }
-      document.title = data.title;
-      this.updatePageCSS(data.pageCSS);
+
+      // Update page metadata
+      if (this.pagesData && this.pagesData[pageName]) {
+        const pageData = this.pagesData[pageName];
+        document.title = pageData.title;
+        this.updatePageCSS(pageData.pageCSS);
+      }
+
       this.updateActiveNav(pageName);
-      if (contentElement && addTransition) {
-        contentElement.offsetWidth;
-        contentElement.style.opacity = "1";
-      }
     } catch (error) {
-      console.error("[SPA Router] Error loading page:", error);
-      const contentElement = document.getElementById("app-content");
-      if (contentElement) {
-        contentElement.innerHTML = "<h1>Error loading page</h1><p>Please try again.</p>";
-      }
+      console.error("[SPA Router] Error switching page:", error);
     } finally {
       this.isNavigating = false;
     }
@@ -150,22 +185,31 @@ class SPARouter {
       this.loadBlogPost(slug, true);
     });
   }
+
   async loadBlogPost(slug, addTransition) {
     this.isNavigating = true;
     try {
-      const contentElement = document.getElementById("app-content");
-      if (contentElement && addTransition) {
-        contentElement.style.opacity = "0";
-        contentElement.style.transition = "opacity 0.15s ease-out";
+      const blogPostContainer = document.getElementById('blog-post-page');
+
+      if (blogPostContainer && addTransition) {
+        blogPostContainer.style.opacity = "0";
+        blogPostContainer.style.transition = "opacity 0.15s ease-out";
         await new Promise((resolve) => setTimeout(resolve, 150));
       }
+
       const response = await fetch(`/api/blog/${slug}`);
       if (!response.ok) {
         throw new Error(`Failed to load blog post: ${response.statusText}`);
       }
       const data = await response.json();
-      if (contentElement) {
-        contentElement.innerHTML = `
+
+      // Hide all pages and show blog-post-page
+      document.querySelectorAll('.page-container').forEach(container => {
+        container.classList.remove('active');
+      });
+
+      if (blogPostContainer) {
+        blogPostContainer.innerHTML = `
           <article class="blog-post">
             <a href="/blog" class="back-to-blog back-link">&larr; Back to Blog</a>
             <div class="blog-post-content">
@@ -173,15 +217,18 @@ class SPARouter {
             </div>
           </article>
         `;
-        const backLink = contentElement.querySelector('.back-to-blog');
+        blogPostContainer.classList.add('active');
+
+        const backLink = blogPostContainer.querySelector('.back-to-blog');
         if (backLink) {
           backLink.addEventListener('click', (e) => {
             e.preventDefault();
             window.history.pushState({ page: 'blog' }, '', '/blog');
-            this.loadPage('blog', true);
+            this.switchPage('blog', true);
           });
         }
       }
+
       document.title = `${data.metadata.title} - Blog - Portfolio`;
 
       // Update meta tags for SEO
@@ -193,15 +240,16 @@ class SPARouter {
 
       this.updatePageCSS('/pages/blog/styles.css');
       this.updateActiveNav('blog');
-      if (contentElement && addTransition) {
-        contentElement.offsetWidth;
-        contentElement.style.opacity = "1";
+
+      if (blogPostContainer && addTransition) {
+        blogPostContainer.offsetWidth;
+        blogPostContainer.style.opacity = "1";
       }
     } catch (error) {
       console.error("[SPA Router] Error loading blog post:", error);
-      const contentElement = document.getElementById("app-content");
-      if (contentElement) {
-        contentElement.innerHTML = "<h1>Error loading post</h1><p>Please try again.</p>";
+      const blogPostContainer = document.getElementById('blog-post-page');
+      if (blogPostContainer) {
+        blogPostContainer.innerHTML = "<h1>Error loading post</h1><p>Please try again.</p>";
       }
     } finally {
       this.isNavigating = false;

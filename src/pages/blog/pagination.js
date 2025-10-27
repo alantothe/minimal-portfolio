@@ -147,7 +147,7 @@ window.BlogPagination = class BlogPagination {
             ${post.title}
           </a>
         </h3>
-        <p class="post-views" data-post-id="${post.slug}">0 views</p>
+        <p class="post-views" data-post-id="${post.slug}">${post.views || 0} views</p>
       </article>
     `
       )

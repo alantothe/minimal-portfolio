@@ -4,6 +4,8 @@
 
 import { readMarkdownFile, generateSlug } from '../services/markdown.ts';
 import type { BlogPostMetadata } from '../services/markdown.ts';
+import { incrementPostView, getPostViews, getViewCounts } from '../services/views.ts';
+import { shouldCountView } from '../services/viewCooldown.ts';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 
@@ -14,6 +16,7 @@ export interface BlogPostSummary {
   title: string;
   date: string;
   excerpt?: string;
+  views: number;
 }
 
 /**
@@ -22,6 +25,7 @@ export interface BlogPostSummary {
 async function getAllBlogPosts(): Promise<BlogPostSummary[]> {
   try {
     const files = readdirSync(BLOG_CONTENT_DIR).filter(file => file.endsWith('.md'));
+    const viewCounts = await getViewCounts();
 
     const posts = await Promise.all(
       files.map(async (filename) => {
@@ -33,7 +37,8 @@ async function getAllBlogPosts(): Promise<BlogPostSummary[]> {
           slug,
           title: post.metadata.title,
           date: post.metadata.date,
-          excerpt: post.metadata.excerpt
+          excerpt: post.metadata.excerpt,
+          views: viewCounts[slug] || 0
         };
       })
     );
@@ -138,11 +143,23 @@ export function createBlogPostHandler(url: URL, params?: Record<string, string>)
         );
       }
 
+      // Use slug as the IP identifier for cooldown (simple approach for personal portfolio)
+      // In a real app, you'd extract the actual client IP from the request
+      const clientIp = 'localhost'; // All requests treated as same client
+
+      // Check if view should be counted (prevents spam)
+      let views = await getPostViews(slug);
+
+      if (shouldCountView(slug, clientIp)) {
+        // Increment view count
+        views = await incrementPostView(slug);
+      }
+
       // Wrap HTML content with markdown-content class for styling
       const wrappedHtml = `<div class="markdown-content">${post.html}</div>`;
 
       return new Response(
-        JSON.stringify({ ...post, html: wrappedHtml }),
+        JSON.stringify({ ...post, html: wrappedHtml, views }),
         {
           headers: {
             'Content-Type': 'application/json',

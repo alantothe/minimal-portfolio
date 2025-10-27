@@ -4,6 +4,7 @@
  */
 
 import { getMonthlyCommitCount } from '../services/github.ts';
+import { getTotalViews } from '../services/views.ts';
 
 interface PageData {
   content: string;
@@ -55,13 +56,17 @@ async function loadPageData(pageName: string): Promise<any> {
       // Count blog posts
       const blogPostCount = await countBlogPosts();
 
+      // Get total blog views
+      const totalViews = await getTotalViews();
+
       // Merge with config data, using real GitHub data if available (fallback to config value)
       return {
         ...siteConfig,
         metrics: {
           ...siteConfig.metrics,
           githubCommits: githubCommits > 0 ? githubCommits : siteConfig.metrics.githubCommits,
-          blogPostCount: blogPostCount
+          blogPostCount: blogPostCount,
+          totalViews: totalViews
         }
       };
     } catch (error) {

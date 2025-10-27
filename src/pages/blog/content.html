@@ -39,6 +39,7 @@
     }
   }
 
+  // Load blog posts on initial page load (called by SPA router when switching to blog tab)
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', loadBlogPosts);
   } else {

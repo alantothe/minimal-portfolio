@@ -184,6 +184,16 @@ class SPARouter {
       }
 
       this.updateActiveNav(pageName);
+
+      // Refresh blog posts when returning to blog tab to get updated view counts
+      if (pageName === 'blog' && typeof loadBlogPosts === 'function') {
+        loadBlogPosts();
+      }
+
+      // Update home page metrics when returning to it (without full page reload)
+      if (pageName === 'home') {
+        this.updateHomePageMetrics();
+      }
     } catch (error) {
       console.error("[SPA Router] Error switching page:", error);
     } finally {
@@ -230,6 +240,39 @@ class SPARouter {
       }
     });
   }
+
+  /**
+   * Update home page metrics with fresh data (view counts, etc.)
+   */
+  async updateHomePageMetrics() {
+    try {
+      const response = await fetch(`/api/page?name=home`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch metrics: ${response.statusText}`);
+      }
+      const pageData = await response.json();
+
+      // Extract the total views value from the content
+      // Content includes: {{metrics.totalViews}} blog views all time
+      const totalViewsMatch = pageData.content.match(/(\d+)\s+blog views all time/);
+      if (totalViewsMatch) {
+        const totalViews = totalViewsMatch[1];
+        // Find and update the views stat in the DOM
+        const homePageContainer = document.getElementById('home-page');
+        if (homePageContainer) {
+          const viewsElements = homePageContainer.querySelectorAll('span');
+          viewsElements.forEach(el => {
+            if (el.textContent.includes('blog views all time')) {
+              el.textContent = `${totalViews} blog views all time`;
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`[SPA Router] Error updating home page metrics:`, error);
+    }
+  }
+
   attachBlogPostListener() {
     window.addEventListener("navigate-to-post", (event) => {
       const { slug } = event.detail;
@@ -248,11 +291,21 @@ class SPARouter {
         await new Promise((resolve) => setTimeout(resolve, 150));
       }
 
+      // Check if this post was already viewed in this session
+      const viewedPosts = JSON.parse(localStorage.getItem('viewedBlogPosts') || '{}');
+      const hasBeenViewed = viewedPosts[slug] === true;
+
       const response = await fetch(`/api/blog/${slug}`);
       if (!response.ok) {
         throw new Error(`Failed to load blog post: ${response.statusText}`);
       }
       const data = await response.json();
+
+      // Mark as viewed in localStorage (prevents re-counting on refresh)
+      if (!hasBeenViewed) {
+        viewedPosts[slug] = true;
+        localStorage.setItem('viewedBlogPosts', JSON.stringify(viewedPosts));
+      }
 
       // Hide all pages and show blog-post-page
       document.querySelectorAll('.page-container').forEach(container => {
@@ -284,7 +337,6 @@ class SPARouter {
 
       // Update meta tags for SEO
       this.updateMetaTags({
-        title: data.metadata.title,
         description: data.metadata.excerpt || '',
         date: data.metadata.date
       });

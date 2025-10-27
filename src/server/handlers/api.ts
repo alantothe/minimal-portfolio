@@ -13,6 +13,24 @@ interface PageData {
 }
 
 /**
+ * Count blog posts in the blog directory
+ */
+async function countBlogPosts(): Promise<number> {
+  try {
+    const blogDir = './src/content/blog';
+    const { readdir } = await import('fs/promises');
+
+    const files = await readdir(blogDir);
+    const mdFiles = files.filter(file => file.endsWith('.md'));
+
+    return mdFiles.length;
+  } catch (error) {
+    console.error('Error counting blog posts:', error);
+    return 0;
+  }
+}
+
+/**
  * load page-specific data configuration
  */
 async function loadPageData(pageName: string): Promise<any> {
@@ -34,12 +52,16 @@ async function loadPageData(pageName: string): Promise<any> {
       // Fetch real-time GitHub commit count
       const githubCommits = await getMonthlyCommitCount();
 
+      // Count blog posts
+      const blogPostCount = await countBlogPosts();
+
       // Merge with config data, using real GitHub data if available (fallback to config value)
       return {
         ...siteConfig,
         metrics: {
           ...siteConfig.metrics,
-          githubCommits: githubCommits > 0 ? githubCommits : siteConfig.metrics.githubCommits
+          githubCommits: githubCommits > 0 ? githubCommits : siteConfig.metrics.githubCommits,
+          blogPostCount: blogPostCount
         }
       };
     } catch (error) {

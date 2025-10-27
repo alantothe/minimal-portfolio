@@ -4,7 +4,7 @@ export const siteConfig = {
     firstName: "Alan",
     email: "alanmalpartida@gmail.com",
     photo:
-      "https://res.cloudinary.com/dzjr3skhe/image/upload/v1759784144/Screenshot_2025-10-06_at_4.54.38_PM_nmdwkn.png",
+      "src/public/avatar.png",
   },
   professional: {
     title: "Founding Engineer at Questurian",

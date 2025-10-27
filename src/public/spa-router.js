@@ -64,12 +64,63 @@ class SPARouter {
         if (container && pageData.content) {
           container.innerHTML = pageData.content;
 
-          // Execute inline scripts (needed for blog listing)
+          // Execute inline scripts and load external scripts (needed for blog listing)
           const scripts = container.querySelectorAll('script');
+          const externalScripts = [];
+          const inlineScripts = [];
+
+          // Separate external and inline scripts
           scripts.forEach(oldScript => {
-            const newScript = document.createElement('script');
-            newScript.textContent = oldScript.textContent;
-            oldScript.parentNode.replaceChild(newScript, oldScript);
+            if (oldScript.src) {
+              externalScripts.push(oldScript);
+            } else {
+              inlineScripts.push(oldScript);
+            }
+          });
+
+          // Load external scripts first, then execute inline scripts
+          Promise.all(
+            externalScripts.map(oldScript => {
+              return new Promise((resolve, reject) => {
+                const newScript = document.createElement('script');
+                newScript.src = oldScript.src;
+
+                // Copy any other attributes except src
+                Array.from(oldScript.attributes).forEach(attr => {
+                  if (attr.name !== 'src' && attr.name !== 'type') {
+                    newScript.setAttribute(attr.name, attr.value);
+                  }
+                });
+
+                newScript.onload = resolve;
+                newScript.onerror = reject;
+
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+              });
+            })
+          ).then(() => {
+            // After external scripts load, execute inline scripts
+            inlineScripts.forEach(oldScript => {
+              const newScript = document.createElement('script');
+              newScript.textContent = oldScript.textContent;
+
+              // Copy any other attributes
+              Array.from(oldScript.attributes).forEach(attr => {
+                if (attr.name !== 'src' && attr.name !== 'type') {
+                  newScript.setAttribute(attr.name, attr.value);
+                }
+              });
+
+              oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
+          }).catch(error => {
+            console.error('[SPA Router] Error loading external scripts:', error);
+            // Still execute inline scripts even if external scripts fail
+            inlineScripts.forEach(oldScript => {
+              const newScript = document.createElement('script');
+              newScript.textContent = oldScript.textContent;
+              oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
           });
         }
       });

@@ -1,5 +1,5 @@
 ---
-title: "A Minimal Approach : Tiny Portions on Big Plates"
+title: A Minimal Approach - Tiny Portions on Big Plates
 date: 2025-10-22
 excerpt: Exploring minimalist design through tiny portions on big plates
 ---

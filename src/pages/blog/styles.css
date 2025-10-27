@@ -65,3 +65,77 @@
   color: #ffffff;
 }
 
+/* Pagination Controls */
+.blog-pagination-container {
+  margin-top: 40px;
+  padding-top: 24px;
+}
+
+.pagination-controls {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pagination-numbers {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-start !important;
+}
+
+.pagination-btn {
+  padding: 8px 12px;
+  border: 1px solid #444444;
+  background-color: transparent;
+  color: #999999;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  min-width: 40px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pagination-btn:hover:not(:disabled):not(.pagination-ellipsis) {
+  border-color: #666666;
+  color: #ffffff;
+  background-color: #222222;
+}
+
+.pagination-btn.active {
+  background-color: #444444;
+  color: #ffffff;
+  border-color: #555555;
+  font-weight: 500;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-ellipsis {
+  color: #666666;
+  padding: 8px 4px;
+  cursor: default;
+}
+
+@media (max-width: 768px) {
+  .pagination-numbers {
+    gap: 6px;
+  }
+
+  .pagination-btn {
+    padding: 6px 10px;
+    font-size: 13px;
+    min-width: 36px;
+  }
+}
+
+

@@ -1,52 +1,47 @@
 <div class="tab-content active" id="blog">
 
   <h1>Blog</h1>
-  
+
   <div id="blog-posts" class="blog-posts">
     <p class="loading">Loading posts...</p>
   </div>
 
+  <div id="blog-pagination" class="blog-pagination-container"></div>
+
 </div>
 
 
+<script src="/pages/blog/pagination.js"></script>
 <script>
-  // Fetch and display blog posts
+  let pagination = null;
+
   async function loadBlogPosts() {
     try {
+      if (typeof window.BlogPagination === 'undefined') {
+        throw new Error('BlogPagination class not available');
+      }
+
       const response = await fetch('/api/blog/list');
       const data = await response.json();
-      const container = document.getElementById('blog-posts');
 
       if (data.posts && data.posts.length > 0) {
-        container.innerHTML = data.posts.map(post => `
-          <article class="blog-post-preview">
-            <h3 class="post-title">
-              <a href="/blog/${post.slug}" class="post-link" data-slug="${post.slug}">
-                ${post.title}
-              </a>
-            </h3>
-            <p class="post-views" data-post-id="${post.slug}">0 views</p>
-          </article>
-        `).join('');
-
-        // Attach click handlers for SPA navigation
-        container.querySelectorAll('.post-link').forEach(link => {
-          link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const slug = e.target.dataset.slug;
-            window.history.pushState({ page: 'blog-post', slug }, '', `/blog/${slug}`);
-            window.dispatchEvent(new CustomEvent('navigate-to-post', { detail: { slug } }));
-          });
-        });
+        pagination = new window.BlogPagination(4);
+        pagination.init(data.posts);
       } else {
-        container.innerHTML = '<p class="no-posts">No blog posts yet. Check back soon!</p>';
+        document.getElementById('blog-posts').innerHTML = '<p class="no-posts">No blog posts yet. Check back soon!</p>';
       }
     } catch (error) {
       console.error('Error loading blog posts:', error);
-      document.getElementById('blog-posts-view').innerHTML = '<p class="error">Failed to load blog posts. Please try again later.</p>';
+      const container = document.getElementById('blog-posts');
+      if (container) {
+        container.innerHTML = '<p class="error">Failed to load blog posts. Please try again later.</p>';
+      }
     }
   }
 
-  // Load posts when the blog page is shown
-  loadBlogPosts();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadBlogPosts);
+  } else {
+    setTimeout(loadBlogPosts, 100);
+  }
 </script>

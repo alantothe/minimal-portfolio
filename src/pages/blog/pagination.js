@@ -125,7 +125,7 @@ window.BlogPagination = class BlogPagination {
   }
 
   /**
-   * Render the articles for current page
+   * Render the articles for current page with empty slots
    */
   renderArticles() {
     const container = document.getElementById('blog-posts');
@@ -133,14 +133,27 @@ window.BlogPagination = class BlogPagination {
 
     const articles = this.getPageArticles();
 
-    if (articles.length === 0) {
+    if (this.allArticles.length === 0) {
       container.innerHTML = '<p class="no-posts">No blog posts yet. Check back soon!</p>';
       return;
     }
 
-    container.innerHTML = articles
-      .map(
-        post => `
+    // Create slots array with actual posts and empty slots
+    const slots = [];
+    for (let i = 0; i < this.articlesPerPage; i++) {
+      if (i < articles.length) {
+        slots.push(articles[i]);
+      } else {
+        slots.push(null); // Empty slot
+      }
+    }
+
+    container.innerHTML = slots
+      .map((post, index) => {
+        if (post === null) {
+          return `<article class="blog-post-preview empty-slot"></article>`;
+        }
+        return `
       <article class="blog-post-preview">
         <h3 class="post-title">
           <a href="/blog/${post.slug}" class="post-link" data-slug="${post.slug}">
@@ -149,8 +162,8 @@ window.BlogPagination = class BlogPagination {
         </h3>
         <p class="post-views" data-post-id="${post.slug}">${post.views || 0} views</p>
       </article>
-    `
-      )
+    `;
+      })
       .join('');
 
     // Attach click handlers for SPA navigation

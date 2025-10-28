@@ -4,9 +4,184 @@ main h1 {
     margin-bottom: 1rem;
 }
 
-main p {
-    font-size: 1.1rem;
-    line-height: 1.6;
+main > p {
+    color: #999999;
+    font-size: 14px;
+    margin-bottom: 2rem;
+}
+
+/* Projects List */
+.projects-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+/* Project Preview Item */
+.project-preview {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.project-preview:hover {
+    background-color: #111111;
+}
+
+.project-preview.empty-slot {
+    pointer-events: none;
+    visibility: hidden;
+}
+
+/* Project Thumbnail */
+.project-thumbnail {
+    flex-shrink: 0;
+    width: 80px;
+    height: 80px;
+    background-color: #1a1a1a;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.project-thumbnail.placeholder {
+    background-color: #0a0a0a;
+}
+
+.project-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Project Info */
+.project-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.project-name {
+    font-size: 15px;
+    font-weight: 400;
+    margin: 0 0 4px 0;
+    color: #ffffff;
+}
+
+.project-link {
+    color: #ffffff;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.project-link:hover {
+    color: #999999;
+}
+
+.project-date {
+    color: #666666;
+    font-size: 13px;
+    margin: 0;
+}
+
+/* Loading and Empty States */
+.loading,
+.no-projects,
+.error {
+    text-align: center;
     color: #b0b0b0;
-    max-width: 600px;
+    padding: 40px 20px;
+    grid-column: 1 / -1;
+}
+
+.error {
+    color: #ff6b6b;
+}
+
+/* Pagination Controls */
+.projects-pagination-container {
+    margin-top: 48px;
+    padding-top: 32px;
+}
+
+.pagination-controls {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.pagination-numbers {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-start !important;
+}
+
+.pagination-btn {
+    padding: 8px 12px;
+    border: 1px solid #444444;
+    background-color: transparent;
+    color: #999999;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.pagination-btn:hover:not(:disabled):not(.pagination-ellipsis) {
+    border-color: #666666;
+    color: #ffffff;
+    background-color: #222222;
+}
+
+.pagination-btn.active {
+    background-color: #444444;
+    color: #ffffff;
+    border-color: #555555;
+    font-weight: 500;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pagination-ellipsis {
+    color: #666666;
+    padding: 8px 4px;
+    cursor: default;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .project-preview {
+        gap: 12px;
+        padding: 10px;
+    }
+
+    .project-thumbnail {
+        width: 64px;
+        height: 64px;
+    }
+
+    .project-name {
+        font-size: 14px;
+    }
+
+    .pagination-numbers {
+        gap: 6px;
+    }
+
+    .pagination-btn {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
 }

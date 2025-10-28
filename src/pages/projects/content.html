@@ -1,1 +1,49 @@
-<h1>Projects</h1>
+<div class="tab-content active" id="projects">
+
+  <h1>Projects</h1>
+  <p>A collection of projects I've built and contributed to.</p>
+
+  <div id="projects-list" class="projects-list">
+    <p class="loading">Loading projects...</p>
+  </div>
+
+  <div id="projects-pagination" class="projects-pagination-container"></div>
+
+</div>
+
+
+<script src="/pages/projects/pagination.js"></script>
+<script>
+  let projectsPagination = null;
+
+  window.loadProjects = async function() {
+    try {
+      if (typeof window.ProjectsPagination === 'undefined') {
+        throw new Error('ProjectsPagination class not available');
+      }
+
+      const response = await fetch('/api/projects/list');
+      const data = await response.json();
+
+      if (data.projects && data.projects.length > 0) {
+        projectsPagination = new window.ProjectsPagination(3);
+        projectsPagination.init(data.projects);
+      } else {
+        document.getElementById('projects-list').innerHTML = '<p class="no-projects">No projects yet. Check back soon!</p>';
+      }
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      const container = document.getElementById('projects-list');
+      if (container) {
+        container.innerHTML = '<p class="error">Failed to load projects. Please try again later.</p>';
+      }
+    }
+  }
+
+  // Load projects on initial page load (called by SPA router when switching to projects tab)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.loadProjects);
+  } else {
+    setTimeout(window.loadProjects, 100);
+  }
+</script>

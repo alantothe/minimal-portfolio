@@ -18,6 +18,7 @@ class SPARouter {
   init() {
     this.attachNavListeners();
     this.attachBlogPostListener();
+    this.attachProjectListener();
     window.addEventListener("popstate", (event) => {
       if (event.state) {
         if (event.state.page === 'blog-post' && event.state.slug) {
@@ -185,9 +186,22 @@ class SPARouter {
 
       this.updateActiveNav(pageName);
 
-      // Refresh blog posts when returning to blog tab to get updated view counts
-      if (pageName === 'blog' && typeof loadBlogPosts === 'function') {
-        loadBlogPosts();
+      // Refresh content when returning to dynamic pages
+      // Add small delay to allow page scripts to execute
+      if (pageName === 'blog') {
+        setTimeout(() => {
+          if (typeof window.loadBlogPosts === 'function') {
+            window.loadBlogPosts();
+          }
+        }, 50);
+      }
+
+      if (pageName === 'projects') {
+        setTimeout(() => {
+          if (typeof window.loadProjects === 'function') {
+            window.loadProjects();
+          }
+        }, 50);
       }
 
       // Update home page metrics when returning to it (without full page reload)
@@ -283,6 +297,13 @@ class SPARouter {
     });
   }
 
+  attachProjectListener() {
+    window.addEventListener("navigate-to-project", (event) => {
+      const { slug } = event.detail;
+      this.loadProject(slug, true);
+    });
+  }
+
   getBlogPageFromURL() {
     // Extract page number from current URL (e.g., /blog?page=2 -> 2)
     const params = new URLSearchParams(window.location.search);
@@ -366,6 +387,75 @@ class SPARouter {
       const blogPostContainer = document.getElementById('blog-post-page');
       if (blogPostContainer) {
         blogPostContainer.innerHTML = "<h1>Error loading post</h1><p>Please try again.</p>";
+      }
+    } finally {
+      this.isNavigating = false;
+    }
+  }
+
+  async loadProject(slug, addTransition) {
+    this.isNavigating = true;
+    try {
+      const projectContainer = document.getElementById('project-page');
+
+      if (projectContainer && addTransition) {
+        projectContainer.style.opacity = "0";
+        projectContainer.style.transition = "opacity 0.15s ease-out";
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+
+      const response = await fetch(`/api/projects/${slug}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load project: ${response.statusText}`);
+      }
+      const data = await response.json();
+
+      // Hide all pages and show project-page
+      document.querySelectorAll('.page-container').forEach(container => {
+        container.classList.remove('active');
+      });
+
+      if (projectContainer) {
+        projectContainer.innerHTML = `
+          <article class="project">
+            <a href="/projects" class="back-to-projects back-link">&larr; Back to Projects</a>
+            <div class="project-content">
+              ${data.html}
+            </div>
+          </article>
+        `;
+        projectContainer.classList.add('active');
+
+        const backLink = projectContainer.querySelector('.back-to-projects');
+        if (backLink) {
+          backLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.history.pushState({ page: 'projects' }, '', '/projects');
+            this.switchPage('projects', true);
+          });
+        }
+      }
+
+      document.title = `${data.metadata.title} - Portfolio`;
+
+      // Update meta tags for SEO
+      this.updateMetaTags({
+        description: data.metadata.description || '',
+        date: data.metadata.date || ''
+      });
+
+      this.updatePageCSS('/pages/projects/styles.css');
+      this.updateActiveNav('projects');
+
+      if (projectContainer && addTransition) {
+        projectContainer.offsetWidth;
+        projectContainer.style.opacity = "1";
+      }
+    } catch (error) {
+      console.error("[SPA Router] Error loading project:", error);
+      const projectContainer = document.getElementById('project-page');
+      if (projectContainer) {
+        projectContainer.innerHTML = "<h1>Error loading project</h1><p>Please try again.</p>";
       }
     } finally {
       this.isNavigating = false;

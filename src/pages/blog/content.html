@@ -13,9 +13,9 @@
 
 <script src="/pages/blog/pagination.js"></script>
 <script>
-  let pagination = null;
+  let blogPagination = null;
 
-  async function loadBlogPosts() {
+  window.loadBlogPosts = async function() {
     try {
       if (typeof window.BlogPagination === 'undefined') {
         throw new Error('BlogPagination class not available');
@@ -25,8 +25,8 @@
       const data = await response.json();
 
       if (data.posts && data.posts.length > 0) {
-        pagination = new window.BlogPagination(4);
-        pagination.init(data.posts);
+        blogPagination = new window.BlogPagination(4);
+        blogPagination.init(data.posts);
       } else {
         document.getElementById('blog-posts').innerHTML = '<p class="no-posts">No blog posts yet. Check back soon!</p>';
       }
@@ -41,8 +41,8 @@
 
   // Load blog posts on initial page load (called by SPA router when switching to blog tab)
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadBlogPosts);
+    document.addEventListener('DOMContentLoaded', window.loadBlogPosts);
   } else {
-    setTimeout(loadBlogPosts, 100);
+    setTimeout(window.loadBlogPosts, 100);
   }
 </script>

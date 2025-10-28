@@ -37,6 +37,20 @@ marked.setOptions({
 });
 
 /**
+ * Transform image URLs from placeholder paths to Cloudinary URLs
+ * Converts /images/{slug}/{name} to https://res.cloudinary.com/dz18m79a1/image/upload/{slug}/{name}
+ */
+function transformImageUrls(html: string): string {
+  return html.replace(
+    /src="\/images\/([^\/]+)\/([^"]+)"/g,
+    (match, slug, imageName) => {
+      const cloudinaryUrl = `https://res.cloudinary.com/dz18m79a1/image/upload/${slug}/${imageName}`;
+      return `src="${cloudinaryUrl}"`;
+    }
+  );
+}
+
+/**
  * Parse markdown file with YAML frontmatter
  */
 export function parseMarkdown(markdownContent: string): BlogPost {
@@ -49,7 +63,10 @@ export function parseMarkdown(markdownContent: string): BlogPost {
   }
 
   // Convert markdown to HTML
-  const html = marked(content) as string;
+  let html = marked(content) as string;
+
+  // Transform placeholder image URLs to Cloudinary URLs
+  html = transformImageUrls(html);
 
   return {
     metadata: data as BlogPostMetadata,

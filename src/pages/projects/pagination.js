@@ -1,0 +1,222 @@
+/**
+ * Projects Pagination System
+ * Handles client-side pagination for projects list with smart page number display
+ */
+
+window.ProjectsPagination = class ProjectsPagination {
+  constructor(articlesPerPage = 3) {
+    this.articlesPerPage = articlesPerPage;
+    this.allArticles = [];
+    this.currentPage = 1;
+  }
+
+  /**
+   * Initialize pagination with articles and optional page from URL
+   */
+  init(articles) {
+    this.allArticles = articles;
+    this.currentPage = this.getPageFromURL() || 1;
+    this.render();
+  }
+
+  /**
+   * Get current page from URL query parameter
+   */
+  getPageFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const page = parseInt(params.get('page'), 10);
+    return page && page > 0 ? page : 1;
+  }
+
+  /**
+   * Update URL with current page (without full reload)
+   */
+  updateURL(page) {
+    const url = new URL(window.location);
+    url.searchParams.set('page', page);
+    window.history.replaceState({ page }, '', url.toString());
+  }
+
+  /**
+   * Calculate total pages
+   */
+  getTotalPages() {
+    return Math.ceil(this.allArticles.length / this.articlesPerPage);
+  }
+
+  /**
+   * Get articles for current page
+   */
+  getPageArticles() {
+    const start = (this.currentPage - 1) * this.articlesPerPage;
+    const end = start + this.articlesPerPage;
+    return this.allArticles.slice(start, end);
+  }
+
+  calculateVisiblePageNumbers() {
+    const totalPages = this.getTotalPages();
+    const current = this.currentPage;
+    const visible = [];
+
+    visible.push(1);
+
+    const rangeStart = Math.max(2, current - 1);
+    const rangeEnd = Math.min(totalPages - 1, current + 1);
+
+    if (rangeStart > 2) {
+      visible.push('...');
+    }
+
+    for (let i = rangeStart; i <= rangeEnd; i++) {
+      visible.push(i);
+    }
+
+    if (rangeEnd < totalPages - 1) {
+      visible.push('...');
+    }
+
+    if (totalPages > 1) {
+      visible.push(totalPages);
+    }
+
+    return visible;
+  }
+
+  /**
+   * Generate HTML for pagination controls
+   */
+  renderPaginationHTML() {
+    const totalPages = this.getTotalPages();
+
+    // Hide pagination if only 1 page or no articles
+    if (totalPages <= 1) {
+      return '';
+    }
+
+    const visiblePages = this.calculateVisiblePageNumbers();
+    const pageButtons = visiblePages
+      .map(page => {
+        if (page === '...') {
+          return '<span class="pagination-ellipsis">...</span>';
+        }
+
+        const isActive = page === this.currentPage;
+        const activeClass = isActive ? ' active' : '';
+        return `<button class="pagination-btn${activeClass}" data-page="${page}">${page}</button>`;
+      })
+      .join('');
+
+    return `
+      <nav class="pagination-controls">
+        <div class="pagination-numbers">
+          ${pageButtons}
+        </div>
+      </nav>
+    `;
+  }
+
+  /**
+   * Main render function - updates articles display and pagination controls
+   */
+  render() {
+    this.renderArticles();
+    this.renderPagination();
+    this.attachEventListeners();
+  }
+
+  /**
+   * Render the articles for current page with empty slots
+   */
+  renderArticles() {
+    const container = document.getElementById('projects-list');
+    if (!container) return;
+
+    const articles = this.getPageArticles();
+
+    if (this.allArticles.length === 0) {
+      container.innerHTML = '<p class="no-projects">No projects yet. Check back soon!</p>';
+      return;
+    }
+
+    // Create slots array with actual projects and empty slots
+    const slots = [];
+    for (let i = 0; i < this.articlesPerPage; i++) {
+      if (i < articles.length) {
+        slots.push(articles[i]);
+      } else {
+        slots.push(null); // Empty slot
+      }
+    }
+
+    container.innerHTML = slots
+      .map((project, index) => {
+        if (project === null) {
+          return `<article class="project-preview empty-slot"></article>`;
+        }
+        return `
+      <article class="project-preview">
+        ${project.image ? `<div class="project-thumbnail"><img src="${project.image}" alt="${project.title}" /></div>` : '<div class="project-thumbnail placeholder"></div>'}
+        <div class="project-info">
+          <h3 class="project-name">
+            <a href="/projects/${project.slug}" class="project-link" data-slug="${project.slug}">
+              ${project.title}
+            </a>
+          </h3>
+          ${project.date ? `<p class="project-date">${new Date(project.date).getFullYear()}</p>` : ''}
+        </div>
+      </article>
+    `;
+      })
+      .join('');
+
+    // Attach click handlers for SPA navigation
+    container.querySelectorAll('.project-link').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const slug = e.currentTarget.dataset.slug;
+        // Preserve current page number in URL when navigating to project
+        const pageParam = this.currentPage > 1 ? `?page=${this.currentPage}` : '';
+        const projectUrl = `/projects/${slug}${pageParam}`;
+        window.history.pushState({ page: 'project', slug }, '', projectUrl);
+        window.dispatchEvent(new CustomEvent('navigate-to-project', { detail: { slug } }));
+      });
+    });
+  }
+
+  /**
+   * Render pagination controls
+   */
+  renderPagination() {
+    const container = document.getElementById('projects-pagination');
+    if (!container) return;
+
+    container.innerHTML = this.renderPaginationHTML();
+  }
+
+  attachEventListeners() {
+    const container = document.getElementById('projects-pagination');
+    if (!container) return;
+
+    const buttons = container.querySelectorAll('.pagination-btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', e => {
+        const page = parseInt(e.currentTarget.dataset.page, 10);
+        this.goToPage(page);
+      });
+    });
+  }
+
+  /**
+   * Navigate to specific page
+   */
+  goToPage(page) {
+    const totalPages = this.getTotalPages();
+    if (page < 1 || page > totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.updateURL(page);
+    this.render();
+  }
+};

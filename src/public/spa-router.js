@@ -276,8 +276,17 @@ class SPARouter {
   attachBlogPostListener() {
     window.addEventListener("navigate-to-post", (event) => {
       const { slug } = event.detail;
+      // Capture current blog page before navigating to post
+      this.currentBlogPage = this.getBlogPageFromURL();
+      console.log('[SPA Router] Navigating to post - captured currentBlogPage:', this.currentBlogPage, 'from URL:', window.location.search);
       this.loadBlogPost(slug, true);
     });
+  }
+
+  getBlogPageFromURL() {
+    // Extract page number from current URL (e.g., /blog?page=2 -> 2)
+    const params = new URLSearchParams(window.location.search);
+    return params.get('page') || '1';
   }
 
   async loadBlogPost(slug, addTransition) {
@@ -327,7 +336,11 @@ class SPARouter {
         if (backLink) {
           backLink.addEventListener('click', (e) => {
             e.preventDefault();
-            window.history.pushState({ page: 'blog' }, '', '/blog');
+            // Return to the blog page with the page number preserved
+            const pageParam = this.currentBlogPage ? `?page=${this.currentBlogPage}` : '';
+            const backUrl = `/blog${pageParam}`;
+            console.log('[SPA Router] Back to blog - currentBlogPage:', this.currentBlogPage, 'backUrl:', backUrl);
+            window.history.pushState({ page: 'blog' }, '', backUrl);
             this.switchPage('blog', true);
           });
         }

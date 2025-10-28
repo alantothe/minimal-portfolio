@@ -171,7 +171,10 @@ window.BlogPagination = class BlogPagination {
       link.addEventListener('click', e => {
         e.preventDefault();
         const slug = e.currentTarget.dataset.slug;
-        window.history.pushState({ page: 'blog-post', slug }, '', `/blog/${slug}`);
+        // Preserve current page number in URL when navigating to post
+        const pageParam = this.currentPage > 1 ? `?page=${this.currentPage}` : '';
+        const postUrl = `/blog/${slug}${pageParam}`;
+        window.history.pushState({ page: 'blog-post', slug }, '', postUrl);
         window.dispatchEvent(new CustomEvent('navigate-to-post', { detail: { slug } }));
       });
     });

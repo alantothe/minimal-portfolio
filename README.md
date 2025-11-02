@@ -2,6 +2,10 @@
 
 a lightweight personal portfolio and blog. customize in minutes, add content with cli tools.
 
+
+https://github.com/user-attachments/assets/3516996e-6c8c-4123-bc20-fbfcd3a6d133
+
+
 <h2 style="margin-bottom: 0.5rem;">built with:</h2>
 <p>
 <img alt="Bun" src="https://img.shields.io/badge/bun-00E0FF?style=for-the-badge&logo=bun&logoColor=white&color=333333"/>

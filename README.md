@@ -43,7 +43,7 @@ both are interactive - just answer the prompts.
 
 ## setup
 
-see [docs/SETUP.md](./docs/SETUP.md) for:
+see [docs/SETUP.md](./src/config/README.md) for:
 - full customization guide
 - github token setup
 - blog & project specs (cover images: 300×180px)

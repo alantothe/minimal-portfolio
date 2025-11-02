@@ -10,6 +10,8 @@ class SPARouter {
   isNavigating = false;
   pagesLoaded = false;
   pagesData = null;
+  currentBlogPage = '1'; // Track current blog page for back navigation
+  mobileBreakpoint = 481; // Mobile is 480px and below
 
   constructor() {
     this.init();
@@ -17,8 +19,11 @@ class SPARouter {
 
   init() {
     this.attachNavListeners();
+    this.attachHamburgerListener();
     this.attachBlogPostListener();
     this.attachProjectListener();
+    this.attachEmailListener();
+    this.attachResizeListener();
     window.addEventListener("popstate", (event) => {
       if (event.state) {
         if (event.state.page === 'blog-post' && event.state.slug) {
@@ -141,9 +146,59 @@ class SPARouter {
         const url = new URL(link.href);
         const page = this.getPageFromPath(url.pathname);
         this.navigate(page, url.pathname);
+        // Close mobile nav after navigation
+        this.closeMobileNav();
         return false;
       }
     });
+  }
+
+  /**
+   * Check if current viewport is in mobile breakpoint (480px and below)
+   */
+  isMobileBreakpoint() {
+    return window.innerWidth < this.mobileBreakpoint;
+  }
+
+  /**
+   * Attach resize listener to auto-close mobile nav when resizing to tablet+
+   */
+  attachResizeListener() {
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        // If resizing into tablet+ range and mobile nav is open, close it
+        if (!this.isMobileBreakpoint()) {
+          this.closeMobileNav();
+        }
+      }, 100);
+    });
+  }
+
+  attachHamburgerListener() {
+    const hamburger = document.getElementById('hamburger-toggle');
+    const mobileNav = document.getElementById('mobile-nav');
+
+    if (hamburger) {
+      hamburger.addEventListener('click', () => {
+        // Only allow toggle if in mobile breakpoint
+        if (this.isMobileBreakpoint()) {
+          hamburger.classList.toggle('active');
+          mobileNav.classList.toggle('active');
+        }
+      });
+    }
+  }
+
+  closeMobileNav() {
+    const hamburger = document.getElementById('hamburger-toggle');
+    const mobileNav = document.getElementById('mobile-nav');
+
+    if (hamburger && mobileNav) {
+      hamburger.classList.remove('active');
+      mobileNav.classList.remove('active');
+    }
   }
 
   getPageFromPath(pathname) {
@@ -181,7 +236,7 @@ class SPARouter {
       if (this.pagesData && this.pagesData[pageName]) {
         const pageData = this.pagesData[pageName];
         document.title = pageData.title;
-        this.updatePageCSS(pageData.pageCSS);
+        // All CSS files are preloaded in shell.html, no need to switch
       }
 
       this.updateActiveNav(pageName);
@@ -304,6 +359,42 @@ class SPARouter {
     });
   }
 
+  attachEmailListener() {
+    document.addEventListener("click", (e) => {
+      const emailElement = e.target.closest("#copy-email");
+      if (emailElement) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const email = emailElement.getAttribute("data-email");
+        if (email) {
+          // Copy to clipboard
+          navigator.clipboard.writeText(email).then(() => {
+            // Create or get tooltip
+            let tooltip = emailElement.querySelector("#copy-tooltip");
+            if (!tooltip) {
+              tooltip = document.createElement("span");
+              tooltip.id = "copy-tooltip";
+              tooltip.textContent = "Email copied to clipboard";
+              emailElement.appendChild(tooltip);
+            }
+
+            // Show tooltip
+            tooltip.classList.add("show");
+
+            // Auto-hide after 1 second
+            setTimeout(() => {
+              tooltip.classList.remove("show");
+            }, 1000);
+          }).catch(err => {
+            console.error("[SPA Router] Failed to copy email:", err);
+          });
+        }
+        return false;
+      }
+    });
+  }
+
   getBlogPageFromURL() {
     // Extract page number from current URL (e.g., /blog?page=2 -> 2)
     const params = new URLSearchParams(window.location.search);
@@ -375,11 +466,12 @@ class SPARouter {
         date: data.metadata.date
       });
 
-      this.updatePageCSS('/pages/blog/styles.css');
+      // All CSS files are preloaded in shell.html, no need to switch
       this.updateActiveNav('blog');
 
       if (blogPostContainer && addTransition) {
-        blogPostContainer.offsetWidth;
+        // Trigger reflow for CSS transition (CSS transition uses opacity)
+        void blogPostContainer.offsetWidth;
         blogPostContainer.style.opacity = "1";
       }
     } catch (error) {
@@ -444,11 +536,12 @@ class SPARouter {
         date: data.metadata.date || ''
       });
 
-      this.updatePageCSS('/pages/projects/styles.css');
+      // All CSS files are preloaded in shell.html, no need to switch
       this.updateActiveNav('projects');
 
       if (projectContainer && addTransition) {
-        projectContainer.offsetWidth;
+        // Trigger reflow for CSS transition (CSS transition uses opacity)
+        void projectContainer.offsetWidth;
         projectContainer.style.opacity = "1";
       }
     } catch (error) {

@@ -1,8 +1,8 @@
 ---
 title: Questurian - Travel Platform
 description: A comprehensive travel planning and booking platform
-image: /images/questurian/hero.png
-date: 2025-10-23
+image: https://res.cloudinary.com/dz18m79a1/image/upload/c_fill,w_300,h_180/v1761780791/questura_rbayjx.png
+date: 2025-11-04
 ---
 
 # Questurian

@@ -151,20 +151,23 @@ window.ProjectsPagination = class ProjectsPagination {
     container.innerHTML = slots
       .map((project, index) => {
         if (project === null) {
-          return `<article class="project-preview empty-slot"></article>`;
+          return `<div class="project-card empty-slot"></div>`;
         }
+        const year = project.date ? new Date(project.date).getFullYear() : '';
         return `
-      <article class="project-preview">
-        ${project.image ? `<div class="project-thumbnail"><img src="${project.image}" alt="${project.title}" /></div>` : '<div class="project-thumbnail placeholder"></div>'}
-        <div class="project-info">
-          <h3 class="project-name">
-            <a href="/projects/${project.slug}" class="project-link" data-slug="${project.slug}">
-              ${project.title}
-            </a>
-          </h3>
-          ${project.date ? `<p class="project-date">${new Date(project.date).getFullYear()}</p>` : ''}
-        </div>
-      </article>
+      <div class="project-card">
+        <a href="/projects/${project.slug}" class="project-link" data-project-id="${project.slug}">
+          ${project.image ? `
+          <div class="project-image image-loading-container">
+            <img src="${project.image}" alt="${project.title}">
+          </div>
+          ` : `<div class="project-image"><div style="width: 100%; height: 100%; background-color: #333;"></div></div>`}
+          <div class="project-content">
+            <h2 class="project-title">${project.title}</h2>
+            <span class="project-timestamp">${year}</span>
+          </div>
+        </a>
+      </div>
     `;
       })
       .join('');
@@ -173,7 +176,7 @@ window.ProjectsPagination = class ProjectsPagination {
     container.querySelectorAll('.project-link').forEach(link => {
       link.addEventListener('click', e => {
         e.preventDefault();
-        const slug = e.currentTarget.dataset.slug;
+        const slug = e.currentTarget.dataset.projectId;
         // Preserve current page number in URL when navigating to project
         const pageParam = this.currentPage > 1 ? `?page=${this.currentPage}` : '';
         const projectUrl = `/projects/${slug}${pageParam}`;

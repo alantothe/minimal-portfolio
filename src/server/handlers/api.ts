@@ -35,20 +35,10 @@ async function countBlogPosts(): Promise<number> {
  * load page-specific data configuration
  */
 async function loadPageData(pageName: string): Promise<any> {
-  // Only home page has data config for now
   if (pageName === 'home') {
     try {
-      const configFile = Bun.file('./src/pages/home/data/config.ts');
-      const configCode = await configFile.text();
-
-      // Use eval to execute the module code and extract the export
-      // Create a module-like context
-      const moduleContext = { exports: {}, siteConfig: null };
-      const wrappedCode = configCode.replace('export const siteConfig', 'siteConfig');
-
-      // Execute in a function scope to capture siteConfig
-      const func = new Function('siteConfig', wrappedCode + '\nreturn siteConfig;');
-      const siteConfig = func();
+      // Dynamically import the home config - this handles TypeScript and imports correctly
+      const { siteConfig } = await import('../../../src/pages/home/data/config.ts');
 
       // Fetch real-time GitHub commit count
       const githubCommits = await getMonthlyCommitCount();
@@ -71,6 +61,16 @@ async function loadPageData(pageName: string): Promise<any> {
       };
     } catch (error) {
       console.error('Error loading page data:', error);
+      return null;
+    }
+  } else if (pageName === 'about') {
+    try {
+      // Dynamically import the about config - this handles TypeScript and imports correctly
+      const { aboutConfig } = await import('../../../src/pages/about/data/config.ts');
+
+      return aboutConfig;
+    } catch (error) {
+      console.error('Error loading about config:', error);
       return null;
     }
   }

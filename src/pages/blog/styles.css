@@ -34,24 +34,6 @@
   margin: 0;
 }
 
-/* Blog View States */
-.blog-posts-container {
-  display: block;
-}
-
-.blog-posts-container.hidden {
-  display: none !important;
-}
-
-/* Single Blog Post View */
-.blog-post-single {
-  display: none !important;
-}
-
-.blog-post-single.visible {
-  display: block !important;
-  animation: fadeIn 0.3s ease-in;
-}
 
 .back-link {
   color: #999999;
@@ -137,4 +119,24 @@
   }
 }
 
+/* Blog post images with gradient loading placeholders */
+.markdown-content .image-loading-container {
+  margin: 20px 0;
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #1a1a1a;
+}
+
+.markdown-content .image-loading-container img {
+  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  background-color: #1a1a1a;
+}
 

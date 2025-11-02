@@ -90,16 +90,25 @@ h3 {
 }
 
 #copy-tooltip {
-    display: none;
     position: absolute;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     top: 100%;
     background: #1a1a1a;
     color: #999999;
-    padding: 6px 10px;
-    border-radius: 4px;
-    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
     white-space: nowrap;
     margin-top: 4px;
     border: 1px solid #333;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(-50%) translateY(-4px);
+}
+
+#copy-tooltip.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }

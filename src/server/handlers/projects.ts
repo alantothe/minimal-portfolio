@@ -3,7 +3,6 @@
  */
 
 import { readMarkdownFile, generateSlug } from '../services/markdown.ts';
-import type { BlogPostMetadata } from '../services/markdown.ts';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 

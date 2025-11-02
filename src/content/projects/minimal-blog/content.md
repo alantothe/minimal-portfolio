@@ -1,8 +1,8 @@
 ---
 title: Minimal Blog Platform
 description: A lightweight blog platform built with Bun and TypeScript
-image: /images/minimal-blog/hero.png
-date: 2025-10-20
+image: https://res.cloudinary.com/dz18m79a1/image/upload/c_fill,w_300,h_180/v1761780015/Screenshot_2025-10-29_at_7.19.26_PM_spk87q.png
+date: 2025-11-03
 ---
 
 # Minimal Blog Platform

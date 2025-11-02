@@ -1,14 +1,14 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Inter:wght@400;500;700&display=swap");
+/* Google Fonts are now preloaded in shell.html to prevent FOUT */
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Montserrat", "Inter", "Arial", "Helvetica", sans-serif;
+  font-family: "Montserrat", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
 body {
-    font-family: 'Montserrat', 'Inter', 'Arial', 'Helvetica', sans-serif !important;
+    font-family: 'Montserrat', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif !important;
     background-color: #0a0a0a;
     color: #ffffff;
     line-height: 1.6;
@@ -51,10 +51,25 @@ body {
   height: auto;
 }
 
+/* Base styles - will be overridden by media queries */
 nav {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+}
+
+.navbar-header {
+  display: flex;
+}
+
+.logo-wrapper {
+  display: block;
+}
+
+.hamburger {
+  display: none;
+}
+
+#mobile-nav {
+  display: none;
 }
 
 .nav-link {
@@ -92,24 +107,112 @@ h1 {
     line-height: 1.2;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
+/* DESKTOP: Large screens (811px and above) - vertical sidebar */
+@media (min-width: 811px) {
   .container {
-    padding: 0 0.5rem;
+    padding-top: 130px;
+  }
+
+  .sidebar {
+    width: 126px;
+    height: 100vh;
+    position: sticky;
+    flex-direction: column;
+    padding: 0 10px 60px;
+  }
+
+  .navbar-header {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .hamburger {
+    display: none;
+  }
+
+  #mobile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+  }
+
+  nav {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* TABLET: Medium screens (481px - 810px) - horizontal top navbar */
+@media (max-width: 810px) and (min-width: 481px) {
+  .container {
+    flex-direction: column;
+    padding-top: 0;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    gap: 0;
+    padding: 16px 20px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .navbar-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 0;
+    gap: 16px;
+  }
+
+  .hamburger {
+    display: none;
+  }
+
+  /* Override mobile nav styles for tablet - always visible horizontal */
+  #mobile-nav {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+    transition: none;
+  }
+
+  /* Disable active state effects on tablet */
+  #mobile-nav.active {
+    max-height: none;
+    padding: 0;
+    gap: 12px;
+  }
+
+  nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
   }
 
   h1 {
     font-size: 2rem;
   }
 
-  nav {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
   .nav-link {
     padding: 0.4rem 0.8rem;
     font-size: 0.9rem;
+  }
+
+  .content {
+    padding: 40px 20px 80px;
+    max-width: 100%;
   }
 }
 
@@ -226,5 +329,203 @@ h1 {
     border: none;
     border-top: 1px solid #1a1a1a;
     margin: 40px 0;
+}
+
+/* Social Buttons - must be in global CSS to apply before page content loads */
+.social-button,
+.social-button:link,
+.social-button:visited,
+.social-button:active {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 12px 20px !important;
+    background-color: transparent !important;
+    border: 1px solid #333333 !important;
+    border-radius: 6px !important;
+    color: #ffffff !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease !important;
+    position: relative !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+}
+
+.social-button svg {
+    flex-shrink: 0 !important;
+    width: 16px !important;
+    height: 16px !important;
+    display: block !important;
+}
+
+.social-button .external-icon {
+    opacity: 0.5 !important;
+    margin-left: auto !important;
+    width: 12px !important;
+    height: 12px !important;
+}
+
+.social-button:hover {
+    border-color: #666666 !important;
+    background-color: #1a1a1a !important;
+}
+
+.social-button:hover .external-icon {
+    opacity: 1 !important;
+}
+
+/* PHONE: Small screens (480px and below) - hamburger menu */
+@media (max-width: 480px) {
+    /* Container and sidebar */
+    .container {
+        flex-direction: column;
+        padding-top: 0;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        flex-direction: column;
+        gap: 0;
+        padding: 0;
+        align-items: stretch;
+        z-index: 100;
+    }
+
+    /* Navbar header - logo and hamburger in a row */
+    .navbar-header {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        gap: 16px;
+    }
+
+    /* Hamburger button styling - Chevron */
+    .hamburger {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        justify-content: center;
+        align-items: center;
+        width: 40px;
+        height: 40px;
+    }
+
+    .hamburger span {
+        width: 12px;
+        height: 2px;
+        background-color: #666666;
+        transition: all 0.3s ease;
+        display: block;
+        position: absolute;
+    }
+
+    .hamburger:hover span {
+        background-color: #999999;
+    }
+
+    /* Chevron Down - closed state (default) */
+    .hamburger span:nth-child(1) {
+        transform: rotate(135deg) translateY(-5px);
+    }
+
+    .hamburger span:nth-child(2) {
+        transform: rotate(45deg) translateY(5px);
+    }
+
+    .hamburger span:nth-child(3) {
+        display: none;
+    }
+
+    /* Chevron Up - open state */
+    .hamburger.active span:nth-child(1) {
+        transform: rotate(45deg) translateY(-5px);
+    }
+
+    .hamburger.active span:nth-child(2) {
+        transform: rotate(135deg) translateY(5px);
+    }
+
+    /* Mobile nav - HIDDEN by default, expands with .active class */
+    #mobile-nav {
+        display: none;
+        flex-direction: column;
+        max-height: 0;
+        overflow: hidden;
+        gap: 0;
+        padding: 0;
+        transition: max-height 0.3s ease, padding 0.3s ease, gap 0.3s ease;
+    }
+
+    /* Mobile nav expanded state */
+    #mobile-nav.active {
+        display: flex;
+        max-height: 500px;
+        padding: 16px 20px;
+        gap: 12px;
+    }
+
+    nav {
+        flex-direction: column;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .nav-link {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+
+    .content {
+        padding: 40px 20px 80px;
+        max-width: 100%;
+    }
+
+    h1 {
+        font-size: 28px;
+    }
+
+    .profile-section {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .profile-img {
+        width: 100px;
+        height: 100px;
+    }
+
+    .description {
+        margin-bottom: 60px;
+    }
+
+    /* Mobile social buttons */
+    .social-button {
+        width: 100% !important;
+        justify-content: flex-start !important;
+    }
+
+    .social-links {
+        flex-direction: column !important;
+    }
+}
+
+/* Image blur-to-sharp loading effect */
+img {
+    filter: blur(10px);
+    transition: filter 0.4s ease-out, opacity 0.4s ease-out;
+}
+
+img[loading-done] {
+    filter: blur(0);
+    opacity: 1 !important;
 }
 

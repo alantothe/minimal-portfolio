@@ -2,11 +2,27 @@
  * GitHub API service for fetching user statistics
  */
 
+import { readFile, writeFile } from 'fs/promises';
+import { join } from 'path';
+
 interface GitHubCommitSearchResponse {
   total_count: number;
   incomplete_results: boolean;
   items: any[];
 }
+
+interface CommitCache {
+  lastMonth: {
+    date: string;
+    count: number;
+  };
+  currentMonth: {
+    date: string;
+    count: number;
+  };
+}
+
+const CACHE_FILE = './src/data/github-commits.json';
 
 /**
  * Get the date range for the current month
@@ -34,6 +50,43 @@ function getCurrentMonthDateRange(): { start: string; end: string } {
 }
 
 /**
+ * Get the current month identifier (YYYY-MM)
+ */
+function getCurrentMonthId(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+/**
+ * Load cache from file
+ */
+async function loadCache(): Promise<CommitCache> {
+  try {
+    const data = await readFile(CACHE_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    // Cache file doesn't exist or is invalid, return default
+    return {
+      lastMonth: { date: '', count: 0 },
+      currentMonth: { date: '', count: 0 }
+    };
+  }
+}
+
+/**
+ * Save cache to file
+ */
+async function saveCache(cache: CommitCache): Promise<void> {
+  try {
+    await writeFile(CACHE_FILE, JSON.stringify(cache, null, 2));
+  } catch (error) {
+    console.error('Error saving GitHub commits cache:', error);
+  }
+}
+
+/**
  * Fetch the number of commits made by a user in the current month
  */
 export async function getMonthlyCommitCount(): Promise<number> {
@@ -42,7 +95,18 @@ export async function getMonthlyCommitCount(): Promise<number> {
 
   if (!token || !username) {
     console.error('GitHub credentials not found in environment variables');
-    return 0;
+    // Return cached value if available
+    const cache = await loadCache();
+    return cache.currentMonth.count;
+  }
+
+  const currentMonthId = getCurrentMonthId();
+  const cache = await loadCache();
+
+  // Check if we've moved to a new month
+  if (cache.currentMonth.date !== currentMonthId) {
+    // Shift current to last month
+    cache.lastMonth = cache.currentMonth;
   }
 
   try {
@@ -62,13 +126,43 @@ export async function getMonthlyCommitCount(): Promise<number> {
 
     if (!response.ok) {
       console.error(`GitHub API error: ${response.status} ${response.statusText}`);
-      return 0;
+
+      // Use cached value on API failure
+      const cachedValue = cache.currentMonth.count;
+      if (cachedValue > 0) {
+        console.log(`[GitHub Cache] API failed, using cached value: ${cachedValue} commits`);
+      }
+      return cachedValue;
     }
 
     const data = await response.json() as GitHubCommitSearchResponse;
-    return data.total_count;
+    const newCount = data.total_count;
+
+    // Calculate difference from previous value
+    const oldCount = cache.currentMonth.count;
+    const difference = newCount - oldCount;
+
+    // Update cache with new count
+    cache.currentMonth.date = currentMonthId;
+    cache.currentMonth.count = newCount;
+    await saveCache(cache);
+
+    // Log the result
+    if (difference !== 0) {
+      console.log(`[GitHub Commits] ${newCount} commits this month (+${difference} since last update)`);
+    } else {
+      console.log(`[GitHub Commits] ${newCount} commits this month (no change)`);
+    }
+
+    return newCount;
   } catch (error) {
     console.error('Error fetching GitHub commit count:', error);
-    return 0;
+
+    // Use cached value on error
+    const cachedValue = cache.currentMonth.count;
+    if (cachedValue > 0) {
+      console.log(`[GitHub Cache] Error during fetch, using cached value: ${cachedValue} commits`);
+    }
+    return cachedValue;
   }
 }

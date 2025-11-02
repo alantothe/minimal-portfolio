@@ -54,5 +54,4 @@ ehthumbs.db
 # docs
 docs/
 
-# Local image staging (backup & organization before uploading to Cloudinary)
-images-to-upload/
+

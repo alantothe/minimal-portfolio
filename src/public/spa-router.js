@@ -34,20 +34,32 @@ class SPARouter {
       }
     });
 
-    // Pre-load all pages on init
-    this.preloadAllPages().then(() => {
+    // Pre-load all pages on init, then reveal everything at once
+    this.preloadAllPages().then(async () => {
       const initialPath = window.location.pathname;
       const blogPostMatch = initialPath.match(/^\/blog\/([^/]+)$/);
 
       if (blogPostMatch) {
         const slug = blogPostMatch[1];
         window.history.replaceState({ page: 'blog-post', slug }, "", initialPath);
-        this.loadBlogPost(slug, false);
+        await this.loadBlogPost(slug, false);
       } else {
         const initialPage = this.getPageFromPath(initialPath);
         window.history.replaceState({ page: initialPage }, "", initialPath);
-        this.switchPage(initialPage, false);
+        await this.switchPage(initialPage, false);
       }
+
+      // Wait for all images (page + sidebar) to load before revealing
+      const allImages = document.querySelectorAll('.container img');
+      await Promise.all(Array.from(allImages).map(img =>
+        img.complete ? Promise.resolve() : new Promise(resolve => {
+          img.addEventListener('load', resolve, { once: true });
+          img.addEventListener('error', resolve, { once: true });
+        })
+      ));
+
+      // Everything is ready — reveal the entire container in one frame
+      document.querySelector('.container')?.classList.add('ready');
     });
   }
 
@@ -221,15 +233,18 @@ class SPARouter {
   async switchPage(pageName, addTransition) {
     this.isNavigating = true;
     try {
-      // Hide all page containers
+      // Hide all page containers and remove navigation animation class
       document.querySelectorAll('.page-container').forEach(container => {
-        container.classList.remove('active');
+        container.classList.remove('active', 'navigating');
       });
 
-      // Show the requested page
+      // Show the requested page, animate only during SPA navigation
       const pageContainer = document.getElementById(`${pageName}-page`);
       if (pageContainer) {
         pageContainer.classList.add('active');
+        if (addTransition) {
+          pageContainer.classList.add('navigating');
+        }
       }
 
       // Update page metadata

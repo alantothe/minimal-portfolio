@@ -1,9 +1,6 @@
 /* About Page Styles */
 
-/* Fade-in animation for about page sections */
-.about-section {
-  animation: fadeIn 0.3s ease-in;
-}
+/* Animation handled by container reveal in shell.html */
 
 .about-section {
   margin-bottom: 40px;

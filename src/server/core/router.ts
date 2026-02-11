@@ -1,4 +1,4 @@
-import { NotFoundError, ServerError, createErrorResponse } from './errors.ts';
+import { NotFoundError, ServerError, createErrorResponse } from './errors';
 
 type RouteHandler = (() => Promise<Response>) | ((url: URL, params?: Record<string, string>) => () => Promise<Response>);
 

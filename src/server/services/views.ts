@@ -5,6 +5,7 @@
 
 import { readdirSync } from 'fs';
 import { join } from 'path';
+import { readTextFile, fileExists, writeTextFile } from '../core/file';
 
 const VIEWS_FILE = './src/data/blog-views.json';
 const BLOG_CONTENT_DIR = './src/content/blog';
@@ -18,11 +19,10 @@ interface ViewCounts {
  */
 export async function getViewCounts(): Promise<ViewCounts> {
   try {
-    const file = Bun.file(VIEWS_FILE);
-    if (!(await file.exists())) {
+    if (!(await fileExists(VIEWS_FILE))) {
       return {};
     }
-    const content = await file.text();
+    const content = await readTextFile(VIEWS_FILE);
     return JSON.parse(content);
   } catch (error) {
     console.error('Error reading view counts:', error);
@@ -47,8 +47,7 @@ export async function incrementPostView(slug: string): Promise<number> {
     views[slug] = (views[slug] || 0) + 1;
 
     // Write back to file
-    const file = Bun.file(VIEWS_FILE);
-    await Bun.write(file, JSON.stringify(views, null, 2));
+    await writeTextFile(VIEWS_FILE, JSON.stringify(views, null, 2));
 
     return views[slug];
   } catch (error) {
@@ -112,8 +111,7 @@ export async function syncViewsWithBlogPosts(): Promise<void> {
     });
 
     // Write cleaned views back to file
-    const file = Bun.file(VIEWS_FILE);
-    await Bun.write(file, JSON.stringify(cleanedViews, null, 2));
+    await writeTextFile(VIEWS_FILE, JSON.stringify(cleanedViews, null, 2));
 
     console.log(
       `[View Sync] Cleaned up orphaned view entries: ${orphanedSlugs.join(', ')}`

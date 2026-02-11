@@ -1,4 +1,4 @@
-import type { ServerConfig } from './types.ts';
+import type { ServerConfig } from './types';
 
 /**
  * Server configuration

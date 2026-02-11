@@ -1,5 +1,5 @@
-import { Router } from './router.ts';
-import { StaticHandler } from './staticHandler.ts';
+import { Router } from './router';
+import { StaticHandler } from './staticHandler';
 
 /**
  * Main request handler that orchestrates static file serving and routing

@@ -3,8 +3,9 @@
  * returns only the main content and metadata, not full html
  */
 
-import { getMonthlyCommitCount } from '../services/github.ts';
-import { getTotalViews } from '../services/views.ts';
+import { getMonthlyCommitCount } from '../services/github';
+import { getTotalViews } from '../services/views';
+import { readTextFile, fileExists } from '../core/file';
 
 interface PageData {
   content: string;
@@ -38,7 +39,7 @@ async function loadPageData(pageName: string): Promise<any> {
   if (pageName === 'home') {
     try {
       // Dynamically import the home config - this handles TypeScript and imports correctly
-      const { siteConfig } = await import('../../../src/pages/home/data/config.ts');
+      const { siteConfig } = await import('../../../src/pages/home/data/config');
 
       // Fetch real-time GitHub commit count
       const githubCommits = await getMonthlyCommitCount();
@@ -66,7 +67,7 @@ async function loadPageData(pageName: string): Promise<any> {
   } else if (pageName === 'about') {
     try {
       // Dynamically import the about config - this handles TypeScript and imports correctly
-      const { aboutConfig } = await import('../../../src/pages/about/data/config.ts');
+      const { aboutConfig } = await import('../../../src/pages/about/data/config');
 
       return aboutConfig;
     } catch (error) {
@@ -127,12 +128,11 @@ async function loadPageContent(pageName: string): Promise<PageData> {
     throw new Error('Page not found');
   }
 
-  const pageFile = Bun.file(pagePath);
-  if (!(await pageFile.exists())) {
+  if (!(await fileExists(pagePath))) {
     throw new Error('Page content not found');
   }
 
-  let content = await pageFile.text();
+  let content = await readTextFile(pagePath);
 
   // Load and process page data
   const pageData = await loadPageData(pageName);

@@ -1,8 +1,8 @@
-import { Router } from '../core/router.ts';
-import { shellHandler } from '../handlers/shell.ts';
-import { createApiHandler, createBulkPagesHandler } from '../handlers/api.ts';
-import { blogListHandler, createBlogPostHandler } from '../handlers/blog.ts';
-import { projectsListHandler, createProjectHandler } from '../handlers/projects.ts';
+import { Router } from '../core/router';
+import { shellHandler } from '../handlers/shell';
+import { createApiHandler, createBulkPagesHandler } from '../handlers/api';
+import { blogListHandler, createBlogPostHandler } from '../handlers/blog';
+import { projectsListHandler, createProjectHandler } from '../handlers/projects';
 
 export function setupRoutes(router: Router): void {
   router.addRoute('/', shellHandler);

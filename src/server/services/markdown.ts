@@ -5,6 +5,7 @@
 import { marked } from 'marked';
 import matter from 'gray-matter';
 import hljs from 'highlight.js';
+import { readTextFile, fileExists } from '../core/file';
 
 export interface BlogPostMetadata {
   title: string;
@@ -91,12 +92,10 @@ export function generateSlug(filename: string): string {
  * Read and parse a markdown file
  */
 export async function readMarkdownFile(filePath: string): Promise<BlogPost> {
-  const file = Bun.file(filePath);
-
-  if (!(await file.exists())) {
+  if (!(await fileExists(filePath))) {
     throw new Error(`Markdown file not found: ${filePath}`);
   }
 
-  const content = await file.text();
+  const content = await readTextFile(filePath);
   return parseMarkdown(content);
 }

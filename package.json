@@ -5,11 +5,13 @@
   "private": true,
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/marked": "^6.0.0"
+    "@types/marked": "^6.0.0",
+    "@vercel/node": "^5"
   },
   "scripts": {
     "start": "bun run index.ts",
-    "dev": "bun --watch index.ts"
+    "dev": "bun --watch index.ts",
+    "build": "bun run scripts/build-vercel.ts"
   },
   "peerDependencies": {
     "typescript": "^5"

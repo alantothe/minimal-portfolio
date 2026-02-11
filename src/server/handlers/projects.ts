@@ -2,7 +2,7 @@
  * Projects API handlers for listing projects and fetching individual projects
  */
 
-import { readMarkdownFile, generateSlug } from '../services/markdown.ts';
+import { readMarkdownFile, generateSlug } from '../services/markdown';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 

@@ -1,5 +1,5 @@
-import { serverConfig } from './config.ts';
-import { StaticFileError, ServerError, createErrorResponse } from './errors.ts';
+import { serverConfig } from './config';
+import { StaticFileError, ServerError, createErrorResponse } from './errors';
 
 /**
  * Handles static file serving for CSS, JS, images, and other assets

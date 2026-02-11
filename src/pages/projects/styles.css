@@ -6,6 +6,10 @@
     margin-top: 24px;
 }
 
+.projects-list.images-loading {
+    opacity: 0;
+}
+
 .project-card {
     display: block;
     background-color: #1a1a1a;

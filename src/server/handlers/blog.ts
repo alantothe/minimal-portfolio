@@ -2,10 +2,10 @@
  * Blog API handlers for listing posts and fetching individual posts
  */
 
-import { readMarkdownFile, generateSlug } from '../services/markdown.ts';
-import type { BlogPostMetadata } from '../services/markdown.ts';
-import { incrementPostView, getPostViews, getViewCounts } from '../services/views.ts';
-import { shouldCountView } from '../services/viewCooldown.ts';
+import { readMarkdownFile, generateSlug } from '../services/markdown';
+import type { BlogPostMetadata } from '../services/markdown';
+import { incrementPostView, getPostViews, getViewCounts } from '../services/views';
+import { shouldCountView } from '../services/viewCooldown';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 

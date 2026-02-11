@@ -1,8 +1,8 @@
-import { Router } from './core/router.ts';
-import { RequestHandler } from './core/requestHandler.ts';
+import { Router } from './core/router';
+import { RequestHandler } from './core/requestHandler';
 import { setupRoutes } from './routes';
-import { serverConfig, getServerUrl } from './core/config.ts';
-import { syncViewsWithBlogPosts } from './services/views.ts';
+import { serverConfig, getServerUrl } from './core/config';
+import { syncViewsWithBlogPosts } from './services/views';
 
 
 const router = new Router();

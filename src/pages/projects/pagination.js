@@ -122,6 +122,7 @@ window.ProjectsPagination = class ProjectsPagination {
     this.renderArticles();
     this.renderPagination();
     this.attachEventListeners();
+    this.waitForImages();
   }
 
   /**
@@ -183,6 +184,31 @@ window.ProjectsPagination = class ProjectsPagination {
         window.history.pushState({ page: 'project', slug }, '', projectUrl);
         window.dispatchEvent(new CustomEvent('navigate-to-project', { detail: { slug } }));
       });
+    });
+  }
+
+  /**
+   * Wait for all project images to load, then reveal the list
+   */
+  waitForImages() {
+    const container = document.getElementById('projects-list');
+    if (!container) return;
+
+    container.classList.add('images-loading');
+
+    const images = container.querySelectorAll('img');
+    if (images.length === 0) {
+      container.classList.remove('images-loading');
+      return;
+    }
+
+    Promise.all(Array.from(images).map(img =>
+      img.complete ? Promise.resolve() : new Promise(resolve => {
+        img.addEventListener('load', resolve, { once: true });
+        img.addEventListener('error', resolve, { once: true });
+      })
+    )).then(() => {
+      container.classList.remove('images-loading');
     });
   }
 

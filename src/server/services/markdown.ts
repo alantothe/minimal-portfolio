@@ -2,7 +2,7 @@
  * Markdown parsing service with YAML frontmatter and syntax highlighting
  */
 
-import { marked } from 'marked';
+import { marked, Renderer } from 'marked';
 import matter from 'gray-matter';
 import hljs from 'highlight.js';
 import { readTextFile, fileExists } from '../core/file';
@@ -21,21 +21,24 @@ export interface BlogPost {
 }
 
 /**
- * Configure marked with syntax highlighting
+ * Configure marked with syntax highlighting via custom renderer
  */
-marked.setOptions({
-  highlight: function(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(code, { language: lang }).value;
-      } catch (err) {
-        console.error('Error highlighting code:', err);
-      }
+const renderer = new Renderer();
+renderer.code = function({ text, lang }: { text: string; lang?: string }) {
+  let highlighted: string;
+  if (lang && hljs.getLanguage(lang)) {
+    try {
+      highlighted = hljs.highlight(text, { language: lang }).value;
+    } catch {
+      highlighted = hljs.highlightAuto(text).value;
     }
-    return hljs.highlightAuto(code).value;
-  },
-  langPrefix: 'hljs language-'
-});
+  } else {
+    highlighted = hljs.highlightAuto(text).value;
+  }
+  return `<pre><code class="hljs language-${lang || ''}">${highlighted}</code></pre>`;
+};
+
+marked.use({ renderer });
 
 /**
  * Transform image URLs from placeholder paths to Cloudinary URLs

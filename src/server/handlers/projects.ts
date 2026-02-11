@@ -26,7 +26,7 @@ async function getAllProjects(): Promise<ProjectSummary[]> {
       .map(dirent => dirent.name);
 
     const projects = await Promise.all(
-      dirs.map(async (dir) => {
+      dirs.map(async (dir): Promise<ProjectSummary | null> => {
         try {
           const filePath = join(PROJECTS_CONTENT_DIR, dir, 'content.md');
           const project = await readMarkdownFile(filePath);
@@ -46,16 +46,14 @@ async function getAllProjects(): Promise<ProjectSummary[]> {
     );
 
     // Filter out null entries and sort by date (newest first) if available
-    return projects
-      .filter((p): p is ProjectSummary => p !== null)
-      .sort((a, b) => {
-        if (a.date && b.date) {
-          const dateA = new Date(a.date).getTime();
-          const dateB = new Date(b.date).getTime();
-          return dateB - dateA;
-        }
-        return 0;
-      });
+    const valid = projects.filter((p): p is ProjectSummary => p !== null);
+    valid.sort((a, b) => {
+      if (a.date && b.date) {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      }
+      return 0;
+    });
+    return valid;
   } catch (error) {
     console.error('Error reading projects:', error);
     return [];

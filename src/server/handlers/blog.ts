@@ -22,7 +22,7 @@ export interface BlogPostSummary {
 /**
  * Get all blog posts with metadata
  */
-async function getAllBlogPosts(): Promise<BlogPostSummary[]> {
+export async function getAllBlogPosts(): Promise<BlogPostSummary[]> {
   try {
     const files = readdirSync(BLOG_CONTENT_DIR).filter(file => file.endsWith('.md'));
     const viewCounts = await getViewCounts();
@@ -60,7 +60,7 @@ async function getAllBlogPosts(): Promise<BlogPostSummary[]> {
 /**
  * Get a single blog post by slug
  */
-async function getBlogPostBySlug(slug: string) {
+export async function getBlogPostBySlug(slug: string) {
   try {
     const files = readdirSync(BLOG_CONTENT_DIR).filter(file => file.endsWith('.md'));
 

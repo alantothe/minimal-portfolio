@@ -19,7 +19,7 @@ export interface ProjectSummary {
 /**
  * Get all projects with metadata
  */
-async function getAllProjects(): Promise<ProjectSummary[]> {
+export async function getAllProjects(): Promise<ProjectSummary[]> {
   try {
     const dirs = readdirSync(PROJECTS_CONTENT_DIR, { withFileTypes: true })
       .filter(dirent => dirent.isDirectory())
@@ -63,7 +63,7 @@ async function getAllProjects(): Promise<ProjectSummary[]> {
 /**
  * Get a single project by slug
  */
-async function getProjectBySlug(slug: string) {
+export async function getProjectBySlug(slug: string) {
   try {
     const filePath = join(PROJECTS_CONTENT_DIR, slug, 'content.md');
     const project = await readMarkdownFile(filePath);

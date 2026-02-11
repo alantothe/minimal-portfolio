@@ -3,7 +3,7 @@
  * Copies static assets into dist/ matching the URL structure the SPA expects
  */
 
-import { mkdirSync, cpSync, existsSync } from 'fs';
+import { mkdirSync, cpSync, existsSync, rmSync } from 'fs';
 import { join } from 'path';
 
 const DIST = './dist';
@@ -20,9 +20,9 @@ function copy(src: string, dest: string) {
   cpSync(src, dest, { recursive: true });
 }
 
-// Clean and create dist
+// Clean and recreate dist
 if (existsSync(DIST)) {
-  cpSync(DIST, DIST, { recursive: true }); // no-op to ensure it exists
+  rmSync(DIST, { recursive: true });
 }
 mkdirSync(DIST, { recursive: true });
 

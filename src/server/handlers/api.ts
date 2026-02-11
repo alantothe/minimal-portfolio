@@ -6,6 +6,7 @@
 import { getMonthlyCommitCount } from '../services/github';
 import { getTotalViews } from '../services/views';
 import { readTextFile, fileExists } from '../core/file';
+import { homeConfig, aboutConfig } from '../../config/index';
 
 interface PageData {
   content: string;
@@ -34,13 +35,11 @@ async function countBlogPosts(): Promise<number> {
 
 /**
  * load page-specific data configuration
+ * Uses static imports instead of dynamic imports for Node.js/Vercel compatibility
  */
 async function loadPageData(pageName: string): Promise<any> {
   if (pageName === 'home') {
     try {
-      // Dynamically import the home config - this handles TypeScript and imports correctly
-      const { siteConfig } = await import('../../../src/pages/home/data/config');
-
       // Fetch real-time GitHub commit count
       const githubCommits = await getMonthlyCommitCount();
 
@@ -52,10 +51,10 @@ async function loadPageData(pageName: string): Promise<any> {
 
       // Merge with config data, using real GitHub data if available (fallback to config value)
       return {
-        ...siteConfig,
+        ...homeConfig,
         metrics: {
-          ...siteConfig.metrics,
-          githubCommits: githubCommits > 0 ? githubCommits : siteConfig.metrics.githubCommits,
+          ...homeConfig.metrics,
+          githubCommits: githubCommits > 0 ? githubCommits : homeConfig.metrics.githubCommits,
           blogPostCount: blogPostCount,
           totalViews: totalViews
         }
@@ -65,15 +64,7 @@ async function loadPageData(pageName: string): Promise<any> {
       return null;
     }
   } else if (pageName === 'about') {
-    try {
-      // Dynamically import the about config - this handles TypeScript and imports correctly
-      const { aboutConfig } = await import('../../../src/pages/about/data/config');
-
-      return aboutConfig;
-    } catch (error) {
-      console.error('Error loading about config:', error);
-      return null;
-    }
+    return aboutConfig;
   }
   return null;
 }
@@ -101,7 +92,7 @@ function processTemplate(html: string, data: any): string {
 /**
  * load page content from content fragment files
  */
-async function loadPageContent(pageName: string): Promise<PageData> {
+export async function loadPageContent(pageName: string): Promise<PageData> {
   const pageMap: Record<string, string> = {
     'home': './src/pages/home/content.html',
     'about': './src/pages/about/content.html',

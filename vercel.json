@@ -4,11 +4,10 @@
   "outputDirectory": "dist",
   "functions": {
     "api/**/*.ts": {
-      "includeFiles": "src/**"
+      "includeFiles": "src/**/*"
     }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/shell.html" }
+    { "source": "/((?!api/).*)", "destination": "/shell.html" }
   ]
 }

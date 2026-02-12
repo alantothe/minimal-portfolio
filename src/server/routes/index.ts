@@ -1,17 +1,18 @@
 import { Router } from '../core/router';
-import { shellHandler } from '../handlers/shell';
+import { createShellHandler } from '../handlers/shell';
 import { createApiHandler, createBulkPagesHandler } from '../handlers/api';
 import { blogListHandler, createBlogPostHandler } from '../handlers/blog';
 import { projectsListHandler, createProjectHandler } from '../handlers/projects';
 
 export function setupRoutes(router: Router): void {
-  router.addRoute('/', shellHandler);
-  router.addRoute('/home', shellHandler);
-  router.addRoute('/about', shellHandler);
-  router.addRoute('/blog', shellHandler);
-  router.addRoute('/blog/:slug', shellHandler);
-  router.addRoute('/projects', shellHandler);
-  router.addRoute('/projects/:slug', shellHandler);
+  // SSR shell routes - content is injected server-side before serving
+  router.addRoute('/', createShellHandler);
+  router.addRoute('/home', createShellHandler);
+  router.addRoute('/about', createShellHandler);
+  router.addRoute('/blog', createShellHandler);
+  router.addRoute('/blog/:slug', createShellHandler);
+  router.addRoute('/projects', createShellHandler);
+  router.addRoute('/projects/:slug', createShellHandler);
 
   //fetches content fragments
   router.addRoute('/api/page', createApiHandler);

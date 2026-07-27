@@ -37,7 +37,7 @@ export class RequestHandler {
 
     // Handle static assets first
     if (this.staticHandler.isStaticRequest(url.pathname)) {
-      response = await this.staticHandler.handleStaticRequest(url);
+      response = await this.staticHandler.handleStaticRequest(request);
     } else {
       // Handle API routes
       response = await this.router.handleRequest(url);

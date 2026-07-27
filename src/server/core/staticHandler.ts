@@ -39,14 +39,25 @@ export class StaticHandler {
   /**
    * Handles static file requests
    */
-  async handleStaticRequest(url: URL): Promise<Response> {
+  async handleStaticRequest(request: Request): Promise<Response> {
     try {
+      const url = new URL(request.url);
       const pathname = url.pathname;
       const filePath = this.resolveFilePath(pathname);
       const file = Bun.file(`.${filePath}`);
       
       if (await file.exists()) {
-        return new Response(file);
+        const etag = `W/"${file.size}-${file.lastModified}"`;
+        const headers = {
+          'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+          ETag: etag,
+        };
+
+        if (request.headers.get('If-None-Match') === etag) {
+          return new Response(null, { status: 304, headers });
+        }
+
+        return new Response(file, { headers });
       }
       
       throw new StaticFileError(`File not found: ${pathname}`);

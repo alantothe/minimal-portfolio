@@ -3,46 +3,9 @@
   <h1>Blog</h1>
 
   <div id="blog-posts" class="blog-posts">
-    <p class="loading">Loading posts...</p>
+    {{collection.items}}
   </div>
 
-  <div id="blog-pagination" class="blog-pagination-container"></div>
+  <div id="blog-pagination" class="blog-pagination-container">{{collection.pagination}}</div>
 
 </div>
-
-
-<script src="/pages/blog/pagination.js"></script>
-<script>
-  let blogPagination = null;
-
-  window.loadBlogPosts = async function() {
-    try {
-      if (typeof window.BlogPagination === 'undefined') {
-        throw new Error('BlogPagination class not available');
-      }
-
-      const response = await fetch('/api/blog/list');
-      const data = await response.json();
-
-      if (data.posts && data.posts.length > 0) {
-        blogPagination = new window.BlogPagination(4);
-        blogPagination.init(data.posts);
-      } else {
-        document.getElementById('blog-posts').innerHTML = '<p class="no-posts">No blog posts yet. Check back soon!</p>';
-      }
-    } catch (error) {
-      console.error('Error loading blog posts:', error);
-      const container = document.getElementById('blog-posts');
-      if (container) {
-        container.innerHTML = '<p class="error">Failed to load blog posts. Please try again later.</p>';
-      }
-    }
-  }
-
-  // Load blog posts on initial page load (called by SPA router when switching to blog tab)
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.loadBlogPosts);
-  } else {
-    setTimeout(window.loadBlogPosts, 100);
-  }
-</script>

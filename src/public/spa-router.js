@@ -18,9 +18,8 @@ class SPARouter {
 
   init() {
     this.attachNavListeners();
+    this.attachContentLinkListeners();
     this.attachHamburgerListener();
-    this.attachBlogPostListener();
-    this.attachProjectListener();
     this.attachEmailListener();
     this.attachResizeListener();
     window.addEventListener("popstate", (event) => {
@@ -129,6 +128,46 @@ class SPARouter {
         // Close mobile nav after navigation
         this.closeMobileNav();
         return false;
+      }
+    });
+  }
+
+  attachContentLinkListeners() {
+    document.addEventListener("click", (event) => {
+      if (
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+
+      const postLink = event.target.closest("a.post-link");
+      if (postLink) {
+        event.preventDefault();
+        const slug = postLink.dataset.slug;
+        this.currentBlogPage = this.getBlogPageFromURL();
+        window.history.pushState(
+          { page: 'blog-post', slug },
+          '',
+          postLink.href,
+        );
+        this.loadBlogPost(slug, true);
+        return;
+      }
+
+      const projectLink = event.target.closest("a.project-link");
+      if (projectLink) {
+        event.preventDefault();
+        const slug = projectLink.dataset.projectId;
+        window.history.pushState(
+          { page: 'project', slug },
+          '',
+          projectLink.href,
+        );
+        this.loadProject(slug, true);
       }
     });
   }
@@ -264,23 +303,6 @@ class SPARouter {
       if (linkPage === pageName || pageName === "home" && linkHref === "/") {
         link.classList.add("active");
       }
-    });
-  }
-
-  attachBlogPostListener() {
-    window.addEventListener("navigate-to-post", (event) => {
-      const { slug } = event.detail;
-      // Capture current blog page before navigating to post
-      this.currentBlogPage = this.getBlogPageFromURL();
-      console.log('[SPA Router] Navigating to post - captured currentBlogPage:', this.currentBlogPage, 'from URL:', window.location.search);
-      this.loadBlogPost(slug, true);
-    });
-  }
-
-  attachProjectListener() {
-    window.addEventListener("navigate-to-project", (event) => {
-      const { slug } = event.detail;
-      this.loadProject(slug, true);
     });
   }
 

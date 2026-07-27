@@ -8,6 +8,7 @@ import { incrementPostView, getPostViews, getViewCounts } from '../services/view
 import { shouldCountView } from '../services/viewCooldown';
 import { readdirSync } from 'fs';
 import { join } from 'path';
+import { createSeoMetadata } from '../services/seo';
 
 const BLOG_CONTENT_DIR = './src/content/blog';
 
@@ -157,9 +158,16 @@ export function createBlogPostHandler(url: URL, params?: Record<string, string>)
 
       // Wrap HTML content with markdown-content class for styling
       const wrappedHtml = `<div class="markdown-content">${post.html}</div>`;
+      const seo = createSeoMetadata({
+        kind: 'blog-post',
+        slug: post.slug,
+        title: post.metadata.title,
+        description: post.metadata.excerpt || '',
+        date: post.metadata.date,
+      }, url);
 
       return new Response(
-        JSON.stringify({ ...post, html: wrappedHtml, views }),
+        JSON.stringify({ ...post, html: wrappedHtml, views, seo }),
         {
           headers: {
             'Content-Type': 'application/json',

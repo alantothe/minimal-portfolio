@@ -14,6 +14,10 @@ import {
   renderBlogCollection,
   renderProjectCollection,
 } from '../services/collectionPages';
+import {
+  createSeoMetadata,
+  type SeoPageInput,
+} from '../services/seo';
 
 interface PageData {
   content: string;
@@ -192,9 +196,14 @@ export function createApiHandler(url: URL) {
 
       const pageNumber = Number(url.searchParams.get('page') || 1);
       const pageData = await loadPageContent(pageName, pageNumber);
+      const pageKind = pageName as 'home' | 'about' | 'projects' | 'blog';
+      const seoInput: SeoPageInput = pageKind === 'blog' || pageKind === 'projects'
+        ? { kind: pageKind, page: pageNumber }
+        : { kind: pageKind };
+      const seo = createSeoMetadata(seoInput, url);
 
       return new Response(
-        JSON.stringify(pageData),
+        JSON.stringify({ ...pageData, seo }),
         {
           headers: {
             'Content-Type': 'application/json',

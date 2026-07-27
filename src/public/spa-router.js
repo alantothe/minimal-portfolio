@@ -245,8 +245,9 @@ class SPARouter {
         throw new Error(`Unknown page: ${pageName}`);
       }
 
-      const pageData = pageContainer.dataset.loaded === 'true'
-        ? this.pagesData[pageName]
+      const cachedPage = this.pagesData[pageName];
+      const pageData = pageContainer.dataset.loaded === 'true' && cachedPage?.seo
+        ? cachedPage
         : await this.loadPage(pageName, pageContainer);
 
       document.querySelectorAll('.page-container').forEach(container => {
@@ -254,7 +255,9 @@ class SPARouter {
       });
       pageContainer.classList.add('active');
 
-      if (pageData) {
+      if (pageData?.seo) {
+        this.applySeoMetadata(pageData.seo);
+      } else if (pageData) {
         document.title = pageData.title;
       }
 
@@ -275,24 +278,56 @@ class SPARouter {
     }
     pageCssLink.href = cssPath;
   }
-  updateMetaTags(metadata) {
-    // Update or create description meta tag
-    let descriptionMeta = document.querySelector('meta[name="description"]');
-    if (!descriptionMeta) {
-      descriptionMeta = document.createElement('meta');
-      descriptionMeta.name = 'description';
-      document.head.appendChild(descriptionMeta);
-    }
-    descriptionMeta.content = metadata.description;
+  applySeoMetadata(metadata) {
+    document.title = metadata.title;
 
-    // Update or create article:published_time meta tag for SEO
-    let publishedMeta = document.querySelector('meta[property="article:published_time"]');
-    if (!publishedMeta) {
-      publishedMeta = document.createElement('meta');
-      publishedMeta.setAttribute('property', 'article:published_time');
-      document.head.appendChild(publishedMeta);
+    const setMeta = (attribute, name, content) => {
+      let element = document.querySelector(`meta[${attribute}="${name}"]`);
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attribute, name);
+        document.head.appendChild(element);
+      }
+      element.content = content;
+    };
+
+    setMeta('name', 'description', metadata.description);
+    setMeta('property', 'og:type', metadata.type);
+    setMeta('property', 'og:title', metadata.title);
+    setMeta('property', 'og:description', metadata.description);
+    setMeta('property', 'og:url', metadata.canonical);
+    setMeta('property', 'og:image', metadata.image);
+    setMeta('name', 'twitter:card', 'summary');
+    setMeta('name', 'twitter:title', metadata.title);
+    setMeta('name', 'twitter:description', metadata.description);
+    setMeta('name', 'twitter:image', metadata.image);
+
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
     }
-    publishedMeta.content = metadata.date;
+    canonical.href = metadata.canonical;
+
+    const published = document.querySelector('meta[property="article:published_time"]');
+    if (metadata.publishedTime) {
+      setMeta('property', 'article:published_time', metadata.publishedTime);
+    } else {
+      published?.remove();
+    }
+
+    let structuredData = document.querySelector('script[type="application/ld+json"]');
+    if (metadata.structuredData) {
+      if (!structuredData) {
+        structuredData = document.createElement('script');
+        structuredData.type = 'application/ld+json';
+        document.head.appendChild(structuredData);
+      }
+      structuredData.textContent = JSON.stringify(metadata.structuredData);
+    } else {
+      structuredData?.remove();
+    }
   }
   updateActiveNav(pageName) {
     const navLinks = document.querySelectorAll(".nav-link");
@@ -405,13 +440,7 @@ class SPARouter {
         }
       }
 
-      document.title = `${data.metadata.title} - Blog - Portfolio`;
-
-      // Update meta tags for SEO
-      this.updateMetaTags({
-        description: data.metadata.excerpt || '',
-        date: data.metadata.date
-      });
+      this.applySeoMetadata(data.seo);
 
       // All CSS files are preloaded in shell.html, no need to switch
       this.updateActiveNav('blog');
@@ -475,13 +504,7 @@ class SPARouter {
         }
       }
 
-      document.title = `${data.metadata.title} - Portfolio`;
-
-      // Update meta tags for SEO
-      this.updateMetaTags({
-        description: data.metadata.description || '',
-        date: data.metadata.date || ''
-      });
+      this.applySeoMetadata(data.seo);
 
       // All CSS files are preloaded in shell.html, no need to switch
       this.updateActiveNav('projects');

@@ -4,6 +4,7 @@
 
 import { readMarkdownFile, generateSlug } from '../services/markdown';
 import { fileExists } from '../core/file';
+import { createSeoMetadata } from '../services/seo';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 
@@ -144,9 +145,15 @@ export function createProjectHandler(url: URL, params?: Record<string, string>) 
 
       // Wrap HTML content with markdown-content class for styling
       const wrappedHtml = `<div class="markdown-content">${project.html}</div>`;
+      const seo = createSeoMetadata({
+        kind: 'project',
+        slug: project.slug,
+        title: project.metadata.title,
+        description: project.metadata.description || '',
+      }, url);
 
       return new Response(
-        JSON.stringify({ ...project, html: wrappedHtml }),
+        JSON.stringify({ ...project, html: wrappedHtml, seo }),
         {
           headers: {
             'Content-Type': 'application/json',

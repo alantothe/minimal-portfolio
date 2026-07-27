@@ -29,7 +29,7 @@ class SPARouter {
         if (event.state.page === 'blog-post' && event.state.slug) {
           this.loadBlogPost(event.state.slug, false);
         } else if (event.state.page) {
-          this.switchPage(event.state.page, false);
+          this.switchPage(event.state.page);
         }
       }
     });
@@ -46,7 +46,7 @@ class SPARouter {
       } else {
         const initialPage = this.getPageFromPath(initialPath);
         window.history.replaceState({ page: initialPage }, "", initialPath);
-        await this.switchPage(initialPage, false);
+        await this.switchPage(initialPage);
       }
 
       // Wait for all images (page + sidebar) to load before revealing
@@ -224,27 +224,24 @@ class SPARouter {
       return;
     }
     window.history.pushState({ page }, "", path);
-    await this.switchPage(page, true);
+    await this.switchPage(page);
   }
 
   /**
    * Switch between pre-loaded pages with instant visibility toggle
    */
-  async switchPage(pageName, addTransition) {
+  async switchPage(pageName) {
     this.isNavigating = true;
     try {
-      // Hide all page containers and remove navigation animation class
+      // Hide all page containers
       document.querySelectorAll('.page-container').forEach(container => {
-        container.classList.remove('active', 'navigating');
+        container.classList.remove('active');
       });
 
-      // Show the requested page, animate only during SPA navigation
+      // Show the requested page
       const pageContainer = document.getElementById(`${pageName}-page`);
       if (pageContainer) {
         pageContainer.classList.add('active');
-        if (addTransition) {
-          pageContainer.classList.add('navigating');
-        }
       }
 
       // Update page metadata
@@ -468,7 +465,7 @@ class SPARouter {
             const backUrl = `/blog${pageParam}`;
             console.log('[SPA Router] Back to blog - currentBlogPage:', this.currentBlogPage, 'backUrl:', backUrl);
             window.history.pushState({ page: 'blog' }, '', backUrl);
-            this.switchPage('blog', true);
+            this.switchPage('blog');
           });
         }
       }
@@ -538,7 +535,7 @@ class SPARouter {
           backLink.addEventListener('click', (e) => {
             e.preventDefault();
             window.history.pushState({ page: 'projects' }, '', '/projects');
-            this.switchPage('projects', true);
+            this.switchPage('projects');
           });
         }
       }

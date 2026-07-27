@@ -13,12 +13,14 @@ export class ServerError extends Error {
 export class NotFoundError extends ServerError {
   constructor(message: string = 'Resource not found') {
     super(message, 404, 'NOT_FOUND');
+    this.name = 'NotFoundError';
   }
 }
 
 export class StaticFileError extends ServerError {
   constructor(message: string = 'Static file error') {
     super(message, 404, 'STATIC_FILE_ERROR');
+    this.name = 'StaticFileError';
   }
 }
 
@@ -31,7 +33,7 @@ export function createErrorResponse(error: ServerError): Response {
     <html>
       <head>
         <title>${error.statusCode} - ${error.name}</title>
-        <link rel="stylesheet" href="/global.css">
+        <link rel="stylesheet" href="/public/css/global.css">
       </head>
       <body>
         <div class="container">

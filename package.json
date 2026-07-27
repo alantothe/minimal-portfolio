@@ -9,7 +9,10 @@
   },
   "scripts": {
     "start": "bun run index.ts",
-    "dev": "bun --watch index.ts"
+    "dev": "bun --watch index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run typecheck && bun test"
   },
   "peerDependencies": {
     "typescript": "^5"

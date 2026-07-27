@@ -8,6 +8,7 @@ import { readTextFile } from '../core/file';
 import { loadPageContent } from './api';
 import { getBlogPostBySlug } from './blog';
 import { getProjectBySlug } from './projects';
+import { createErrorResponse, NotFoundError } from '../core/errors';
 
 export function createShellHandler(url: URL, params?: Record<string, string>) {
   return async (): Promise<Response> => {
@@ -29,6 +30,8 @@ export function createShellHandler(url: URL, params?: Record<string, string>) {
           title = `${post.metadata.title} - Blog - Portfolio`;
           description = post.metadata.excerpt || '';
           containerId = 'blog-post-page';
+        } else {
+          return createErrorResponse(new NotFoundError('Blog post not found'));
         }
       } else if (params?.slug && pathname.startsWith('/projects/')) {
         // Project route
@@ -39,6 +42,8 @@ export function createShellHandler(url: URL, params?: Record<string, string>) {
           title = `${project.metadata.title} - Portfolio`;
           description = project.metadata.description || '';
           containerId = 'project-page';
+        } else {
+          return createErrorResponse(new NotFoundError('Project not found'));
         }
       } else {
         // Regular page (home, about, blog listing, projects listing)

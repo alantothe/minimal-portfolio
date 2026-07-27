@@ -4,8 +4,8 @@ import type { ServerConfig } from './types';
  * Server configuration
  */
 export const serverConfig: ServerConfig = {
-  port: 8000,
-  hostname: 'localhost',
+  port: Number(process.env.PORT || 8000),
+  hostname: process.env.HOST || '0.0.0.0',
   
   // Static file handling
   static: {

@@ -5,6 +5,11 @@ import { blogListHandler, createBlogPostHandler } from '../handlers/blog';
 import { projectsListHandler, createProjectHandler } from '../handlers/projects';
 
 export function setupRoutes(router: Router): void {
+  router.addRoute('/healthz', async () => new Response(
+    JSON.stringify({ status: 'ok' }),
+    { headers: { 'Content-Type': 'application/json' } },
+  ));
+
   // SSR shell routes - content is injected server-side before serving
   router.addRoute('/', createShellHandler);
   router.addRoute('/home', createShellHandler);

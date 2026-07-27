@@ -17,14 +17,40 @@ export class RequestHandler {
    * Main request handler function
    */
   async handleRequest(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-    
-    // Handle static assets first
-    if (this.staticHandler.isStaticRequest(url.pathname)) {
-      return await this.staticHandler.handleStaticRequest(url);
+    const allowedMethods = 'GET, HEAD, OPTIONS';
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: { Allow: allowedMethods },
+      });
     }
 
-    // Handle API routes
-    return await this.router.handleRequest(url);
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response('Method Not Allowed', {
+        status: 405,
+        headers: { Allow: allowedMethods },
+      });
+    }
+
+    const url = new URL(request.url);
+    let response: Response;
+
+    // Handle static assets first
+    if (this.staticHandler.isStaticRequest(url.pathname)) {
+      response = await this.staticHandler.handleStaticRequest(url);
+    } else {
+      // Handle API routes
+      response = await this.router.handleRequest(url);
+    }
+
+    if (request.method === 'HEAD') {
+      return new Response(null, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
+    }
+
+    return response;
   }
 }

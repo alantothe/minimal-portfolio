@@ -22,7 +22,10 @@ export class Router {
     let match;
 
     while ((match = paramPattern.exec(normalizedPath)) !== null) {
-      paramNames.push(match[1]);
+      const paramName = match[1];
+      if (paramName) {
+        paramNames.push(paramName);
+      }
     }
 
     // If path has parameters, create a regex pattern
@@ -70,7 +73,10 @@ export class Router {
             // Extract parameters
             const params: Record<string, string> = {};
             route.paramNames.forEach((name, index) => {
-              params[name] = decodeURIComponent(match[index + 1]);
+              const value = match[index + 1];
+              if (value !== undefined) {
+                params[name] = decodeURIComponent(value);
+              }
             });
 
             // Call handler with URL and params

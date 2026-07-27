@@ -3,6 +3,7 @@
  */
 
 import { readMarkdownFile, generateSlug } from '../services/markdown';
+import { fileExists } from '../core/file';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 
@@ -66,6 +67,10 @@ export async function getAllProjects(): Promise<ProjectSummary[]> {
 export async function getProjectBySlug(slug: string) {
   try {
     const filePath = join(PROJECTS_CONTENT_DIR, slug, 'content.md');
+    if (!(await fileExists(filePath))) {
+      return null;
+    }
+
     const project = await readMarkdownFile(filePath);
 
     return {

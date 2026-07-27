@@ -17,6 +17,7 @@ await syncViewsWithBlogPosts();
 // start server
 const server = Bun.serve({
   port: serverConfig.port,
+  hostname: serverConfig.hostname,
   async fetch(request) {
     return await requestHandler.handleRequest(request);
   },

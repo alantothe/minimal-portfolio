@@ -16,7 +16,19 @@ import {
   type SeoPageInput,
 } from '../services/seo';
 
-export function createShellHandler(url: URL, params?: Record<string, string>) {
+interface ShellDependencies {
+  loadPageContent: typeof loadPageContent;
+}
+
+const defaultDependencies: ShellDependencies = {
+  loadPageContent,
+};
+
+export function createShellHandler(
+  url: URL,
+  params: Record<string, string> | undefined = undefined,
+  dependencies: ShellDependencies = defaultDependencies,
+) {
   return async (): Promise<Response> => {
     try {
       if (url.pathname === '/home') {
@@ -75,7 +87,7 @@ export function createShellHandler(url: URL, params?: Record<string, string>) {
 
         try {
           const pageNumber = Number(url.searchParams.get('page') || 1);
-          const pageData = await loadPageContent(pageName, pageNumber);
+          const pageData = await dependencies.loadPageContent(pageName, pageNumber);
           pageContent = pageData.content;
           containerId = `${pageName}-page`;
           seoInput = pageName === 'blog' || pageName === 'projects'
@@ -85,7 +97,7 @@ export function createShellHandler(url: URL, params?: Record<string, string>) {
           if (error instanceof CollectionPageNotFoundError) {
             return createErrorResponse(new NotFoundError('Collection page not found'));
           }
-          console.error('Error loading page content for SSR:', error);
+          throw error;
         }
       }
 
@@ -119,7 +131,13 @@ export function createShellHandler(url: URL, params?: Record<string, string>) {
       });
     } catch (error) {
       console.error('Error in shell handler:', error);
-      return new Response('Internal Server Error', { status: 500 });
+      return new Response('Internal Server Error', {
+        status: 500,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'no-store',
+        },
+      });
     }
   };
 }

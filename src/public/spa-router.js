@@ -7,6 +7,7 @@
  */
 
 import {
+  blogPostApiPath,
   collectionPath,
   getCollectionPage,
   isCollectionPage,
@@ -76,6 +77,9 @@ class SPARouter {
         initialRoute.pageNumber || 1,
       );
       this.pagesData[key] = { title: document.title };
+    }
+    if (initialRoute.page === 'blog-post' && initialRoute.slug) {
+      this.recordInitialBlogView(initialRoute.slug);
     }
 
     // SSR content is already complete. Reveal it without client fetches.
@@ -404,6 +408,54 @@ class SPARouter {
     });
   }
 
+  getViewedPosts() {
+    try {
+      return JSON.parse(localStorage.getItem('viewedBlogPosts') || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  saveViewedPost(slug, viewedPosts) {
+    try {
+      viewedPosts[slug] = true;
+      localStorage.setItem('viewedBlogPosts', JSON.stringify(viewedPosts));
+    } catch {
+      // View tracking must never block navigation.
+    }
+  }
+
+  getVisitorId() {
+    try {
+      const existing = localStorage.getItem('portfolioVisitorId');
+      if (existing) {
+        return existing;
+      }
+
+      const visitorId = crypto.randomUUID();
+      localStorage.setItem('portfolioVisitorId', visitorId);
+      return visitorId;
+    } catch {
+      return crypto.randomUUID();
+    }
+  }
+
+  async recordInitialBlogView(slug) {
+    const viewedPosts = this.getViewedPosts();
+    if (viewedPosts[slug] === true) {
+      return;
+    }
+
+    try {
+      const response = await fetch(blogPostApiPath(slug, this.getVisitorId()));
+      if (response.ok) {
+        this.saveViewedPost(slug, viewedPosts);
+      }
+    } catch {
+      // Analytics failure must not affect the server-rendered page.
+    }
+  }
+
   async loadBlogPost(slug, addTransition, returnPage = 1) {
     this.isNavigating = true;
     try {
@@ -415,21 +467,22 @@ class SPARouter {
         await new Promise((resolve) => setTimeout(resolve, 150));
       }
 
-      // Check if this post was already viewed in this session
-      const viewedPosts = JSON.parse(localStorage.getItem('viewedBlogPosts') || '{}');
+      const viewedPosts = this.getViewedPosts();
       const hasBeenViewed = viewedPosts[slug] === true;
-
-      const response = await fetch(`/api/blog/${slug}`);
+      const response = await fetch(
+        blogPostApiPath(
+          slug,
+          hasBeenViewed ? undefined : this.getVisitorId(),
+        ),
+      );
       if (!response.ok) {
         throw new Error(`Failed to load blog post: ${response.statusText}`);
       }
       const data = await response.json();
       await this.updatePageCSS('/pages/blog/styles.css');
 
-      // Mark as viewed in localStorage (prevents re-counting on refresh)
       if (!hasBeenViewed) {
-        viewedPosts[slug] = true;
-        localStorage.setItem('viewedBlogPosts', JSON.stringify(viewedPosts));
+        this.saveViewedPost(slug, viewedPosts);
       }
 
       // Hide all pages and show blog-post-page

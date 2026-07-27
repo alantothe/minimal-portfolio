@@ -144,15 +144,13 @@ export function createBlogPostHandler(url: URL, params?: Record<string, string>)
         );
       }
 
-      // Use slug as the IP identifier for cooldown (simple approach for personal portfolio)
-      // In a real app, you'd extract the actual client IP from the request
-      const clientIp = 'localhost'; // All requests treated as same client
-
-      // Check if view should be counted (prevents spam)
       let views = await getPostViews(slug);
+      const visitorId = url.searchParams.get('visitor');
+      const shouldTrackView = url.searchParams.get('view') === '1'
+        && visitorId !== null
+        && /^[a-zA-Z0-9_-]{16,100}$/.test(visitorId);
 
-      if (shouldCountView(slug, clientIp)) {
-        // Increment view count
+      if (shouldTrackView && shouldCountView(slug, visitorId)) {
         views = await incrementPostView(slug);
       }
 

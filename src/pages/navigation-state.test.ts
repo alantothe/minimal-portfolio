@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  blogPostApiPath,
   collectionPath,
   getCollectionPage,
   pageCacheKey,
@@ -25,5 +26,12 @@ describe("collection navigation state", () => {
     expect(pageCacheKey("projects", 1)).toBe("projects:1");
     expect(pageCacheKey("projects", 2)).toBe("projects:2");
     expect(pageCacheKey("about", 1)).toBe("about");
+  });
+
+  test("adds explicit view tracking only for a new visitor view", () => {
+    expect(blogPostApiPath("example-post")).toBe("/api/blog/example-post");
+    expect(blogPostApiPath("example-post", "visitor-12345678")).toBe(
+      "/api/blog/example-post?view=1&visitor=visitor-12345678",
+    );
   });
 });

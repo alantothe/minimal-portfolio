@@ -21,3 +21,16 @@ export function pageCacheKey(pageName, pageNumber = 1) {
 export function isCollectionPage(pageName) {
   return collectionPages.has(pageName);
 }
+
+export function blogPostApiPath(slug, visitorId) {
+  const path = `/api/blog/${encodeURIComponent(slug)}`;
+  if (!visitorId) {
+    return path;
+  }
+
+  const query = new URLSearchParams({
+    view: "1",
+    visitor: visitorId,
+  });
+  return `${path}?${query}`;
+}

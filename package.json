@@ -9,7 +9,7 @@
     "@types/marked": "^6.0.0"
   },
   "scripts": {
-    "start": "bun run index.ts",
+    "start": "bun run start.ts",
     "dev": "bun --watch index.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",

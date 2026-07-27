@@ -132,6 +132,28 @@ describe("search metadata", () => {
     }
   });
 
+  test("production metadata requires a configured origin", () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousUrl = process.env.SITE_URL;
+
+    try {
+      process.env.NODE_ENV = "production";
+      delete process.env.SITE_URL;
+
+      expect(() =>
+        createSeoMetadata(
+          { kind: "home" },
+          new URL("http://attacker.example"),
+        ),
+      ).toThrow("SITE_URL");
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousNodeEnv;
+      if (previousUrl === undefined) delete process.env.SITE_URL;
+      else process.env.SITE_URL = previousUrl;
+    }
+  });
+
   test("uses portfolio config as the identity source of truth", () => {
     const previousAuthor = { ...homeConfig.author };
     const previousTitle = homeConfig.professional.title;

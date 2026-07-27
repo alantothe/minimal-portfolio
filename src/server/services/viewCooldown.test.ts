@@ -26,4 +26,20 @@ describe("view cooldown", () => {
     expect(cooldown.shouldCount("post", "visitor-c")).toBeTrue();
     expect(cooldown.shouldCount("post", "visitor-a")).toBeTrue();
   });
+
+  test("caps writes even when callers rotate visitor IDs", () => {
+    let now = 1_000;
+    const cooldown = new ViewCooldown({
+      now: () => now,
+      maxViewsPerWindow: 2,
+      windowMs: 60_000,
+    });
+
+    expect(cooldown.shouldCount("post", "visitor-a")).toBeTrue();
+    expect(cooldown.shouldCount("post", "visitor-b")).toBeTrue();
+    expect(cooldown.shouldCount("post", "visitor-c")).toBeFalse();
+
+    now += 60_001;
+    expect(cooldown.shouldCount("post", "visitor-c")).toBeTrue();
+  });
 });

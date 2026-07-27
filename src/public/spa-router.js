@@ -100,32 +100,8 @@ class SPARouter {
     };
   }
 
-  async setPageContent(container, content) {
+  setPageContent(container, content) {
     container.innerHTML = content;
-    const scripts = Array.from(container.querySelectorAll('script'));
-    const externalScripts = scripts.filter(script => script.src);
-    const inlineScripts = scripts.filter(script => !script.src);
-
-    await Promise.all(externalScripts.map(oldScript => new Promise((resolve, reject) => {
-      const newScript = document.createElement('script');
-      newScript.src = oldScript.src;
-
-      Array.from(oldScript.attributes).forEach(attr => {
-        if (attr.name !== 'src' && attr.name !== 'type') {
-          newScript.setAttribute(attr.name, attr.value);
-        }
-      });
-
-      newScript.onload = resolve;
-      newScript.onerror = reject;
-      oldScript.parentNode.replaceChild(newScript, oldScript);
-    })));
-
-    inlineScripts.forEach(oldScript => {
-      const newScript = document.createElement('script');
-      newScript.textContent = oldScript.textContent;
-      oldScript.parentNode.replaceChild(newScript, oldScript);
-    });
   }
 
   async loadPage(pageName, pageContainer, pageNumber = 1) {
@@ -139,7 +115,7 @@ class SPARouter {
     }
 
     const pageData = await response.json();
-    await this.setPageContent(pageContainer, pageData.content);
+    this.setPageContent(pageContainer, pageData.content);
     pageContainer.dataset.loaded = 'true';
     pageContainer.dataset.pageNumber = String(pageNumber);
     this.pagesData[pageCacheKey(pageName, pageNumber)] = pageData;
@@ -285,6 +261,8 @@ class SPARouter {
         ? cachedPage
         : await this.loadPage(pageName, pageContainer, pageNumber);
 
+      await this.updatePageCSS(pageData.pageCSS);
+
       document.querySelectorAll('.page-container').forEach(container => {
         container.classList.remove('active');
       });
@@ -303,15 +281,28 @@ class SPARouter {
       this.isNavigating = false;
     }
   }
-  updatePageCSS(cssPath) {
-    let pageCssLink = document.getElementById("page-css");
-    if (!pageCssLink) {
-      pageCssLink = document.createElement("link");
-      pageCssLink.id = "page-css";
-      pageCssLink.rel = "stylesheet";
-      document.head.appendChild(pageCssLink);
+  async updatePageCSS(cssPath) {
+    if (!cssPath) {
+      return;
     }
-    pageCssLink.href = cssPath;
+
+    const currentLink = document.getElementById("page-css");
+    if (currentLink && new URL(currentLink.href).pathname === cssPath) {
+      return;
+    }
+
+    const nextLink = document.createElement("link");
+    nextLink.rel = "stylesheet";
+    nextLink.href = cssPath;
+
+    await new Promise((resolve, reject) => {
+      nextLink.addEventListener("load", resolve, { once: true });
+      nextLink.addEventListener("error", reject, { once: true });
+      document.head.appendChild(nextLink);
+    });
+
+    currentLink?.remove();
+    nextLink.id = "page-css";
   }
   applySeoMetadata(metadata) {
     document.title = metadata.title;
@@ -433,6 +424,7 @@ class SPARouter {
         throw new Error(`Failed to load blog post: ${response.statusText}`);
       }
       const data = await response.json();
+      await this.updatePageCSS('/pages/blog/styles.css');
 
       // Mark as viewed in localStorage (prevents re-counting on refresh)
       if (!hasBeenViewed) {
@@ -473,7 +465,6 @@ class SPARouter {
 
       this.applySeoMetadata(data.seo);
 
-      // All CSS files are preloaded in shell.html, no need to switch
       this.updateActiveNav('blog');
 
       if (blogPostContainer && addTransition) {
@@ -508,6 +499,7 @@ class SPARouter {
         throw new Error(`Failed to load project: ${response.statusText}`);
       }
       const data = await response.json();
+      await this.updatePageCSS('/pages/projects/styles.css');
 
       // Hide all pages and show project-page
       document.querySelectorAll('.page-container').forEach(container => {
@@ -542,7 +534,6 @@ class SPARouter {
 
       this.applySeoMetadata(data.seo);
 
-      // All CSS files are preloaded in shell.html, no need to switch
       this.updateActiveNav('projects');
 
       if (projectContainer && addTransition) {

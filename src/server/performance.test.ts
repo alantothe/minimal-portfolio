@@ -3,6 +3,7 @@ import { RequestHandler } from "./core/requestHandler";
 import { Router } from "./core/router";
 import { setupRoutes } from "./routes";
 import { GitHubCommitCounter } from "./services/github";
+import { gunzipSync } from "node:zlib";
 
 function createRequestHandler() {
   const router = new Router();
@@ -43,6 +44,36 @@ describe("production response performance", () => {
     expect(home).toContain('src="/avatar.webp"');
     expect(home).toContain('width="512"');
     expect(home).toContain('height="510"');
+  });
+
+  test("SSR loads only the current route stylesheet", async () => {
+    const response = await createRequestHandler().handleRequest(
+      new Request("http://portfolio.test/projects"),
+    );
+    const html = await response.text();
+
+    expect(html).toContain(
+      '<link id="page-css" rel="stylesheet" href="/pages/projects/styles.css">',
+    );
+    expect(html).not.toContain('/pages/home/styles.css');
+    expect(html).not.toContain('/pages/about/styles.css');
+    expect(html).not.toContain('/pages/blog/styles.css');
+  });
+
+  test("compresses text responses when the client accepts gzip", async () => {
+    const response = await createRequestHandler().handleRequest(
+      new Request("http://portfolio.test/", {
+        headers: { "Accept-Encoding": "gzip" },
+      }),
+    );
+
+    expect(response.headers.get("Content-Encoding")).toBe("gzip");
+    expect(response.headers.get("Vary")).toContain("Accept-Encoding");
+
+    const decompressed = gunzipSync(
+      new Uint8Array(await response.arrayBuffer()),
+    );
+    expect(new TextDecoder().decode(decompressed)).toContain("<!DOCTYPE html>");
   });
 });
 

@@ -44,6 +44,7 @@ export function createShellHandler(
       let pageContent = '';
       let containerId = 'home-page';
       let seoInput: SeoPageInput = { kind: 'home' };
+      let pageCss = '/pages/home/styles.css';
 
       if (params?.slug && pathname.startsWith('/blog/')) {
         // Blog post route
@@ -52,6 +53,7 @@ export function createShellHandler(
           const wrappedHtml = `<div class="markdown-content">${post.html}</div>`;
           pageContent = `<article class="blog-post"><a href="/blog" class="back-to-blog back-link">&larr; Back to Blog</a><div class="blog-post-content">${wrappedHtml}</div></article>`;
           containerId = 'blog-post-page';
+          pageCss = '/pages/blog/styles.css';
           seoInput = {
             kind: 'blog-post',
             slug: post.slug,
@@ -69,6 +71,7 @@ export function createShellHandler(
           const wrappedHtml = `<div class="markdown-content">${project.html}</div>`;
           pageContent = `<article class="project"><a href="/projects" class="back-to-projects back-link">&larr; Back to Projects</a><div class="project-content">${wrappedHtml}</div></article>`;
           containerId = 'project-page';
+          pageCss = '/pages/projects/styles.css';
           seoInput = {
             kind: 'project',
             slug: project.slug,
@@ -90,6 +93,7 @@ export function createShellHandler(
           const pageData = await dependencies.loadPageContent(pageName, pageNumber);
           pageContent = pageData.content;
           containerId = `${pageName}-page`;
+          pageCss = pageData.pageCSS;
           seoInput = pageName === 'blog' || pageName === 'projects'
             ? { kind: pageName, page: pageNumber }
             : { kind: pageName };
@@ -122,6 +126,10 @@ export function createShellHandler(
 
       const seo = createSeoMetadata(seoInput, url);
       html = html.replace('<title>Portfolio</title>', renderSeoHead(seo));
+      html = html.replace(
+        '<link id="page-css" rel="stylesheet" href="/pages/home/styles.css">',
+        `<link id="page-css" rel="stylesheet" href="${pageCss}">`,
+      );
 
       return new Response(html, {
         headers: {

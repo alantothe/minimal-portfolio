@@ -10,4 +10,16 @@ describe("SPA navigation", () => {
     expect(shell).not.toContain(".page-container.active.navigating");
     expect(router).not.toContain("pageContainer.classList.add('navigating')");
   });
+
+  test("preserves server-rendered content during initial boot", () => {
+    expect(router).not.toContain("preloadAllPages");
+    expect(router).not.toContain("fetch('/api/pages')");
+    expect(router).not.toContain("const allImages");
+  });
+
+  test("recognizes direct blog and project detail routes", () => {
+    expect(router).toContain("getInitialRoute");
+    expect(router).toContain("page: 'blog-post'");
+    expect(router).toContain("page: 'project'");
+  });
 });

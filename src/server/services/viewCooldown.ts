@@ -2,6 +2,8 @@ interface ViewCooldownOptions {
   now?: () => number;
   cooldownMs?: number;
   maxEntries?: number;
+  maxViewsPerWindow?: number;
+  windowMs?: number;
 }
 
 export class ViewCooldown {
@@ -9,11 +11,16 @@ export class ViewCooldown {
   private readonly now: () => number;
   private readonly cooldownMs: number;
   private readonly maxEntries: number;
+  private readonly maxViewsPerWindow: number;
+  private readonly windowMs: number;
+  private readonly postWindows = new Map<string, number[]>();
 
   constructor(options: ViewCooldownOptions = {}) {
     this.now = options.now || Date.now;
     this.cooldownMs = options.cooldownMs ?? 30_000;
     this.maxEntries = options.maxEntries ?? 10_000;
+    this.maxViewsPerWindow = options.maxViewsPerWindow ?? 60;
+    this.windowMs = options.windowMs ?? 60 * 60 * 1000;
   }
 
   shouldCount(slug: string, visitorId: string): boolean {
@@ -28,6 +35,14 @@ export class ViewCooldown {
       return false;
     }
 
+    const windowStart = timestamp - this.windowMs;
+    const recentViews = (this.postWindows.get(slug) || [])
+      .filter(viewTimestamp => viewTimestamp > windowStart);
+    if (recentViews.length >= this.maxViewsPerWindow) {
+      this.postWindows.set(slug, recentViews);
+      return false;
+    }
+
     if (!this.timestamps.has(key) && this.timestamps.size >= this.maxEntries) {
       const oldestKey = this.timestamps.keys().next().value;
       if (oldestKey !== undefined) {
@@ -36,6 +51,8 @@ export class ViewCooldown {
     }
 
     this.timestamps.set(key, timestamp);
+    recentViews.push(timestamp);
+    this.postWindows.set(slug, recentViews);
     return true;
   }
 }

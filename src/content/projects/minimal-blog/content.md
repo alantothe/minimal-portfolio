@@ -23,8 +23,6 @@ A personal portfolio and blog platform designed for simplicity and performance.
 - Markdown Processing: marked + gray-matter
 - Syntax Highlighting: highlight.js
 
-## Performance
+## Deployment
 
-- 200ms server startup
-- 5ms navigation between pages
-- No build step required
+- Runs directly on Bun without a separate application build

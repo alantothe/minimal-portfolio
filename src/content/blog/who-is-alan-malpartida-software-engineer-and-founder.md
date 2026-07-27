@@ -36,4 +36,4 @@ Every page you see here is server-side rendered for fast load times and search e
 
 I'm currently based in South America, traveling and building. I split my time between writing code for Questurian, exploring new cities, and finding the best local food wherever I go. If you're a developer, founder, traveler, or just curious about what I'm building, welcome. Take a look around.
 
-If you want to connect, feel free to reach out at alanmalpartida@gmail.com or find me on [GitHub](https://github.com/alantothe) and [LinkedIn](https://linkedin.com/in/alanmalpartisdaaaa).
+If you want to connect, feel free to reach out at alanmalpartida@gmail.com or find me on [GitHub](https://github.com/alantothe).

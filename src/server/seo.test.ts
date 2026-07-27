@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { RequestHandler } from "./core/requestHandler";
 import { Router } from "./core/router";
 import { setupRoutes } from "./routes";
-import { createSeoMetadata } from "./services/seo";
+import { createSeoMetadata, renderSeoHead } from "./services/seo";
+import { aboutConfig, homeConfig } from "../config";
 
 const previousSiteUrl = process.env.SITE_URL;
 
@@ -128,6 +129,41 @@ describe("search metadata", () => {
       else process.env.NODE_ENV = previousNodeEnv;
       if (previousUrl === undefined) delete process.env.SITE_URL;
       else process.env.SITE_URL = previousUrl;
+    }
+  });
+
+  test("uses portfolio config as the identity source of truth", () => {
+    const previousAuthor = { ...homeConfig.author };
+    const previousTitle = homeConfig.professional.title;
+    const previousLinks = [...aboutConfig.sections.personal.socialLinks];
+
+    try {
+      homeConfig.author.name = "Example Engineer";
+      homeConfig.author.photo = "https://cdn.example/profile.webp";
+      homeConfig.professional.title = "Principal Engineer";
+      aboutConfig.sections.personal.socialLinks = [
+        { name: "GitHub", url: "https://github.com/example" },
+      ];
+
+      const metadata = createSeoMetadata(
+        { kind: "home" },
+        new URL("https://portfolio.test"),
+      );
+      const schema = metadata.structuredData as Record<string, unknown>;
+      const head = renderSeoHead(metadata);
+
+      expect(metadata.title).toContain("Example Engineer");
+      expect(metadata.image).toBe("https://cdn.example/profile.webp");
+      expect(schema.name).toBe("Example Engineer");
+      expect(schema.jobTitle).toBe("Principal Engineer");
+      expect(schema.sameAs).toEqual(["https://github.com/example"]);
+      expect(head).toContain(
+        '<meta property="og:site_name" content="Example Engineer">',
+      );
+    } finally {
+      Object.assign(homeConfig.author, previousAuthor);
+      homeConfig.professional.title = previousTitle;
+      aboutConfig.sections.personal.socialLinks = previousLinks;
     }
   });
 });

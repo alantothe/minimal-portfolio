@@ -327,6 +327,7 @@ class SPARouter {
     };
 
     setMeta('name', 'description', metadata.description);
+    setMeta('property', 'og:site_name', metadata.siteName);
     setMeta('property', 'og:type', metadata.type);
     setMeta('property', 'og:title', metadata.title);
     setMeta('property', 'og:description', metadata.description);

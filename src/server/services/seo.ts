@@ -1,3 +1,5 @@
+import { aboutConfig, homeConfig } from '../../config';
+
 export type SeoPageInput =
   | { kind: 'home' }
   | { kind: 'about' }
@@ -18,6 +20,7 @@ export type SeoPageInput =
     };
 
 export interface SeoMetadata {
+  siteName: string;
   title: string;
   description: string;
   canonical: string;
@@ -98,16 +101,29 @@ export function getCanonicalUrl(input: SeoPageInput, requestUrl: URL): string {
   return new URL(path, `${origin}/`).toString();
 }
 
-function personSchema(origin: string) {
+function absoluteImageUrl(image: string, origin: string): string {
+  return new URL(image, `${origin}/`).toString();
+}
+
+function identityId(name: string): string {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  return slug || 'profile';
+}
+
+function personSchema(origin: string, image: string) {
+  const name = homeConfig.author.name;
   return {
     '@context': 'https://schema.org',
     '@type': 'Person',
-    '@id': `${origin}/#alan-malpartida`,
-    name: 'Alan Malpartida',
+    '@id': `${origin}/#${identityId(name)}`,
+    name,
     url: `${origin}/`,
-    image: `${origin}/avatar.webp`,
-    jobTitle: 'Founding Engineer at Questurian',
-    sameAs: ['https://github.com/alantothe'],
+    image,
+    jobTitle: homeConfig.professional.title,
+    sameAs: aboutConfig.sections.personal.socialLinks.map(link => link.url),
   };
 }
 
@@ -117,14 +133,17 @@ export function createSeoMetadata(
 ): SeoMetadata {
   const canonical = getCanonicalUrl(input, requestUrl);
   const origin = new URL(canonical).origin;
-  const image = `${origin}/avatar.webp`;
-  const person = personSchema(origin);
+  const siteName = homeConfig.author.name;
+  const role = homeConfig.professional.title;
+  const image = absoluteImageUrl(homeConfig.author.photo, origin);
+  const person = personSchema(origin, image);
 
   switch (input.kind) {
     case 'home':
       return {
-        title: 'Alan Malpartida — Software Engineer & Founding Engineer',
-        description: 'Alan Malpartida is a full-stack software engineer and founding engineer at Questurian, building web platforms and sharing technical projects.',
+        siteName,
+        title: `${siteName} — ${role}`,
+        description: `${siteName} is a full-stack software engineer working as ${role}, building web platforms and sharing technical projects.`,
         canonical,
         type: 'website',
         image,
@@ -132,8 +151,9 @@ export function createSeoMetadata(
       };
     case 'about':
       return {
-        title: 'About Alan Malpartida',
-        description: 'Learn about Alan Malpartida, his software engineering background, current work at Questurian, and selected interests.',
+        siteName,
+        title: `About ${siteName}`,
+        description: `Learn about ${siteName}, their software engineering background, current work, and selected interests.`,
         canonical,
         type: 'website',
         image,
@@ -145,20 +165,22 @@ export function createSeoMetadata(
       };
     case 'blog':
       return {
+        siteName,
         title: input.page > 1
-          ? `Alan Malpartida’s Software Engineering Blog — Page ${input.page}`
-          : 'Alan Malpartida’s Software Engineering Blog',
-        description: 'Software engineering, architecture, startup building, and project notes from Alan Malpartida.',
+          ? `${siteName}’s Software Engineering Blog — Page ${input.page}`
+          : `${siteName}’s Software Engineering Blog`,
+        description: `Software engineering, architecture, startup building, and project notes from ${siteName}.`,
         canonical,
         type: 'website',
         image,
       };
     case 'projects':
       return {
+        siteName,
         title: input.page > 1
-          ? `Software Projects by Alan Malpartida — Page ${input.page}`
-          : 'Software Projects by Alan Malpartida',
-        description: 'Selected software projects built and contributed to by Alan Malpartida, with implementation details and technical context.',
+          ? `Software Projects by ${siteName} — Page ${input.page}`
+          : `Software Projects by ${siteName}`,
+        description: `Selected software projects built and contributed to by ${siteName}, with implementation details and technical context.`,
         canonical,
         type: 'website',
         image,
@@ -168,7 +190,8 @@ export function createSeoMetadata(
         ? input.date.toISOString()
         : input.date;
       return {
-        title: `${input.title} | Alan Malpartida`,
+        siteName,
+        title: `${input.title} | ${siteName}`,
         description: input.description,
         canonical,
         type: 'article',
@@ -191,7 +214,8 @@ export function createSeoMetadata(
       };
     case 'project':
       return {
-        title: `${input.title} | Alan Malpartida`,
+        siteName,
+        title: `${input.title} | ${siteName}`,
         description: input.description,
         canonical,
         type: 'website',
@@ -228,7 +252,7 @@ export function renderSeoHead(metadata: SeoMetadata): string {
   return `<title>${title}</title>
     <meta name="description" content="${description}">
     <link rel="canonical" href="${canonical}">
-    <meta property="og:site_name" content="Alan Malpartida">
+    <meta property="og:site_name" content="${escapeHtml(metadata.siteName)}">
     <meta property="og:type" content="${metadata.type}">
     <meta property="og:title" content="${title}">
     <meta property="og:description" content="${description}">

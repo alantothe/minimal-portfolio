@@ -1,6 +1,9 @@
 import type { BlogPostSummary } from '../handlers/blog';
 import type { ProjectSummary } from '../handlers/projects';
 
+export const BLOG_PAGE_SIZE = 4;
+export const PROJECT_PAGE_SIZE = 3;
+
 export class CollectionPageNotFoundError extends Error {
   constructor() {
     super('Collection page not found');
@@ -51,7 +54,7 @@ function renderPagination(
 }
 
 export function renderBlogCollection(posts: BlogPostSummary[], page: number) {
-  const pageSize = 4;
+  const pageSize = BLOG_PAGE_SIZE;
   const pageItems = getPageItems(posts, page, pageSize);
   const itemsHtml = pageItems.length === 0
     ? '<p class="no-posts">No blog posts yet. Check back soon!</p>'
@@ -71,7 +74,7 @@ export function renderBlogCollection(posts: BlogPostSummary[], page: number) {
 }
 
 export function renderProjectCollection(projects: ProjectSummary[], page: number) {
-  const pageSize = 3;
+  const pageSize = PROJECT_PAGE_SIZE;
   const pageItems = getPageItems(projects, page, pageSize);
   const itemsHtml = pageItems.length === 0
     ? '<p class="no-projects">No projects yet. Check back soon!</p>'

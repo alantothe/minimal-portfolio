@@ -3,12 +3,18 @@ import { createShellHandler } from '../handlers/shell';
 import { createApiHandler } from '../handlers/api';
 import { blogListHandler, createBlogPostHandler } from '../handlers/blog';
 import { projectsListHandler, createProjectHandler } from '../handlers/projects';
+import {
+  createRobotsHandler,
+  createSitemapHandler,
+} from '../handlers/discovery';
 
 export function setupRoutes(router: Router): void {
   router.addRoute('/healthz', async () => new Response(
     JSON.stringify({ status: 'ok' }),
     { headers: { 'Content-Type': 'application/json' } },
   ));
+  router.addRoute('/robots.txt', createRobotsHandler);
+  router.addRoute('/sitemap.xml', createSitemapHandler);
 
   // SSR shell routes - content is injected server-side before serving
   router.addRoute('/', createShellHandler);

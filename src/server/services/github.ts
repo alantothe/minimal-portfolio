@@ -16,6 +16,7 @@ interface GitHubCommitCounterOptions {
   fetch?: FetchFunction;
   now?: () => Date;
   ttlMs?: number;
+  failureTtlMs?: number;
   timeoutMs?: number;
 }
 
@@ -23,6 +24,7 @@ export class GitHubCommitCounter {
   private readonly fetchImpl: FetchFunction;
   private readonly now: () => Date;
   private readonly ttlMs: number;
+  private readonly failureTtlMs: number;
   private readonly timeoutMs: number;
   private readonly cache = new Map<string, CacheEntry>();
   private readonly inFlight = new Map<string, Promise<number>>();
@@ -31,6 +33,7 @@ export class GitHubCommitCounter {
     this.fetchImpl = options.fetch || fetch;
     this.now = options.now || (() => new Date());
     this.ttlMs = options.ttlMs ?? 15 * 60 * 1000;
+    this.failureTtlMs = options.failureTtlMs ?? 30 * 1000;
     this.timeoutMs = options.timeoutMs ?? 3_000;
   }
 
@@ -64,7 +67,14 @@ export class GitHubCommitCounter {
         });
         return count;
       })
-      .catch(() => cached?.count ?? 0)
+      .catch(() => {
+        const count = cached?.count ?? 0;
+        this.cache.set(cacheKey, {
+          count,
+          expiresAt: this.now().getTime() + this.failureTtlMs,
+        });
+        return count;
+      })
       .finally(() => {
         this.inFlight.delete(cacheKey);
       });

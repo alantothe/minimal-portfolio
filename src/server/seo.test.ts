@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { RequestHandler } from "./core/requestHandler";
 import { Router } from "./core/router";
 import { setupRoutes } from "./routes";
+import { createSeoMetadata } from "./services/seo";
 
 const previousSiteUrl = process.env.SITE_URL;
 
@@ -106,5 +107,27 @@ describe("search metadata", () => {
 
     expect(data.seo.title).toBe("About Alan Malpartida");
     expect(data.seo.canonical).toBe("https://alan.example/about");
+  });
+
+  test("production metadata rejects an invalid configured origin", () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousUrl = process.env.SITE_URL;
+
+    try {
+      process.env.NODE_ENV = "production";
+      process.env.SITE_URL = "http://example.com";
+
+      expect(() =>
+        createSeoMetadata(
+          { kind: "home" },
+          new URL("http://attacker.example"),
+        ),
+      ).toThrow("SITE_URL");
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousNodeEnv;
+      if (previousUrl === undefined) delete process.env.SITE_URL;
+      else process.env.SITE_URL = previousUrl;
+    }
   });
 });

@@ -35,9 +35,9 @@ export const homeConfig = {
     email: "alanmalpartida@gmail.com",
 
     // Path to your avatar image
-    // Recommended: Store in src/public/ and reference as "src/public/avatar.png"
+    // Recommended: Store in src/public/ and reference as "src/public/avatar.webp"
     // or upload to a CDN and use the URL
-    photo: "src/public/avatar.png",
+    photo: "src/public/avatar.webp",
   },
 
   professional: {

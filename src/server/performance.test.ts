@@ -1,0 +1,83 @@
+import { describe, expect, test } from "bun:test";
+import { RequestHandler } from "./core/requestHandler";
+import { Router } from "./core/router";
+import { setupRoutes } from "./routes";
+import { GitHubCommitCounter } from "./services/github";
+
+function createRequestHandler() {
+  const router = new Router();
+  setupRoutes(router);
+  return new RequestHandler(router);
+}
+
+describe("production response performance", () => {
+  test("static assets are cacheable and support conditional requests", async () => {
+    const handler = createRequestHandler();
+    const first = await handler.handleRequest(
+      new Request("http://portfolio.test/public/css/global.css"),
+    );
+    const etag = first.headers.get("ETag");
+    const second = await handler.handleRequest(
+      new Request("http://portfolio.test/public/css/global.css", {
+        headers: { "If-None-Match": etag! },
+      }),
+    );
+
+    expect(first.status).toBe(200);
+    expect(first.headers.get("Cache-Control")).toContain("public");
+    expect(etag).not.toBeNull();
+    expect(second.status).toBe(304);
+    expect(await second.text()).toBe("");
+  });
+
+  test("HTML stays revalidatable and reserves profile image space", async () => {
+    const response = await createRequestHandler().handleRequest(
+      new Request("http://portfolio.test/about"),
+    );
+    const homeResponse = await createRequestHandler().handleRequest(
+      new Request("http://portfolio.test/"),
+    );
+    const home = await homeResponse.text();
+
+    expect(response.headers.get("Cache-Control")).toBe("no-cache");
+    expect(home).toContain('src="/avatar.webp"');
+    expect(home).toContain('width="512"');
+    expect(home).toContain('height="510"');
+  });
+});
+
+describe("GitHub commit metric", () => {
+  test("coalesces concurrent requests and reuses a fresh memory cache", async () => {
+    let fetchCalls = 0;
+    const counter = new GitHubCommitCounter({
+      now: () => new Date("2026-07-27T12:00:00Z"),
+      fetch: async () => {
+        fetchCalls += 1;
+        return Response.json({ total_count: 263 });
+      },
+    });
+
+    const counts = await Promise.all([
+      counter.getMonthlyCommitCount("token", "alantothe"),
+      counter.getMonthlyCommitCount("token", "alantothe"),
+    ]);
+    const cached = await counter.getMonthlyCommitCount("token", "alantothe");
+
+    expect(counts).toEqual([263, 263]);
+    expect(cached).toBe(263);
+    expect(fetchCalls).toBe(1);
+  });
+
+  test("returns zero without credentials and does not call GitHub", async () => {
+    let fetchCalls = 0;
+    const counter = new GitHubCommitCounter({
+      fetch: async () => {
+        fetchCalls += 1;
+        return Response.json({ total_count: 1 });
+      },
+    });
+
+    expect(await counter.getMonthlyCommitCount()).toBe(0);
+    expect(fetchCalls).toBe(0);
+  });
+});

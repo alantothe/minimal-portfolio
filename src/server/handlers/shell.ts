@@ -112,7 +112,10 @@ export function createShellHandler(url: URL, params?: Record<string, string>) {
       html = html.replace('<title>Portfolio</title>', renderSeoHead(seo));
 
       return new Response(html, {
-        headers: { "Content-Type": "text/html" },
+        headers: {
+          "Content-Type": "text/html",
+          "Cache-Control": "no-cache",
+        },
       });
     } catch (error) {
       console.error('Error in shell handler:', error);

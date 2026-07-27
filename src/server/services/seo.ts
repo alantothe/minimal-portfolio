@@ -84,7 +84,7 @@ function personSchema(origin: string) {
     '@id': `${origin}/#alan-malpartida`,
     name: 'Alan Malpartida',
     url: `${origin}/`,
-    image: `${origin}/avatar.png`,
+    image: `${origin}/avatar.webp`,
     jobTitle: 'Founding Engineer at Questurian',
     sameAs: ['https://github.com/alantothe'],
   };
@@ -96,7 +96,7 @@ export function createSeoMetadata(
 ): SeoMetadata {
   const canonical = getCanonicalUrl(input, requestUrl);
   const origin = new URL(canonical).origin;
-  const image = `${origin}/avatar.png`;
+  const image = `${origin}/avatar.webp`;
   const person = personSchema(origin);
 
   switch (input.kind) {

@@ -8,8 +8,7 @@
 
 class SPARouter {
   isNavigating = false;
-  pagesLoaded = false;
-  pagesData = null;
+  pagesData = {};
   currentBlogPage = '1'; // Track current blog page for back navigation
   mobileBreakpoint = 481; // Mobile is 480px and below
 
@@ -28,126 +27,95 @@ class SPARouter {
       if (event.state) {
         if (event.state.page === 'blog-post' && event.state.slug) {
           this.loadBlogPost(event.state.slug, false);
+        } else if (event.state.page === 'project' && event.state.slug) {
+          this.loadProject(event.state.slug, false);
         } else if (event.state.page) {
           this.switchPage(event.state.page);
         }
       }
     });
 
-    // Pre-load all pages on init, then reveal everything at once
-    this.preloadAllPages().then(async () => {
-      const initialPath = window.location.pathname;
-      const blogPostMatch = initialPath.match(/^\/blog\/([^/]+)$/);
+    const initialRoute = this.getInitialRoute(window.location.pathname);
+    window.history.replaceState(
+      initialRoute,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
 
-      if (blogPostMatch) {
-        const slug = blogPostMatch[1];
-        window.history.replaceState({ page: 'blog-post', slug }, "", initialPath);
-        await this.loadBlogPost(slug, false);
-      } else {
-        const initialPage = this.getPageFromPath(initialPath);
-        window.history.replaceState({ page: initialPage }, "", initialPath);
-        await this.switchPage(initialPage);
-      }
+    const activePage = initialRoute.page === 'blog-post'
+      ? 'blog'
+      : initialRoute.page === 'project'
+        ? 'projects'
+        : initialRoute.page;
+    this.updateActiveNav(activePage);
 
-      // Wait for all images (page + sidebar) to load before revealing
-      const allImages = document.querySelectorAll('.container img');
-      await Promise.all(Array.from(allImages).map(img =>
-        img.complete ? Promise.resolve() : new Promise(resolve => {
-          img.addEventListener('load', resolve, { once: true });
-          img.addEventListener('error', resolve, { once: true });
-        })
-      ));
+    const initialContainer = document.querySelector('.page-container.active');
+    if (initialContainer) {
+      initialContainer.dataset.loaded = 'true';
+    }
+    if (['home', 'about', 'projects', 'blog'].includes(initialRoute.page)) {
+      this.pagesData[initialRoute.page] = { title: document.title };
+    }
 
-      // Everything is ready — reveal the entire container in one frame
-      document.querySelector('.container')?.classList.add('ready');
-    });
+    // SSR content is already complete. Reveal it without client fetches.
+    document.querySelector('.container')?.classList.add('ready');
   }
 
-  /**
-   * Pre-load all 4 pages at startup
-   */
-  async preloadAllPages() {
-    try {
-      const response = await fetch('/api/pages');
-      if (!response.ok) {
-        throw new Error(`Failed to load pages: ${response.statusText}`);
-      }
-      const data = await response.json();
-      this.pagesData = data.pages;
+  getInitialRoute(pathname) {
+    const blogPostMatch = pathname.match(/^\/blog\/([^/]+)$/);
+    if (blogPostMatch) {
+      return { page: 'blog-post', slug: blogPostMatch[1] };
+    }
 
-      // Populate all page containers with pre-loaded content
-      Object.entries(this.pagesData).forEach(([pageName, pageData]) => {
-        const containerId = `${pageName}-page`;
-        const container = document.getElementById(containerId);
-        if (container && pageData.content) {
-          container.innerHTML = pageData.content;
+    const projectMatch = pathname.match(/^\/projects\/([^/]+)$/);
+    if (projectMatch) {
+      return { page: 'project', slug: projectMatch[1] };
+    }
 
-          // Execute inline scripts and load external scripts (needed for blog listing)
-          const scripts = container.querySelectorAll('script');
-          const externalScripts = [];
-          const inlineScripts = [];
+    return { page: this.getPageFromPath(pathname) };
+  }
 
-          // Separate external and inline scripts
-          scripts.forEach(oldScript => {
-            if (oldScript.src) {
-              externalScripts.push(oldScript);
-            } else {
-              inlineScripts.push(oldScript);
-            }
-          });
+  async setPageContent(container, content) {
+    container.innerHTML = content;
+    const scripts = Array.from(container.querySelectorAll('script'));
+    const externalScripts = scripts.filter(script => script.src);
+    const inlineScripts = scripts.filter(script => !script.src);
 
-          // Load external scripts first, then execute inline scripts
-          Promise.all(
-            externalScripts.map(oldScript => {
-              return new Promise((resolve, reject) => {
-                const newScript = document.createElement('script');
-                newScript.src = oldScript.src;
+    await Promise.all(externalScripts.map(oldScript => new Promise((resolve, reject) => {
+      const newScript = document.createElement('script');
+      newScript.src = oldScript.src;
 
-                // Copy any other attributes except src
-                Array.from(oldScript.attributes).forEach(attr => {
-                  if (attr.name !== 'src' && attr.name !== 'type') {
-                    newScript.setAttribute(attr.name, attr.value);
-                  }
-                });
-
-                newScript.onload = resolve;
-                newScript.onerror = reject;
-
-                oldScript.parentNode.replaceChild(newScript, oldScript);
-              });
-            })
-          ).then(() => {
-            // After external scripts load, execute inline scripts
-            inlineScripts.forEach(oldScript => {
-              const newScript = document.createElement('script');
-              newScript.textContent = oldScript.textContent;
-
-              // Copy any other attributes
-              Array.from(oldScript.attributes).forEach(attr => {
-                if (attr.name !== 'src' && attr.name !== 'type') {
-                  newScript.setAttribute(attr.name, attr.value);
-                }
-              });
-
-              oldScript.parentNode.replaceChild(newScript, oldScript);
-            });
-          }).catch(error => {
-            console.error('[SPA Router] Error loading external scripts:', error);
-            // Still execute inline scripts even if external scripts fail
-            inlineScripts.forEach(oldScript => {
-              const newScript = document.createElement('script');
-              newScript.textContent = oldScript.textContent;
-              oldScript.parentNode.replaceChild(newScript, oldScript);
-            });
-          });
+      Array.from(oldScript.attributes).forEach(attr => {
+        if (attr.name !== 'src' && attr.name !== 'type') {
+          newScript.setAttribute(attr.name, attr.value);
         }
       });
 
-      this.pagesLoaded = true;
-    } catch (error) {
-      console.error("[SPA Router] Error pre-loading pages:", error);
-    }
+      newScript.onload = resolve;
+      newScript.onerror = reject;
+      oldScript.parentNode.replaceChild(newScript, oldScript);
+    })));
+
+    inlineScripts.forEach(oldScript => {
+      const newScript = document.createElement('script');
+      newScript.textContent = oldScript.textContent;
+      oldScript.parentNode.replaceChild(newScript, oldScript);
+    });
   }
+
+  async loadPage(pageName, pageContainer) {
+    const response = await fetch(`/api/page?name=${encodeURIComponent(pageName)}`);
+    if (!response.ok) {
+      throw new Error(`Failed to load ${pageName}: ${response.statusText}`);
+    }
+
+    const pageData = await response.json();
+    await this.setPageContent(pageContainer, pageData.content);
+    pageContainer.dataset.loaded = 'true';
+    this.pagesData[pageName] = pageData;
+    return pageData;
+  }
+
   attachNavListeners() {
     document.addEventListener("click", (e) => {
       const target = e.target;
@@ -228,53 +196,30 @@ class SPARouter {
   }
 
   /**
-   * Switch between pre-loaded pages with instant visibility toggle
+   * Fetch a page fragment on first navigation, then switch cached containers.
    */
   async switchPage(pageName) {
     this.isNavigating = true;
     try {
-      // Hide all page containers
+      const pageContainer = document.getElementById(`${pageName}-page`);
+      if (!pageContainer) {
+        throw new Error(`Unknown page: ${pageName}`);
+      }
+
+      const pageData = pageContainer.dataset.loaded === 'true'
+        ? this.pagesData[pageName]
+        : await this.loadPage(pageName, pageContainer);
+
       document.querySelectorAll('.page-container').forEach(container => {
         container.classList.remove('active');
       });
+      pageContainer.classList.add('active');
 
-      // Show the requested page
-      const pageContainer = document.getElementById(`${pageName}-page`);
-      if (pageContainer) {
-        pageContainer.classList.add('active');
-      }
-
-      // Update page metadata
-      if (this.pagesData && this.pagesData[pageName]) {
-        const pageData = this.pagesData[pageName];
+      if (pageData) {
         document.title = pageData.title;
-        // All CSS files are preloaded in shell.html, no need to switch
       }
 
       this.updateActiveNav(pageName);
-
-      // Refresh content when returning to dynamic pages
-      // Add small delay to allow page scripts to execute
-      if (pageName === 'blog') {
-        setTimeout(() => {
-          if (typeof window.loadBlogPosts === 'function') {
-            window.loadBlogPosts();
-          }
-        }, 50);
-      }
-
-      if (pageName === 'projects') {
-        setTimeout(() => {
-          if (typeof window.loadProjects === 'function') {
-            window.loadProjects();
-          }
-        }, 50);
-      }
-
-      // Update home page metrics when returning to it (without full page reload)
-      if (pageName === 'home') {
-        this.updateHomePageMetrics();
-      }
     } catch (error) {
       console.error("[SPA Router] Error switching page:", error);
     } finally {
@@ -320,38 +265,6 @@ class SPARouter {
         link.classList.add("active");
       }
     });
-  }
-
-  /**
-   * Update home page metrics with fresh data (view counts, etc.)
-   */
-  async updateHomePageMetrics() {
-    try {
-      const response = await fetch(`/api/page?name=home`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch metrics: ${response.statusText}`);
-      }
-      const pageData = await response.json();
-
-      // Extract the total views value from the content
-      // Content includes: {{metrics.totalViews}} blog views all time
-      const totalViewsMatch = pageData.content.match(/(\d+)\s+blog views all time/);
-      if (totalViewsMatch) {
-        const totalViews = totalViewsMatch[1];
-        // Find and update the views stat in the DOM
-        const homePageContainer = document.getElementById('home-page');
-        if (homePageContainer) {
-          const viewsElements = homePageContainer.querySelectorAll('span');
-          viewsElements.forEach(el => {
-            if (el.textContent.includes('blog views all time')) {
-              el.textContent = `${totalViews} blog views all time`;
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error(`[SPA Router] Error updating home page metrics:`, error);
-    }
   }
 
   attachBlogPostListener() {

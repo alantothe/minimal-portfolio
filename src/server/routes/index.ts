@@ -1,6 +1,6 @@
 import { Router } from '../core/router';
 import { createShellHandler } from '../handlers/shell';
-import { createApiHandler, createBulkPagesHandler } from '../handlers/api';
+import { createApiHandler } from '../handlers/api';
 import { blogListHandler, createBlogPostHandler } from '../handlers/blog';
 import { projectsListHandler, createProjectHandler } from '../handlers/projects';
 
@@ -21,9 +21,6 @@ export function setupRoutes(router: Router): void {
 
   //fetches content fragments
   router.addRoute('/api/page', createApiHandler);
-
-  // Bulk pages endpoint - load all 4 tabs at once for instant switching
-  router.addRoute('/api/pages', createBulkPagesHandler);
 
   // Blog API routes
   router.addRoute('/api/blog/list', blogListHandler);

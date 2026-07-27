@@ -48,4 +48,12 @@ describe("public HTTP behavior", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: "ok" });
   });
+
+  test("unused bulk page endpoint is not exposed", async () => {
+    const response = await createRequestHandler().handleRequest(
+      new Request("http://portfolio.test/api/pages"),
+    );
+
+    expect(response.status).toBe(404);
+  });
 });

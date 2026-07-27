@@ -1,7 +1,8 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { RequestHandler } from "./core/requestHandler";
 import { Router } from "./core/router";
 import { setupRoutes } from "./routes";
+import { createShellHandler } from "./handlers/shell";
 
 function createRequestHandler() {
   const router = new Router();
@@ -18,12 +19,34 @@ describe("public HTTP behavior", () => {
   test.each([
     "/blog/does-not-exist",
     "/projects/does-not-exist",
+    "/projects/%2e%2e%2fprojects%2fminimal-blog",
   ])("%s returns a real 404", async (path) => {
     const response = await createRequestHandler().handleRequest(
       new Request(`http://portfolio.test${path}`),
     );
 
     expect(response.status).toBe(404);
+  });
+
+  test("unexpected SSR failures return 500 instead of an empty indexable page", async () => {
+    const errorLog = spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      const response = await createShellHandler(
+        new URL("http://portfolio.test/projects"),
+        undefined,
+        {
+          loadPageContent: async () => {
+            throw new Error("render failed");
+          },
+        },
+      )();
+
+      expect(response.status).toBe(500);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+    } finally {
+      errorLog.mockRestore();
+    }
   });
 
   test("unsupported methods return 405 with allowed methods", async () => {

@@ -67,6 +67,10 @@ export async function getAllProjects(): Promise<ProjectSummary[]> {
  */
 export async function getProjectBySlug(slug: string) {
   try {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      return null;
+    }
+
     const filePath = join(PROJECTS_CONTENT_DIR, slug, 'content.md');
     if (!(await fileExists(filePath))) {
       return null;

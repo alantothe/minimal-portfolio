@@ -7,6 +7,13 @@ import { getMonthlyCommitCount } from '../services/github';
 import { getTotalViews } from '../services/views';
 import { readTextFile, fileExists } from '../core/file';
 import { homeConfig, aboutConfig } from '../../config/index';
+import { getAllBlogPosts } from './blog';
+import { getAllProjects } from './projects';
+import {
+  CollectionPageNotFoundError,
+  renderBlogCollection,
+  renderProjectCollection,
+} from '../services/collectionPages';
 
 interface PageData {
   content: string;
@@ -92,7 +99,10 @@ function processTemplate(html: string, data: any): string {
 /**
  * load page content from content fragment files
  */
-export async function loadPageContent(pageName: string): Promise<PageData> {
+export async function loadPageContent(
+  pageName: string,
+  pageNumber: number = 1,
+): Promise<PageData> {
   const pageMap: Record<string, string> = {
     'home': './src/pages/home/content.html',
     'about': './src/pages/about/content.html',
@@ -131,9 +141,29 @@ export async function loadPageContent(pageName: string): Promise<PageData> {
     content = processTemplate(content, pageData);
   }
 
+  if (pageName === 'blog') {
+    const collection = renderBlogCollection(
+      await getAllBlogPosts(),
+      pageNumber,
+    );
+    content = content
+      .replace('{{collection.items}}', collection.itemsHtml)
+      .replace('{{collection.pagination}}', collection.paginationHtml);
+  } else if (pageName === 'projects') {
+    const collection = renderProjectCollection(
+      await getAllProjects(),
+      pageNumber,
+    );
+    content = content
+      .replace('{{collection.items}}', collection.itemsHtml)
+      .replace('{{collection.pagination}}', collection.paginationHtml);
+  }
+
   return {
     content: content.trim(),
-    title: titles[pageName] || 'Portfolio',
+    title: pageNumber > 1
+      ? `${titles[pageName] || 'Portfolio'} - Page ${pageNumber}`
+      : titles[pageName] || 'Portfolio',
     activePage: pageName,
     pageCSS: cssMap[pageName] || ''
   };
@@ -160,7 +190,8 @@ export function createApiHandler(url: URL) {
         );
       }
 
-      const pageData = await loadPageContent(pageName);
+      const pageNumber = Number(url.searchParams.get('page') || 1);
+      const pageData = await loadPageContent(pageName, pageNumber);
 
       return new Response(
         JSON.stringify(pageData),
@@ -172,6 +203,16 @@ export function createApiHandler(url: URL) {
         }
       );
     } catch (error) {
+      if (error instanceof CollectionPageNotFoundError) {
+        return new Response(
+          JSON.stringify({ error: 'Collection page not found' }),
+          {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }
+
       console.error('Error in page API handler:', error);
       return new Response(
         JSON.stringify({ error: 'Internal server error' }),

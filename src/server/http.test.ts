@@ -9,6 +9,11 @@ function createRequestHandler() {
   return new RequestHandler(router);
 }
 
+function extractDetailLinks(html: string, collection: "blog" | "projects") {
+  const pattern = new RegExp(`href="/${collection}/([^"?]+)"`, "g");
+  return Array.from(html.matchAll(pattern), match => match[1]);
+}
+
 describe("public HTTP behavior", () => {
   test.each([
     "/blog/does-not-exist",
@@ -55,5 +60,67 @@ describe("public HTTP behavior", () => {
     );
 
     expect(response.status).toBe(404);
+  });
+
+  test("blog listing is fully rendered with crawlable post links", async () => {
+    const handler = createRequestHandler();
+    const listing = await handler.handleRequest(
+      new Request("http://portfolio.test/blog"),
+    );
+    const listApi = await handler.handleRequest(
+      new Request("http://portfolio.test/api/blog/list"),
+    );
+    const html = await listing.text();
+    const { posts } = await listApi.json();
+
+    expect(listing.status).toBe(200);
+    expect(html).not.toContain("Loading posts...");
+    expect(extractDetailLinks(html, "blog").sort()).toEqual(
+      posts.map((post: { slug: string }) => post.slug).sort(),
+    );
+  });
+
+  test("project pagination exposes every project through anchors", async () => {
+    const handler = createRequestHandler();
+    const firstPage = await handler.handleRequest(
+      new Request("http://portfolio.test/projects"),
+    );
+    const secondPage = await handler.handleRequest(
+      new Request("http://portfolio.test/projects?page=2"),
+    );
+    const listApi = await handler.handleRequest(
+      new Request("http://portfolio.test/api/projects/list"),
+    );
+    const firstHtml = await firstPage.text();
+    const secondHtml = await secondPage.text();
+    const { projects } = await listApi.json();
+    const discovered = [
+      ...extractDetailLinks(firstHtml, "projects"),
+      ...extractDetailLinks(secondHtml, "projects"),
+    ];
+
+    expect(firstHtml).not.toContain("Loading projects...");
+    expect(firstHtml).toContain('href="/projects?page=2"');
+    expect(discovered.sort()).toEqual(
+      projects.map((project: { slug: string }) => project.slug).sort(),
+    );
+  });
+
+  test("out-of-range collection pages return 404", async () => {
+    const response = await createRequestHandler().handleRequest(
+      new Request("http://portfolio.test/projects?page=99"),
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  test("page fragment API renders requested collection page", async () => {
+    const response = await createRequestHandler().handleRequest(
+      new Request("http://portfolio.test/api/page?name=projects&page=2"),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.content).toContain('href="/projects/le-vino"');
   });
 });

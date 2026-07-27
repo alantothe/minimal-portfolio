@@ -9,6 +9,7 @@ import { loadPageContent } from './api';
 import { getBlogPostBySlug } from './blog';
 import { getProjectBySlug } from './projects';
 import { createErrorResponse, NotFoundError } from '../core/errors';
+import { CollectionPageNotFoundError } from '../services/collectionPages';
 
 export function createShellHandler(url: URL, params?: Record<string, string>) {
   return async (): Promise<Response> => {
@@ -53,11 +54,15 @@ export function createShellHandler(url: URL, params?: Record<string, string>) {
         else if (pathname === '/projects') pageName = 'projects';
 
         try {
-          const pageData = await loadPageContent(pageName);
+          const pageNumber = Number(url.searchParams.get('page') || 1);
+          const pageData = await loadPageContent(pageName, pageNumber);
           pageContent = pageData.content;
           title = pageData.title;
           containerId = `${pageName}-page`;
         } catch (error) {
+          if (error instanceof CollectionPageNotFoundError) {
+            return createErrorResponse(new NotFoundError('Collection page not found'));
+          }
           console.error('Error loading page content for SSR:', error);
         }
       }

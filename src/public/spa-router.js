@@ -6,10 +6,16 @@
  * the need for a build step when making changes to the client-side router.
  */
 
+import {
+  collectionPath,
+  getCollectionPage,
+  isCollectionPage,
+  pageCacheKey,
+} from "./navigation-state.js";
+
 class SPARouter {
   isNavigating = false;
   pagesData = {};
-  currentBlogPage = '1'; // Track current blog page for back navigation
   mobileBreakpoint = 481; // Mobile is 480px and below
 
   constructor() {
@@ -25,16 +31,27 @@ class SPARouter {
     window.addEventListener("popstate", (event) => {
       if (event.state) {
         if (event.state.page === 'blog-post' && event.state.slug) {
-          this.loadBlogPost(event.state.slug, false);
+          this.loadBlogPost(
+            event.state.slug,
+            false,
+            event.state.returnPage || 1,
+          );
         } else if (event.state.page === 'project' && event.state.slug) {
-          this.loadProject(event.state.slug, false);
+          this.loadProject(
+            event.state.slug,
+            false,
+            event.state.returnPage || 1,
+          );
         } else if (event.state.page) {
-          this.switchPage(event.state.page);
+          this.switchPage(event.state.page, event.state.pageNumber || 1);
         }
       }
     });
 
-    const initialRoute = this.getInitialRoute(window.location.pathname);
+    const initialRoute = this.getInitialRoute(
+      window.location.pathname,
+      window.location.search,
+    );
     window.history.replaceState(
       initialRoute,
       "",
@@ -51,16 +68,21 @@ class SPARouter {
     const initialContainer = document.querySelector('.page-container.active');
     if (initialContainer) {
       initialContainer.dataset.loaded = 'true';
+      initialContainer.dataset.pageNumber = String(initialRoute.pageNumber || 1);
     }
     if (['home', 'about', 'projects', 'blog'].includes(initialRoute.page)) {
-      this.pagesData[initialRoute.page] = { title: document.title };
+      const key = pageCacheKey(
+        initialRoute.page,
+        initialRoute.pageNumber || 1,
+      );
+      this.pagesData[key] = { title: document.title };
     }
 
     // SSR content is already complete. Reveal it without client fetches.
     document.querySelector('.container')?.classList.add('ready');
   }
 
-  getInitialRoute(pathname) {
+  getInitialRoute(pathname, search = "") {
     const blogPostMatch = pathname.match(/^\/blog\/([^/]+)$/);
     if (blogPostMatch) {
       return { page: 'blog-post', slug: blogPostMatch[1] };
@@ -71,7 +93,11 @@ class SPARouter {
       return { page: 'project', slug: projectMatch[1] };
     }
 
-    return { page: this.getPageFromPath(pathname) };
+    const page = this.getPageFromPath(pathname);
+    return {
+      page,
+      pageNumber: isCollectionPage(page) ? getCollectionPage(search) : 1,
+    };
   }
 
   async setPageContent(container, content) {
@@ -102,8 +128,12 @@ class SPARouter {
     });
   }
 
-  async loadPage(pageName, pageContainer) {
-    const response = await fetch(`/api/page?name=${encodeURIComponent(pageName)}`);
+  async loadPage(pageName, pageContainer, pageNumber = 1) {
+    const query = new URLSearchParams({ name: pageName });
+    if (isCollectionPage(pageName) && pageNumber > 1) {
+      query.set("page", String(pageNumber));
+    }
+    const response = await fetch(`/api/page?${query}`);
     if (!response.ok) {
       throw new Error(`Failed to load ${pageName}: ${response.statusText}`);
     }
@@ -111,7 +141,8 @@ class SPARouter {
     const pageData = await response.json();
     await this.setPageContent(pageContainer, pageData.content);
     pageContainer.dataset.loaded = 'true';
-    this.pagesData[pageName] = pageData;
+    pageContainer.dataset.pageNumber = String(pageNumber);
+    this.pagesData[pageCacheKey(pageName, pageNumber)] = pageData;
     return pageData;
   }
 
@@ -148,13 +179,13 @@ class SPARouter {
       if (postLink) {
         event.preventDefault();
         const slug = postLink.dataset.slug;
-        this.currentBlogPage = this.getBlogPageFromURL();
+        const returnPage = getCollectionPage(window.location.search);
         window.history.pushState(
-          { page: 'blog-post', slug },
+          { page: 'blog-post', slug, returnPage },
           '',
           postLink.href,
         );
-        this.loadBlogPost(slug, true);
+        this.loadBlogPost(slug, true, returnPage);
         return;
       }
 
@@ -162,12 +193,13 @@ class SPARouter {
       if (projectLink) {
         event.preventDefault();
         const slug = projectLink.dataset.projectId;
+        const returnPage = getCollectionPage(window.location.search);
         window.history.pushState(
-          { page: 'project', slug },
+          { page: 'project', slug, returnPage },
           '',
           projectLink.href,
         );
-        this.loadProject(slug, true);
+        this.loadProject(slug, true, returnPage);
       }
     });
   }
@@ -230,14 +262,14 @@ class SPARouter {
     if (this.isNavigating) {
       return;
     }
-    window.history.pushState({ page }, "", path);
-    await this.switchPage(page);
+    window.history.pushState({ page, pageNumber: 1 }, "", path);
+    await this.switchPage(page, 1);
   }
 
   /**
    * Fetch a page fragment on first navigation, then switch cached containers.
    */
-  async switchPage(pageName) {
+  async switchPage(pageName, pageNumber = 1) {
     this.isNavigating = true;
     try {
       const pageContainer = document.getElementById(`${pageName}-page`);
@@ -245,10 +277,13 @@ class SPARouter {
         throw new Error(`Unknown page: ${pageName}`);
       }
 
-      const cachedPage = this.pagesData[pageName];
-      const pageData = pageContainer.dataset.loaded === 'true' && cachedPage?.seo
+      const cacheKey = pageCacheKey(pageName, pageNumber);
+      const cachedPage = this.pagesData[cacheKey];
+      const pageData = pageContainer.dataset.loaded === 'true'
+        && Number(pageContainer.dataset.pageNumber || 1) === pageNumber
+        && cachedPage?.seo
         ? cachedPage
-        : await this.loadPage(pageName, pageContainer);
+        : await this.loadPage(pageName, pageContainer, pageNumber);
 
       document.querySelectorAll('.page-container').forEach(container => {
         container.classList.remove('active');
@@ -377,13 +412,7 @@ class SPARouter {
     });
   }
 
-  getBlogPageFromURL() {
-    // Extract page number from current URL (e.g., /blog?page=2 -> 2)
-    const params = new URLSearchParams(window.location.search);
-    return params.get('page') || '1';
-  }
-
-  async loadBlogPost(slug, addTransition) {
+  async loadBlogPost(slug, addTransition, returnPage = 1) {
     this.isNavigating = true;
     try {
       const blogPostContainer = document.getElementById('blog-post-page');
@@ -430,12 +459,13 @@ class SPARouter {
         if (backLink) {
           backLink.addEventListener('click', (e) => {
             e.preventDefault();
-            // Return to the blog page with the page number preserved
-            const pageParam = this.currentBlogPage ? `?page=${this.currentBlogPage}` : '';
-            const backUrl = `/blog${pageParam}`;
-            console.log('[SPA Router] Back to blog - currentBlogPage:', this.currentBlogPage, 'backUrl:', backUrl);
-            window.history.pushState({ page: 'blog' }, '', backUrl);
-            this.switchPage('blog');
+            const backUrl = collectionPath('blog', returnPage);
+            window.history.pushState(
+              { page: 'blog', pageNumber: returnPage },
+              '',
+              backUrl,
+            );
+            this.switchPage('blog', returnPage);
           });
         }
       }
@@ -461,7 +491,7 @@ class SPARouter {
     }
   }
 
-  async loadProject(slug, addTransition) {
+  async loadProject(slug, addTransition, returnPage = 1) {
     this.isNavigating = true;
     try {
       const projectContainer = document.getElementById('project-page');
@@ -498,8 +528,13 @@ class SPARouter {
         if (backLink) {
           backLink.addEventListener('click', (e) => {
             e.preventDefault();
-            window.history.pushState({ page: 'projects' }, '', '/projects');
-            this.switchPage('projects');
+            const backUrl = collectionPath('projects', returnPage);
+            window.history.pushState(
+              { page: 'projects', pageNumber: returnPage },
+              '',
+              backUrl,
+            );
+            this.switchPage('projects', returnPage);
           });
         }
       }

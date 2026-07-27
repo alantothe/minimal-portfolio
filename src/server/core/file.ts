@@ -3,7 +3,7 @@
  * Works on both Bun (local dev) and Node.js (Vercel serverless)
  */
 
-import { readFileSync, writeFileSync, accessSync } from 'fs';
+import { readFileSync, accessSync } from 'fs';
 
 const isBun = typeof globalThis.Bun !== 'undefined';
 
@@ -23,17 +23,5 @@ export async function fileExists(path: string): Promise<boolean> {
     return true;
   } catch {
     return false;
-  }
-}
-
-export async function writeTextFile(path: string, content: string): Promise<void> {
-  if (isBun) {
-    await Bun.write(path, content);
-    return;
-  }
-  try {
-    writeFileSync(path, content, 'utf-8');
-  } catch {
-    // Silently fail on read-only filesystems (e.g. Vercel)
   }
 }

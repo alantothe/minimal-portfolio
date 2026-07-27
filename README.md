@@ -38,7 +38,19 @@ copy `.env.example` to your deployment environment and configure:
 
 - `SITE_URL` — public HTTPS origin used for canonical and social URLs
 - `HOST` / `PORT` — bind address assigned by your host
+- `BLOG_VIEWS_FILE` — path on a writable persistent volume for blog view data
 - `GITHUB_USERNAME` / `GITHUB_TOKEN` — optional commit statistics
+
+before sending production traffic:
+
+- set `SITE_URL` to the final public origin
+- mount persistent storage and point `BLOG_VIEWS_FILE` at it
+- run `bun run check`
+- verify `GET /health`, `/robots.txt`, and `/sitemap.xml`
+
+the JSON view store safely serializes writes within one application process. run
+one instance when view counts matter. use shared database or KV storage before
+deploying to serverless or multiple replicas.
 
 ## create content
 
@@ -71,6 +83,7 @@ src/public/                 # logo, avatar, css
 ```bash
 bun run dev                 # dev server
 bun run start               # production
+bun run check               # typecheck and test
 bun scripts/new-blog.ts     # new blog post
 bun scripts/new-project.ts  # new project
 ```

@@ -46,7 +46,7 @@ before sending production traffic:
 - set `SITE_URL` to the final public origin
 - mount persistent storage and point `BLOG_VIEWS_FILE` at it
 - run `bun run check`
-- verify `GET /health`, `/robots.txt`, and `/sitemap.xml`
+- verify `GET /healthz`, `/robots.txt`, and `/sitemap.xml`
 
 the JSON view store safely serializes writes within one application process. run
 one instance when view counts matter. use shared database or KV storage before

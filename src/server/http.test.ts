@@ -45,7 +45,7 @@ describe("public HTTP behavior", () => {
     expect(await response.text()).toBe("");
   });
 
-  test("health check reports readiness", async () => {
+  test("health check reports liveness", async () => {
     const response = await createRequestHandler().handleRequest(
       new Request("http://portfolio.test/healthz"),
     );

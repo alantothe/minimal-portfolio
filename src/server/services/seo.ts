@@ -27,10 +27,10 @@ export interface SeoMetadata {
   structuredData?: Record<string, unknown>;
 }
 
-function getSiteOrigin(requestUrl: URL): string {
+function parseConfiguredOrigin(): string | null {
   const configuredUrl = process.env.SITE_URL?.trim();
   if (!configuredUrl) {
-    return requestUrl.origin;
+    return null;
   }
 
   try {
@@ -39,10 +39,31 @@ function getSiteOrigin(requestUrl: URL): string {
       return parsed.origin;
     }
   } catch {
-    // Fall through to request origin when SITE_URL is invalid.
+    // The error below gives one consistent configuration message.
   }
 
-  return requestUrl.origin;
+  throw new Error('SITE_URL must be an absolute HTTP(S) URL');
+}
+
+export function validateProductionSiteUrl(): void {
+  if (process.env.NODE_ENV !== 'production') {
+    return;
+  }
+
+  const origin = parseConfiguredOrigin();
+  if (!origin) {
+    throw new Error('SITE_URL is required in production');
+  }
+
+  const url = new URL(origin);
+  if (url.protocol !== 'https:' || url.hostname === 'example.com') {
+    throw new Error('SITE_URL must be the final public HTTPS origin in production');
+  }
+}
+
+function getSiteOrigin(requestUrl: URL): string {
+  validateProductionSiteUrl();
+  return parseConfiguredOrigin() || requestUrl.origin;
 }
 
 function withPage(path: string, page?: number): string {

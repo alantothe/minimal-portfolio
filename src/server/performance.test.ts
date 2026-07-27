@@ -80,4 +80,27 @@ describe("GitHub commit metric", () => {
     expect(await counter.getMonthlyCommitCount()).toBe(0);
     expect(fetchCalls).toBe(0);
   });
+
+  test("backs off after an outage while serving stale data", async () => {
+    let now = new Date("2026-07-27T12:00:00Z");
+    let fetchCalls = 0;
+    const counter = new GitHubCommitCounter({
+      now: () => now,
+      ttlMs: 1_000,
+      failureTtlMs: 30_000,
+      fetch: async () => {
+        fetchCalls += 1;
+        if (fetchCalls > 1) {
+          return new Response(null, { status: 503 });
+        }
+        return Response.json({ total_count: 263 });
+      },
+    });
+
+    expect(await counter.getMonthlyCommitCount("token", "alantothe")).toBe(263);
+    now = new Date(now.getTime() + 2_000);
+    expect(await counter.getMonthlyCommitCount("token", "alantothe")).toBe(263);
+    expect(await counter.getMonthlyCommitCount("token", "alantothe")).toBe(263);
+    expect(fetchCalls).toBe(2);
+  });
 });

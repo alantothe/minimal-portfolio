@@ -10,17 +10,28 @@ import { getBlogPostBySlug } from './blog';
 import { getProjectBySlug } from './projects';
 import { createErrorResponse, NotFoundError } from '../core/errors';
 import { CollectionPageNotFoundError } from '../services/collectionPages';
+import {
+  createSeoMetadata,
+  renderSeoHead,
+  type SeoPageInput,
+} from '../services/seo';
 
 export function createShellHandler(url: URL, params?: Record<string, string>) {
   return async (): Promise<Response> => {
     try {
+      if (url.pathname === '/home') {
+        return new Response(null, {
+          status: 308,
+          headers: { Location: '/' },
+        });
+      }
+
       let html = await readTextFile('./src/pages/shell.html');
       const pathname = url.pathname;
 
       let pageContent = '';
-      let title = 'Portfolio';
-      let description = '';
       let containerId = 'home-page';
+      let seoInput: SeoPageInput = { kind: 'home' };
 
       if (params?.slug && pathname.startsWith('/blog/')) {
         // Blog post route
@@ -28,9 +39,14 @@ export function createShellHandler(url: URL, params?: Record<string, string>) {
         if (post) {
           const wrappedHtml = `<div class="markdown-content">${post.html}</div>`;
           pageContent = `<article class="blog-post"><a href="/blog" class="back-to-blog back-link">&larr; Back to Blog</a><div class="blog-post-content">${wrappedHtml}</div></article>`;
-          title = `${post.metadata.title} - Blog - Portfolio`;
-          description = post.metadata.excerpt || '';
           containerId = 'blog-post-page';
+          seoInput = {
+            kind: 'blog-post',
+            slug: post.slug,
+            title: post.metadata.title,
+            description: post.metadata.excerpt || '',
+            date: post.metadata.date,
+          };
         } else {
           return createErrorResponse(new NotFoundError('Blog post not found'));
         }
@@ -40,15 +56,19 @@ export function createShellHandler(url: URL, params?: Record<string, string>) {
         if (project) {
           const wrappedHtml = `<div class="markdown-content">${project.html}</div>`;
           pageContent = `<article class="project"><a href="/projects" class="back-to-projects back-link">&larr; Back to Projects</a><div class="project-content">${wrappedHtml}</div></article>`;
-          title = `${project.metadata.title} - Portfolio`;
-          description = project.metadata.description || '';
           containerId = 'project-page';
+          seoInput = {
+            kind: 'project',
+            slug: project.slug,
+            title: project.metadata.title,
+            description: project.metadata.description || '',
+          };
         } else {
           return createErrorResponse(new NotFoundError('Project not found'));
         }
       } else {
         // Regular page (home, about, blog listing, projects listing)
-        let pageName = 'home';
+        let pageName: 'home' | 'about' | 'blog' | 'projects' = 'home';
         if (pathname === '/about') pageName = 'about';
         else if (pathname === '/blog') pageName = 'blog';
         else if (pathname === '/projects') pageName = 'projects';
@@ -57,8 +77,10 @@ export function createShellHandler(url: URL, params?: Record<string, string>) {
           const pageNumber = Number(url.searchParams.get('page') || 1);
           const pageData = await loadPageContent(pageName, pageNumber);
           pageContent = pageData.content;
-          title = pageData.title;
           containerId = `${pageName}-page`;
+          seoInput = pageName === 'blog' || pageName === 'projects'
+            ? { kind: pageName, page: pageNumber }
+            : { kind: pageName };
         } catch (error) {
           if (error instanceof CollectionPageNotFoundError) {
             return createErrorResponse(new NotFoundError('Collection page not found'));
@@ -86,14 +108,8 @@ export function createShellHandler(url: URL, params?: Record<string, string>) {
         );
       }
 
-      // Set title
-      html = html.replace('<title>Portfolio</title>', `<title>${title}</title>`);
-
-      // Add meta description for blog posts and projects
-      if (description) {
-        const safeDesc = description.replace(/"/g, '&quot;').replace(/</g, '&lt;');
-        html = html.replace('</head>', `    <meta name="description" content="${safeDesc}">\n</head>`);
-      }
+      const seo = createSeoMetadata(seoInput, url);
+      html = html.replace('<title>Portfolio</title>', renderSeoHead(seo));
 
       return new Response(html, {
         headers: { "Content-Type": "text/html" },

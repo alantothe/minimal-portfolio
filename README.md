@@ -32,6 +32,14 @@ bun run dev
 
 then edit `src/config/index.ts` with your info.
 
+## production environment
+
+copy `.env.example` to your deployment environment and configure:
+
+- `SITE_URL` — public HTTPS origin used for canonical and social URLs
+- `HOST` / `PORT` — bind address assigned by your host
+- `GITHUB_USERNAME` / `GITHUB_TOKEN` — optional commit statistics
+
 ## create content
 
 ```bash

@@ -77,7 +77,7 @@ export const aboutConfig = {
     personal: {
       // Your personal introduction/bio - HTML is allowed
       intro:
-        "I'm a web developer and founder of Questurin. Before this, I worked with the U.S. Air Force's ICBM program. Lately, I've been traveling South America, building projects and gaining fresh perspectives along the way.",
+        "I'm a web developer and founder of Questurian. Before this, I worked with the U.S. Air Force's ICBM program. Lately, I've been traveling South America, building projects and gaining fresh perspectives along the way.",
 
       // Your hobbies/interests outside of work - HTML is allowed
       hobbies:
@@ -90,24 +90,20 @@ export const aboutConfig = {
           name: "Github",
           url: "https://github.com/alantothe",
         },
-        {
-          name: "LinkedIn",
-          url: "https://linkedin.com/in/alanmalpartisdaaaa",
-        },
       ],
     },
 
     // CUSTOM SECTION - Replace this with your own company/project info
-    // You can rename "questurin" to anything (e.g., "myCompany", "sideProject", etc.)
+    // You can rename "questurian" to anything (e.g., "myCompany", "sideProject", etc.)
     // and update the content below
-    questurin: {
-      title: "About Questurin",
+    questurian: {
+      title: "About Questurian",
       description1:
-        "Questurin is the travel platform that makes planning seamless, authentic, and informed. Travelers no longer need to piece together advice from scattered forums, reviews, and blogs. Questurin brings everything into one intelligent, visual experience that organizes the world by how people actually explore it.",
+        "Questurian is the travel platform that makes planning seamless, authentic, and informed. Travelers no longer need to piece together advice from scattered forums, reviews, and blogs. Questurian brings everything into one intelligent, visual experience that organizes the world by how people actually explore it.",
       description2:
-        "Our contributors aren't traditional travel writers—they're digital nomads, solo adventurers, food lovers, and group travelers who share firsthand insights shaped by real journeys. Using Questurin's interactive tools, they create ranked recommendations and story-driven guides that connect places, experiences, and context in a way no static list can.",
+        "Our contributors aren't traditional travel writers—they're digital nomads, solo adventurers, food lovers, and group travelers who share firsthand insights shaped by real journeys. Using Questurian's interactive tools, they create ranked recommendations and story-driven guides that connect places, experiences, and context in a way no static list can.",
       description3:
-        "Starting with Latin America and the Caribbean, Questurin transforms fragmented travel knowledge into trusted, tailored storytelling that helps every traveler plan smarter, travel deeper, and see destinations through the eyes of those who truly know them.",
+        "Starting with Latin America and the Caribbean, Questurian transforms fragmented travel knowledge into trusted, tailored storytelling that helps every traveler plan smarter, travel deeper, and see destinations through the eyes of those who truly know them.",
     },
   },
 };

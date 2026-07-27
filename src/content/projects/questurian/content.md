@@ -22,9 +22,3 @@ A modern travel platform designed to help users discover, plan, and book their n
 - Backend: Node.js with Express
 - Database: PostgreSQL
 - Cloud: AWS deployment
-
-## Impact
-
-- 50,000+ active users
-- 10,000+ destinations covered
-- 95% user satisfaction rating

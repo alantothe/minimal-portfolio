@@ -261,6 +261,23 @@ describe("workflow command integration", () => {
 });
 
 describe("workflow support checks", () => {
+  test("pre-push hook blocks any push targeting remote main", () => {
+    const hook = join(projectRoot, ".husky", "pre-push");
+    const result = run(
+      [
+        "bash",
+        "-c",
+        'printf "%s\\n" "HEAD local-sha refs/heads/main remote-sha" | "$1"',
+        "pre-push-test",
+        hook,
+      ],
+      projectRoot
+    );
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toContain("never push directly to remote main");
+  });
+
   test("guided wizard is valid shell and never invokes mutation helpers", async () => {
     expect(run(["bash", "-n", wizardScript], projectRoot).exitCode).toBe(0);
 
@@ -268,8 +285,10 @@ describe("workflow support checks", () => {
     const marker = "# STAGES — author this section.";
     const stages = wizard.slice(wizard.indexOf(marker));
     expect(stages).not.toMatch(
-      /^\s*(ask_secret|write_env|set_secret|set_var)\s/m
+      /^\s*(ask|ask_secret|write_env|set_secret|set_var)\s/m
     );
+    expect(stages).toContain('elif [[ "$current_branch" == feature/* ]]; then');
+    expect(stages).toContain("is not a managed feature branch");
   });
 
   test("production-only dependency installation succeeds without Husky", async () => {

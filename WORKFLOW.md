@@ -93,7 +93,7 @@ bun run work:learn
 
 Keep the wizard open in one terminal and run the local server in another. It
 pauses at each decision, opens the pull request, and explains what to inspect.
-It never reads, writes, or asks for environment values or secrets.
+It never reads, writes, or asks for project environment values or secrets.
 
 ## What each word means
 

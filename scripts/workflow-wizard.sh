@@ -212,10 +212,15 @@ pause "Read status above, then press Enter."
 stage "Start a feature branch" 2
 current_branch="$(git branch --show-current)"
 if [[ "$current_branch" == "main" ]]; then
-  ask CHANGE_DESCRIPTION "Short change description:"
-  bun run work:start "$CHANGE_DESCRIPTION"
+  printf '  %sShort change description:%s ' "$BOLD" "$RESET"
+  read -r change_description
+  bun run work:start "$change_description"
+elif [[ "$current_branch" == feature/* ]]; then
+  note "Already on $current_branch; keeping existing feature branch."
 else
-  note "Already on $current_branch; keeping existing work branch."
+  warn "\"${current_branch:-detached HEAD}\" is not a managed feature branch"
+  say "Stop here. Return safely to main, then run: bun run work:start"
+  exit 1
 fi
 
 stage "Work locally" 15

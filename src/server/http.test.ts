@@ -19,7 +19,7 @@ describe("public HTTP behavior", () => {
   test.each([
     "/blog/does-not-exist",
     "/projects/does-not-exist",
-    "/projects/%2e%2e%2fprojects%2fminimal-blog",
+    "/projects/%2e%2e%2fprojects%2fminimal-portfolio",
   ])("%s returns a real 404", async (path) => {
     const response = await createRequestHandler().handleRequest(
       new Request(`http://portfolio.test${path}`),
@@ -103,27 +103,20 @@ describe("public HTTP behavior", () => {
     );
   });
 
-  test("project pagination exposes every project through anchors", async () => {
+  test("project listing exposes every selected project through anchors", async () => {
     const handler = createRequestHandler();
     const firstPage = await handler.handleRequest(
       new Request("http://portfolio.test/projects"),
-    );
-    const secondPage = await handler.handleRequest(
-      new Request("http://portfolio.test/projects?page=2"),
     );
     const listApi = await handler.handleRequest(
       new Request("http://portfolio.test/api/projects/list"),
     );
     const firstHtml = await firstPage.text();
-    const secondHtml = await secondPage.text();
     const { projects } = await listApi.json();
-    const discovered = [
-      ...extractDetailLinks(firstHtml, "projects"),
-      ...extractDetailLinks(secondHtml, "projects"),
-    ];
+    const discovered = extractDetailLinks(firstHtml, "projects");
 
     expect(firstHtml).not.toContain("Loading projects...");
-    expect(firstHtml).toContain('href="/projects?page=2"');
+    expect(firstHtml).not.toContain('href="/projects?page=2"');
     expect(discovered.sort()).toEqual(
       projects.map((project: { slug: string }) => project.slug).sort(),
     );
@@ -139,11 +132,11 @@ describe("public HTTP behavior", () => {
 
   test("page fragment API renders requested collection page", async () => {
     const response = await createRequestHandler().handleRequest(
-      new Request("http://portfolio.test/api/page?name=projects&page=2"),
+      new Request("http://portfolio.test/api/page?name=projects"),
     );
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data.content).toContain('href="/projects/le-vino"');
+    expect(data.content).toContain('href="/projects/clip-farm"');
   });
 });

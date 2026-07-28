@@ -135,8 +135,9 @@ export function createSeoMetadata(
   const origin = new URL(canonical).origin;
   const siteName = homeConfig.author.name;
   const role = homeConfig.professional.title;
-  const image = absoluteImageUrl(homeConfig.author.photo, origin);
-  const person = personSchema(origin, image);
+  const image = absoluteImageUrl('/public/og.png', origin);
+  const profileImage = absoluteImageUrl(homeConfig.author.photo, origin);
+  const person = personSchema(origin, profileImage);
 
   switch (input.kind) {
     case 'home':
@@ -258,7 +259,7 @@ export function renderSeoHead(metadata: SeoMetadata): string {
     <meta property="og:description" content="${description}">
     <meta property="og:url" content="${canonical}">
     <meta property="og:image" content="${image}">
-    <meta name="twitter:card" content="summary">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${title}">
     <meta name="twitter:description" content="${description}">
     <meta name="twitter:image" content="${image}">${publishedTime}${structuredData}`;

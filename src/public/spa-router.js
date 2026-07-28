@@ -328,7 +328,7 @@ class SPARouter {
     setMeta('property', 'og:description', metadata.description);
     setMeta('property', 'og:url', metadata.canonical);
     setMeta('property', 'og:image', metadata.image);
-    setMeta('name', 'twitter:card', 'summary');
+    setMeta('name', 'twitter:card', 'summary_large_image');
     setMeta('name', 'twitter:title', metadata.title);
     setMeta('name', 'twitter:description', metadata.description);
     setMeta('name', 'twitter:image', metadata.image);
@@ -561,12 +561,10 @@ class SPARouter {
 
       if (projectContainer) {
         projectContainer.innerHTML = `
-          <article class="project">
-            <a href="/projects" class="back-to-projects back-link">&larr; Back to Projects</a>
-            <div class="project-content">
-              ${data.html}
-            </div>
-          </article>
+          <div class="project-page-shell">
+            <a href="/projects" class="back-to-projects back-link">&larr; All projects</a>
+            ${data.html}
+          </div>
         `;
         projectContainer.classList.add('active');
 

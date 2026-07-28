@@ -16,6 +16,98 @@ export interface ProjectSummary {
   description?: string;
   image?: string;
   date?: string;
+  kicker?: string;
+  stack?: string[];
+  accent?: string;
+  order?: number;
+  year?: string | number;
+}
+
+export interface ProjectDetail {
+  slug: string;
+  metadata: Record<string, any>;
+  html: string;
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function safeAccent(value: unknown): string {
+  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)
+    ? value
+    : '#8aa0b2';
+}
+
+function safeExternalUrl(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function renderProjectLink(url: string, label: string): string {
+  return `<a class="project-action" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(label)}<span aria-hidden="true">↗</span></a>`;
+}
+
+export function renderProjectArticle(project: ProjectDetail): string {
+  const { metadata } = project;
+  const accent = safeAccent(metadata.accent);
+  const stack = Array.isArray(metadata.stack)
+    ? metadata.stack.filter((item): item is string => typeof item === 'string')
+    : [];
+  const repository = safeExternalUrl(metadata.repository);
+  const live = safeExternalUrl(metadata.live);
+  const actions = [
+    live ? renderProjectLink(live, 'Visit project') : '',
+    repository ? renderProjectLink(repository, 'View repository') : '',
+  ].filter(Boolean).join('');
+
+  const facts = [
+    ['Role', metadata.role],
+    ['Status', metadata.status],
+    ['Year', metadata.year],
+  ].filter((fact): fact is [string, string | number] => (
+    typeof fact[1] === 'string' || typeof fact[1] === 'number'
+  ));
+
+  return `
+    <article class="project-case-study" style="--project-accent: ${accent}">
+      <header class="project-hero">
+        <p class="project-kicker">${escapeHtml(metadata.kicker || 'Selected project')}</p>
+        <h1>${escapeHtml(metadata.title)}</h1>
+        <p class="project-dek">${escapeHtml(metadata.description || '')}</p>
+        <div class="project-facts">
+          ${facts.map(([label, value]) => `
+            <div class="project-fact">
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+            </div>
+          `).join('')}
+        </div>
+        ${stack.length > 0 ? `
+          <ul class="project-stack" aria-label="Technology stack">
+            ${stack.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+          </ul>
+        ` : ''}
+        ${actions ? `<div class="project-actions">${actions}</div>` : ''}
+      </header>
+      <div class="project-case-study__body markdown-content">
+        ${project.html}
+      </div>
+    </article>
+  `.trim();
 }
 
 /**
@@ -38,7 +130,19 @@ export async function getAllProjects(): Promise<ProjectSummary[]> {
             title: project.metadata.title,
             description: project.metadata.description,
             image: project.metadata.image,
-            date: project.metadata.date
+            date: project.metadata.date,
+            kicker: project.metadata.kicker,
+            stack: Array.isArray(project.metadata.stack)
+              ? project.metadata.stack
+              : [],
+            accent: project.metadata.accent,
+            order: typeof project.metadata.order === 'number'
+              ? project.metadata.order
+              : undefined,
+            year: typeof project.metadata.year === 'string'
+              || typeof project.metadata.year === 'number'
+              ? project.metadata.year
+              : undefined,
           };
         } catch (error) {
           console.error(`Error reading project ${dir}:`, error);
@@ -47,9 +151,13 @@ export async function getAllProjects(): Promise<ProjectSummary[]> {
       })
     );
 
-    // Filter out null entries and sort by date (newest first) if available
+    // Explicit portfolio order wins. Date remains the fallback for older content.
     const valid = projects.filter((p): p is ProjectSummary => p !== null);
     valid.sort((a, b) => {
+      if (a.order !== undefined || b.order !== undefined) {
+        return (a.order ?? Number.MAX_SAFE_INTEGER)
+          - (b.order ?? Number.MAX_SAFE_INTEGER);
+      }
       if (a.date && b.date) {
         return new Date(b.date).getTime() - new Date(a.date).getTime();
       }
@@ -65,7 +173,7 @@ export async function getAllProjects(): Promise<ProjectSummary[]> {
 /**
  * Get a single project by slug
  */
-export async function getProjectBySlug(slug: string) {
+export async function getProjectBySlug(slug: string): Promise<ProjectDetail | null> {
   try {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
       return null;
@@ -147,8 +255,7 @@ export function createProjectHandler(url: URL, params?: Record<string, string>) 
         );
       }
 
-      // Wrap HTML content with markdown-content class for styling
-      const wrappedHtml = `<div class="markdown-content">${project.html}</div>`;
+      const renderedHtml = renderProjectArticle(project);
       const seo = createSeoMetadata({
         kind: 'project',
         slug: project.slug,
@@ -157,7 +264,7 @@ export function createProjectHandler(url: URL, params?: Record<string, string>) 
       }, url);
 
       return new Response(
-        JSON.stringify({ ...project, html: wrappedHtml, seo }),
+        JSON.stringify({ ...project, html: renderedHtml, seo }),
         {
           headers: {
             'Content-Type': 'application/json',

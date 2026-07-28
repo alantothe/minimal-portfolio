@@ -2,7 +2,7 @@ import type { BlogPostSummary } from '../handlers/blog';
 import type { ProjectSummary } from '../handlers/projects';
 
 export const BLOG_PAGE_SIZE = 4;
-export const PROJECT_PAGE_SIZE = 3;
+export const PROJECT_PAGE_SIZE = 6;
 
 export class CollectionPageNotFoundError extends Error {
   constructor() {
@@ -79,19 +79,31 @@ export function renderProjectCollection(projects: ProjectSummary[], page: number
   const itemsHtml = pageItems.length === 0
     ? '<p class="no-projects">No projects yet. Check back soon!</p>'
     : pageItems.map(project => {
-      const image = project.image
-        ? `<div class="project-image image-loading-container"><img src="${escapeHtml(project.image)}" alt="${escapeHtml(project.title)}" width="300" height="180"></div>`
-        : '<div class="project-image"><div class="project-image-placeholder"></div></div>';
-      const year = project.date ? new Date(project.date).getFullYear() : '';
+      const year = project.year
+        ?? (project.date ? new Date(project.date).getFullYear() : '');
+      const accent = typeof project.accent === 'string'
+        && /^#[0-9a-f]{6}$/i.test(project.accent)
+        ? project.accent
+        : '#8aa0b2';
+      const stack = Array.isArray(project.stack)
+        ? project.stack.slice(0, 4)
+        : [];
 
       return `
-        <article class="project-card">
-          <a href="/projects/${encodeURIComponent(project.slug)}" class="project-link" data-project-id="${escapeHtml(project.slug)}">
-            ${image}
-            <div class="project-content">
-              <h2 class="project-title">${escapeHtml(project.title)}</h2>
-              <span class="project-timestamp">${year}</span>
+        <article class="project-card" style="--project-accent: ${accent}">
+          <a href="/projects/${encodeURIComponent(project.slug)}" class="project-link" data-project-id="${escapeHtml(project.slug)}" aria-label="Read ${escapeHtml(project.title)} case study">
+            <div class="project-card__topline">
+              <span class="project-card__type">${escapeHtml(project.kicker || 'Project')}</span>
+              <span class="project-card__year">${year}</span>
             </div>
+            <h2 class="project-title">${escapeHtml(project.title)}</h2>
+            ${project.description ? `<p class="project-summary">${escapeHtml(project.description)}</p>` : ''}
+            ${stack.length > 0 ? `
+              <ul class="project-card__stack" aria-label="Technology stack">
+                ${stack.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+              </ul>
+            ` : ''}
+            <span class="project-card__arrow" aria-hidden="true">↗</span>
           </a>
         </article>
       `;

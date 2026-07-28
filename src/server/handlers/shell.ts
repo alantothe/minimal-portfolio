@@ -7,7 +7,7 @@
 import { readTextFile } from '../core/file';
 import { loadPageContent } from './api';
 import { getBlogPostBySlug } from './blog';
-import { getProjectBySlug } from './projects';
+import { getProjectBySlug, renderProjectArticle } from './projects';
 import { createErrorResponse, NotFoundError } from '../core/errors';
 import { CollectionPageNotFoundError } from '../services/collectionPages';
 import {
@@ -68,8 +68,7 @@ export function createShellHandler(
         // Project route
         const project = await getProjectBySlug(params.slug);
         if (project) {
-          const wrappedHtml = `<div class="markdown-content">${project.html}</div>`;
-          pageContent = `<article class="project"><a href="/projects" class="back-to-projects back-link">&larr; Back to Projects</a><div class="project-content">${wrappedHtml}</div></article>`;
+          pageContent = `<div class="project-page-shell"><a href="/projects" class="back-to-projects back-link">&larr; All projects</a>${renderProjectArticle(project)}</div>`;
           containerId = 'project-page';
           pageCss = '/pages/projects/styles.css';
           seoInput = {

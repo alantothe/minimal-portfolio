@@ -43,7 +43,7 @@ describe("search metadata", () => {
     ["/blog", "Alan Malpartida"],
     ["/projects", "Alan Malpartida"],
     ["/blog/who-is-alan-malpartida-software-engineer-and-founder", "Who Is Alan Malpartida"],
-    ["/projects/minimal-blog", "Minimal Blog Platform"],
+    ["/projects/minimal-portfolio", "Minimal Portfolio"],
   ])("%s has unique metadata and social tags", async (path, titleText) => {
     const response = await createRequestHandler().handleRequest(
       new Request(`http://portfolio.test${path}`),
@@ -63,19 +63,16 @@ describe("search metadata", () => {
     expect(html).toContain('<meta property="og:title"');
     expect(html).toContain('<meta property="og:description"');
     expect(html).toContain('<meta property="og:url"');
-    expect(html).toContain('<meta name="twitter:card" content="summary">');
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
   });
 
   test("pagination keeps its page in the canonical URL", async () => {
-    const response = await createRequestHandler().handleRequest(
-      new Request("http://portfolio.test/projects?page=2"),
+    const metadata = createSeoMetadata(
+      { kind: "projects", page: 2 },
+      new URL("http://portfolio.test/projects?page=2"),
     );
-    const html = await response.text();
 
-    expect(getAttribute(
-      html,
-      /<link rel="canonical" href="([^"]+)">/,
-    )).toBe("https://alan.example/projects?page=2");
+    expect(metadata.canonical).toBe("https://alan.example/projects?page=2");
   });
 
   test("/home permanently redirects to the canonical home URL", async () => {
@@ -175,8 +172,9 @@ describe("search metadata", () => {
       const head = renderSeoHead(metadata);
 
       expect(metadata.title).toContain("Example Engineer");
-      expect(metadata.image).toBe("https://cdn.example/profile.webp");
+      expect(metadata.image).toBe("https://alan.example/public/og.png");
       expect(schema.name).toBe("Example Engineer");
+      expect(schema.image).toBe("https://cdn.example/profile.webp");
       expect(schema.jobTitle).toBe("Principal Engineer");
       expect(schema.sameAs).toEqual(["https://github.com/example"]);
       expect(head).toContain(

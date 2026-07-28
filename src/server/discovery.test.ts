@@ -49,7 +49,7 @@ describe("search discovery", () => {
     expect(urls).toContain("https://alan.example/about");
     expect(urls).toContain("https://alan.example/blog");
     expect(urls).toContain("https://alan.example/projects");
-    expect(urls).toContain("https://alan.example/projects?page=2");
+    expect(urls).not.toContain("https://alan.example/projects?page=2");
     expect(new Set(urls).size).toBe(urls.length);
     expect(urls.some(url => url.includes("/api/"))).toBeFalse();
     expect(urls).not.toContain("https://alan.example/home");

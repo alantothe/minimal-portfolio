@@ -4,8 +4,8 @@ import { aboutConfig } from "../config";
 const questurianProject = Bun.file(
   "./src/content/projects/questurian/content.md",
 );
-const minimalBlogProject = Bun.file(
-  "./src/content/projects/minimal-blog/content.md",
+const minimalPortfolioProject = Bun.file(
+  "./src/content/projects/minimal-portfolio/content.md",
 );
 const profilePost = Bun.file(
   "./src/content/blog/who-is-alan-malpartida-software-engineer-and-founder.md",
@@ -26,7 +26,7 @@ describe("published portfolio content", () => {
     expect(await questurianProject.text()).not.toMatch(
       /50,000|10,000|95% user satisfaction/,
     );
-    expect(await minimalBlogProject.text()).not.toMatch(
+    expect(await minimalPortfolioProject.text()).not.toMatch(
       /200ms server startup|5ms navigation/,
     );
   });

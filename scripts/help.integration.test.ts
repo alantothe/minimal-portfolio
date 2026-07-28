@@ -18,8 +18,13 @@ describe("project help command", () => {
     expect(output).toContain('bun run work:start "change description"');
     expect(output).toContain("bun run work:submit");
     expect(output).toContain("Squash and merge");
+    expect(output).toContain("Resolve open conversations");
+    expect(output).toContain("Check GitHub Actions");
     expect(output).toContain("Railway deploys production");
     expect(output).toContain("bun run work:finish");
+    expect(output).toContain("SITE_URL");
+    expect(output).toContain("bun scripts/new-blog.ts");
+    expect(output).toContain("bun scripts/new-project.ts");
 
     expect(output.indexOf("bun run dev")).toBeLessThan(
       output.indexOf("bun run work:submit")

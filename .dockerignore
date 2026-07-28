@@ -1,0 +1,13 @@
+.git
+.github
+.wrangler
+node_modules
+coverage
+*.log
+.DS_Store
+
+.env
+.env.*
+!.env.example
+
+package-lock.json

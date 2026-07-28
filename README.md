@@ -52,6 +52,20 @@ the JSON view store safely serializes writes within one application process. run
 one instance when view counts matter. use shared database or KV storage before
 deploying to serverless or multiple replicas.
 
+### railway
+
+the included `Dockerfile` and `railway.json` run one always-on instance in
+railway's us east region. attach a persistent volume at `/data`, then configure:
+
+```text
+SITE_URL=https://your-domain.example
+BLOG_VIEWS_FILE=/data/blog-views.json
+GITHUB_USERNAME=your-github-username
+```
+
+set `GITHUB_TOKEN` as a railway secret. railway provides `PORT`; do not set it
+manually.
+
 ## create content
 
 ```bash

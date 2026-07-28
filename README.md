@@ -33,6 +33,12 @@ then edit `src/config/index.ts` with your info.
 development startup logs show the current git branch and next safe workflow
 command. read [WORKFLOW.md](./WORKFLOW.md) before making changes.
 
+need a quick command guide:
+
+```bash
+bun run help
+```
+
 ## safe development workflow
 
 ```bash
@@ -114,6 +120,7 @@ src/public/                 # logo, avatar, css
 bun run dev                 # dev server
 bun run start               # production
 bun run check               # typecheck and test
+bun run help                # quick local and deployment guide
 bun run work:status         # explain current git state
 bun run work:learn          # guided feature-to-production workflow
 bun scripts/new-blog.ts     # new blog post

@@ -1,6 +1,7 @@
 ---
 title: Minimal Portfolio
 description: A source-controlled portfolio and publishing system with server-rendered pages, SPA navigation, durable view tracking, and production web safeguards.
+image: /public/og.png
 kicker: Personal publishing · Web platform
 role: Designer and full-stack engineer
 status: "Live portfolio"

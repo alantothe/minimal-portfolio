@@ -1,6 +1,7 @@
 ---
 title: Questurian
 description: "A full-stack travel publishing platform connecting structured destination data, editorial tooling, media pipelines, and location-first discovery."
+image: "https://res.cloudinary.com/dz18m79a1/image/upload/c_fill,w_300,h_180/v1761780791/questura_rbayjx.png"
 kicker: "Travel publishing platform"
 role: "Founding Engineer"
 status: "Active product"

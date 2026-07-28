@@ -191,6 +191,7 @@ bun run work:status    # explain current Git state
 bun run work:submit    # test, push, and open draft PR
 bun run work:finish    # sync main and remove merged local branch
 bun run work:learn     # guided full workflow
+bun run help           # quick command guide
 bun run dev            # local development server
 bun run check          # typecheck and test
 ```

@@ -7,6 +7,9 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/marked": "^6.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.2.0",
+    "prettier": "^3.9.6",
     "wrangler": "^4.114.0"
   },
   "scripts": {
@@ -14,7 +17,13 @@
     "dev": "bun --watch index.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "check": "bun run typecheck && bun test"
+    "check": "bun run typecheck && bun test",
+    "prepare": "if command -v husky >/dev/null 2>&1; then husky; fi",
+    "work:start": "bun scripts/workflow.ts start",
+    "work:status": "bun scripts/workflow.ts status",
+    "work:submit": "bun scripts/workflow.ts submit",
+    "work:finish": "bun scripts/workflow.ts finish",
+    "work:learn": "bash scripts/workflow-wizard.sh"
   },
   "peerDependencies": {
     "typescript": "^5"

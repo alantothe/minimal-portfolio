@@ -1,14 +1,13 @@
-import { Router } from './core/router';
-import { RequestHandler } from './core/requestHandler';
-import { setupRoutes } from './routes';
-import { serverConfig, getServerUrl } from './core/config';
-import { syncViewsWithBlogPosts } from './services/views';
-import { validateProductionSiteUrl } from './services/seo';
-
+import { Router } from "./core/router";
+import { RequestHandler } from "./core/requestHandler";
+import { setupRoutes } from "./routes";
+import { serverConfig, getServerUrl } from "./core/config";
+import { syncViewsWithBlogPosts } from "./services/views";
+import { validateProductionSiteUrl } from "./services/seo";
+import { logDevelopmentWorkflowBanner } from "./core/developmentWorkflow";
 
 const router = new Router();
 setupRoutes(router);
-
 
 const requestHandler = new RequestHandler(router);
 
@@ -27,3 +26,4 @@ const server = Bun.serve({
 });
 
 console.log(`Server running at ${getServerUrl(server.port)}`);
+logDevelopmentWorkflowBanner();

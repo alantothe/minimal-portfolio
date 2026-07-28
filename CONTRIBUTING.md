@@ -3,41 +3,41 @@
 Production deploys from `main` only. GitHub protects `main`, runs CI on every
 pull request, and deploys a merged commit to Railway after CI passes.
 
-## Make a change
+## Recommended guided workflow
+
+New to Git? Read [WORKFLOW.md](./WORKFLOW.md), then run:
 
 ```bash
-git switch main
-git pull --ff-only
-git switch -c feature/short-description
-
-bun install
-bun run dev
+bun run work:learn
 ```
 
-Make and test the change, then run:
+For normal daily use:
 
 ```bash
+bun run work:start
+bun run dev
+
+# Make one focused change.
 bun run check
 git status
 git diff
 git add path/to/intended-file
 git commit -m "Describe the change"
-git push -u origin feature/short-description
+bun run work:submit
 ```
 
-Open a pull request into `main`. Review the Files changed tab and wait for the
-required `check` job to pass. Resolve any open review conversations, then use
-**Squash and merge**.
+Review the draft pull request's Files changed tab and wait for required `check`
+to pass. Mark it Ready for review, resolve open conversations, then use **Squash
+and merge**.
 
 After the merge, GitHub Actions checks `main`, deploys it to Railway, waits for
 Railway's health check, and verifies the public `/healthz` endpoint. GitHub
 automatically deletes the merged feature branch.
 
-Refresh locally before the next change:
+After GitHub says the pull request is merged:
 
 ```bash
-git switch main
-git pull --ff-only
+bun run work:finish
 ```
 
 ## Do
@@ -45,7 +45,8 @@ git pull --ff-only
 - Use one short-lived feature branch per change.
 - Start each branch from current `main`.
 - Keep pull requests small enough to review in one sitting.
-- Run `bun run check` before pushing.
+- Use `bun run work:status` whenever unsure.
+- Use `bun run work:submit` so checks run before pushing.
 - Read the diff and confirm only intended files are included.
 - Check the GitHub Actions result after merging.
 - Review your own pull request carefully; this is currently a solo repository,
@@ -60,3 +61,4 @@ git pull --ff-only
 - Do not reuse an old merged branch for unrelated work.
 - Do not deploy from a laptop during the normal workflow. Manual Railway deploys
   are for intentional recovery only.
+- Do not bypass hooks with `--no-verify` during routine work.

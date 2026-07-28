@@ -1,0 +1,9 @@
+current_branch="$(git branch --show-current)"
+
+if [ "$current_branch" = "main" ]; then
+  echo "Blocked: never push directly from main."
+  echo "Run: bun run work:start"
+  exit 1
+fi
+
+bun run check

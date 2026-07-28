@@ -261,7 +261,15 @@ describe("workflow command integration", () => {
 });
 
 describe("workflow support checks", () => {
-  test("pre-push hook blocks any push targeting remote main", () => {
+  test("pre-push hook blocks any push targeting remote main", async () => {
+    const fixture = await createFixture();
+    const start = run(
+      [process.execPath, workflowScript, "start", "Hook Test"],
+      fixture.repository,
+      fixture.environment
+    );
+    expect(start.exitCode).toBe(0);
+
     const hook = join(projectRoot, ".husky", "pre-push");
     const result = run(
       [
@@ -271,7 +279,7 @@ describe("workflow support checks", () => {
         "pre-push-test",
         hook,
       ],
-      projectRoot
+      fixture.repository
     );
 
     expect(result.exitCode).toBe(1);

@@ -2,9 +2,7 @@
 
 a lightweight personal portfolio and blog. customize in minutes, add content with cli tools.
 
-
 https://github.com/user-attachments/assets/3516996e-6c8c-4123-bc20-fbfcd3a6d133
-
 
 <h2 style="margin-bottom: 0.5rem;">built with:</h2>
 <p>
@@ -31,6 +29,23 @@ bun run dev
 ```
 
 then edit `src/config/index.ts` with your info.
+
+development startup logs show the current git branch and next safe workflow
+command. read [WORKFLOW.md](./WORKFLOW.md) before making changes.
+
+## safe development workflow
+
+```bash
+bun run work:start     # sync main and create a feature branch
+bun run work:status    # explain current branch and next action
+bun run work:submit    # test, push, and open a draft pull request
+bun run work:finish    # sync main after merge and delete local feature branch
+bun run work:learn     # guided full workflow
+```
+
+routine changes never push directly from local `main`. github branch protection,
+local hooks, pull-request checks, and railway health verification enforce the
+path from feature branch to production.
 
 ## production environment
 
@@ -78,6 +93,7 @@ both are interactive - just answer the prompts.
 ## setup
 
 see [src/config/README.md](./src/config/README.md) for:
+
 - full customization guide
 - github token setup
 - blog & project specs (cover images: 300×180px)
@@ -98,6 +114,8 @@ src/public/                 # logo, avatar, css
 bun run dev                 # dev server
 bun run start               # production
 bun run check               # typecheck and test
+bun run work:status         # explain current git state
+bun run work:learn          # guided feature-to-production workflow
 bun scripts/new-blog.ts     # new blog post
 bun scripts/new-project.ts  # new project
 ```

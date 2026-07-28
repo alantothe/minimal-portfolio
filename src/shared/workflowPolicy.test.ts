@@ -4,9 +4,10 @@ import {
   formatWorkflowStatus,
   isSensitivePath,
   slugifyDescription,
+  validateFinishSafety,
   validateStartSafety,
   validateSubmitSafety,
-} from "./workflow-lib";
+} from "./workflowPolicy";
 
 describe("workflow guardrails", () => {
   test("creates safe branch slugs", () => {
@@ -14,9 +15,10 @@ describe("workflow guardrails", () => {
     expect(slugifyDescription("!!!")).toBe("");
   });
 
-  test("classifies main, work, and detached states", () => {
+  test("classifies main, managed work, other, and detached states", () => {
     expect(classifyBranch("main")).toBe("main");
     expect(classifyBranch("feature/contact-page")).toBe("work");
+    expect(classifyBranch("fix/contact-page")).toBe("other");
     expect(classifyBranch("")).toBe("detached");
   });
 
@@ -69,6 +71,37 @@ describe("workflow guardrails", () => {
         changedPaths: ["src/pages/contact.ts"],
       })
     ).toEqual([]);
+
+    expect(
+      validateSubmitSafety({
+        branch: "fix/contact-page",
+        clean: true,
+        commitCount: 1,
+        changedPaths: [],
+      })
+    ).toContainEqual(expect.stringContaining("Submission blocked"));
+  });
+
+  test("blocks cleanup when a feature branch changed after its PR merged", () => {
+    expect(
+      validateFinishSafety({
+        branch: "feature/contact-page",
+        clean: true,
+        pullRequestState: "MERGED",
+        currentHead: "new-local-commit",
+        pullRequestHead: "merged-pr-head",
+      })
+    ).toContainEqual(expect.stringContaining("commits made after"));
+
+    expect(
+      validateFinishSafety({
+        branch: "feature/contact-page",
+        clean: true,
+        pullRequestState: "MERGED",
+        currentHead: "merged-pr-head",
+        pullRequestHead: "merged-pr-head",
+      })
+    ).toEqual([]);
   });
 
   test("explains next action from current state", () => {
@@ -81,5 +114,11 @@ describe("workflow guardrails", () => {
         clean: false,
       })
     ).toContain("[workflow] next: review, stage, and commit intended changes");
+    expect(
+      formatWorkflowStatus({
+        branch: "fix/contact-page",
+        clean: true,
+      })
+    ).toContainEqual(expect.stringContaining("not a managed feature branch"));
   });
 });

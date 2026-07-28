@@ -1,6 +1,7 @@
 export const PRIMARY_BRANCH = "main";
+export const WORK_BRANCH_PREFIX = "feature/";
 
-export type BranchKind = "main" | "work" | "detached";
+export type BranchKind = "main" | "work" | "other" | "detached";
 
 export function slugifyDescription(description: string): string {
   return description
@@ -13,7 +14,8 @@ export function slugifyDescription(description: string): string {
 export function classifyBranch(branch: string): BranchKind {
   if (!branch) return "detached";
   if (branch === PRIMARY_BRANCH) return "main";
-  return "work";
+  if (branch.startsWith(WORK_BRANCH_PREFIX)) return "work";
+  return "other";
 }
 
 export function isSensitivePath(path: string): boolean {
@@ -83,6 +85,11 @@ export function validateSubmitSafety(input: SubmitSafetyInput): string[] {
   if (branchKind === "detached") {
     errors.push("Submission blocked from a detached commit.");
   }
+  if (branchKind === "other") {
+    errors.push(
+      `Submission blocked from "${input.branch}". Start work with bun run work:start so the branch begins with "${WORK_BRANCH_PREFIX}".`
+    );
+  }
   if (!input.clean) {
     errors.push(
       "Commit your intended changes before submission. Automatic staging is intentionally disabled."
@@ -96,6 +103,42 @@ export function validateSubmitSafety(input: SubmitSafetyInput): string[] {
   if (sensitivePaths.length > 0) {
     errors.push(
       `Possible secret files detected: ${sensitivePaths.join(", ")}. Remove them from Git history before pushing.`
+    );
+  }
+
+  return errors;
+}
+
+export interface FinishSafetyInput {
+  branch: string;
+  clean: boolean;
+  pullRequestState: string;
+  currentHead: string;
+  pullRequestHead: string;
+}
+
+export function validateFinishSafety(input: FinishSafetyInput): string[] {
+  const errors: string[] = [];
+  const branchKind = classifyBranch(input.branch);
+
+  if (branchKind !== "work") {
+    errors.push("Finish must run from a feature branch.");
+  }
+  if (!input.clean) {
+    errors.push(
+      "Working tree is not clean. Commit or discard intended work first."
+    );
+  }
+  if (input.pullRequestState !== "MERGED") {
+    errors.push(`PR is ${input.pullRequestState}, not MERGED.`);
+  }
+  if (
+    input.currentHead &&
+    input.pullRequestHead &&
+    input.currentHead !== input.pullRequestHead
+  ) {
+    errors.push(
+      "This branch contains commits made after the pull request was merged. Cleanup stopped so those commits are not deleted."
     );
   }
 
@@ -126,6 +169,16 @@ export function formatWorkflowStatus(input: WorkflowStatusInput): string[] {
   if (branchKind === "detached") {
     lines.push("[workflow] WARNING: Git is not currently on a named branch.");
     lines.push("[workflow] next: bun run work:status");
+    return lines;
+  }
+
+  if (branchKind === "other") {
+    lines.push(
+      `[workflow] WARNING: "${input.branch}" is not a managed feature branch.`
+    );
+    lines.push(
+      "[workflow] do not submit it; return to main and run work:start."
+    );
     return lines;
   }
 

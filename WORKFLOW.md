@@ -79,8 +79,9 @@ After GitHub says the pull request is merged:
 bun run work:finish
 ```
 
-The command verifies the pull request is merged, updates local `main`, and
-deletes the merged local feature branch.
+The command verifies the pull request is merged and that no newer local commits
+would be lost. It then updates local `main` and deletes the merged local feature
+branch.
 
 ## Learn with the guided wizard
 
@@ -92,6 +93,7 @@ bun run work:learn
 
 Keep the wizard open in one terminal and run the local server in another. It
 pauses at each decision, opens the pull request, and explains what to inspect.
+It never reads, writes, or asks for environment values or secrets.
 
 ## What each word means
 

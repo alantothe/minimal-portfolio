@@ -1,5 +1,8 @@
-import { describe, expect, test } from "bun:test";
-import { formatDevelopmentWorkflowBanner } from "./developmentWorkflow";
+import { describe, expect, spyOn, test } from "bun:test";
+import {
+  formatDevelopmentWorkflowBanner,
+  logDevelopmentWorkflowBanner,
+} from "./developmentWorkflow";
 
 describe("development workflow banner", () => {
   test("warns developers not to edit clean main", () => {
@@ -20,7 +23,7 @@ describe("development workflow banner", () => {
     });
 
     expect(banner).toContain("WARNING");
-    expect(banner).toContain("bun run work:status");
+    expect(banner).toContain("do not push");
   });
 
   test("marks a feature branch safe for local work", () => {
@@ -30,7 +33,7 @@ describe("development workflow banner", () => {
     });
 
     expect(banner).toContain("safe local work branch");
-    expect(banner).toContain("bun run work:status");
+    expect(banner).toContain("review, stage, and commit");
   });
 
   test("warns when Git is detached", () => {
@@ -39,6 +42,25 @@ describe("development workflow banner", () => {
       clean: true,
     });
 
-    expect(banner).toContain("not on a named branch");
+    expect(banner).toContain("not currently on a named branch");
+  });
+
+  test("warns that unrecognized branches are not managed work branches", () => {
+    const banner = formatDevelopmentWorkflowBanner({
+      branch: "fix/contact-page",
+      clean: true,
+    });
+
+    expect(banner).toContain("not a managed feature branch");
+    expect(banner).toContain("do not submit");
+  });
+
+  test("prints nothing in production", () => {
+    const log = spyOn(console, "log").mockImplementation(() => {});
+
+    logDevelopmentWorkflowBanner("production");
+
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
   });
 });

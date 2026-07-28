@@ -1,11 +1,13 @@
 import { createInterface } from "node:readline/promises";
 import {
   PRIMARY_BRANCH,
+  WORK_BRANCH_PREFIX,
   formatWorkflowStatus,
   slugifyDescription,
+  validateFinishSafety,
   validateStartSafety,
   validateSubmitSafety,
-} from "./workflow-lib";
+} from "../src/shared/workflowPolicy";
 
 interface CommandResult {
   exitCode: number;
@@ -148,7 +150,7 @@ async function start(descriptionParts: string[]): Promise<void> {
     run(["git", "pull", "--ff-only", "origin", PRIMARY_BRANCH]);
   }
 
-  const workBranch = `feature/${slugifyDescription(description)}`;
+  const workBranch = `${WORK_BRANCH_PREFIX}${slugifyDescription(description)}`;
   const localBranch = output(
     ["git", "show-ref", "--verify", "--quiet", `refs/heads/${workBranch}`],
     true
@@ -160,6 +162,28 @@ async function start(descriptionParts: string[]): Promise<void> {
   if (localBranch.exitCode === 0 || remoteBranch.exitCode === 0) {
     throw new Error(
       `Branch "${workBranch}" already exists. Choose another description.`
+    );
+  }
+
+  requireGitHub();
+  const priorPullRequests = JSON.parse(
+    output([
+      "gh",
+      "pr",
+      "list",
+      "--head",
+      workBranch,
+      "--state",
+      "all",
+      "--json",
+      "url,state",
+      "--limit",
+      "1",
+    ]).stdout
+  ) as Array<{ state: string; url: string }>;
+  if (priorPullRequests.length > 0) {
+    throw new Error(
+      `Branch name "${workBranch}" was used by an earlier pull request. Choose a different description so each change has a new branch.`
     );
   }
 
@@ -197,13 +221,19 @@ async function submit(): Promise<void> {
 
   const changedPathsResult = output([
     "git",
-    "diff",
+    "log",
+    "--format=",
     "--name-only",
-    `origin/${PRIMARY_BRANCH}...HEAD`,
+    `origin/${PRIMARY_BRANCH}..HEAD`,
   ]);
-  const changedPaths = changedPathsResult.stdout
-    ? changedPathsResult.stdout.split("\n")
-    : [];
+  const changedPaths = [
+    ...new Set(
+      changedPathsResult.stdout
+        .split("\n")
+        .map((path) => path.trim())
+        .filter(Boolean)
+    ),
+  ];
   const commitCount = Number.parseInt(
     output(["git", "rev-list", "--count", `origin/${PRIMARY_BRANCH}..HEAD`])
       .stdout,
@@ -227,19 +257,33 @@ async function submit(): Promise<void> {
 
   run(["bun", "run", "check"]);
   requireGitHub();
-  run(["git", "push", "-u", "origin", branch]);
+  const pullRequests = JSON.parse(
+    output([
+      "gh",
+      "pr",
+      "list",
+      "--head",
+      branch,
+      "--state",
+      "all",
+      "--json",
+      "url,state,isDraft",
+      "--limit",
+      "1",
+    ]).stdout
+  ) as Array<{ url: string; state: string; isDraft: boolean }>;
+  const existingPullRequest = pullRequests[0];
+  if (existingPullRequest && existingPullRequest.state !== "OPEN") {
+    throw new Error(
+      `This branch belongs to an old ${existingPullRequest.state} pull request. Start a new feature branch instead: ${existingPullRequest.url}`
+    );
+  }
 
-  const existingPullRequest = output(
-    ["gh", "pr", "view", branch, "--json", "url,state,isDraft"],
-    true
-  );
+  run(["git", "push", "-u", "origin", branch]);
   let pullRequestUrl = "";
 
-  if (existingPullRequest.exitCode === 0) {
-    const pullRequest = JSON.parse(existingPullRequest.stdout) as {
-      url: string;
-    };
-    pullRequestUrl = pullRequest.url;
+  if (existingPullRequest) {
+    pullRequestUrl = existingPullRequest.url;
     console.log("[workflow] existing PR found.");
   } else {
     pullRequestUrl = output([
@@ -263,14 +307,15 @@ async function submit(): Promise<void> {
 
 async function finish(): Promise<void> {
   const branch = currentBranch();
-  if (branch === PRIMARY_BRANCH || !branch) {
-    throw new Error("Finish must run from a merged feature branch, not main.");
-  }
-  if (!worktreeIsClean()) {
-    throw new Error(
-      "Working tree is not clean. Commit or discard intended work first."
-    );
-  }
+  const clean = worktreeIsClean();
+  const localErrors = validateFinishSafety({
+    branch,
+    clean,
+    pullRequestState: "MERGED",
+    currentHead: "",
+    pullRequestHead: "",
+  });
+  if (localErrors.length > 0) printErrors(localErrors);
 
   requireGitHub();
   const pullRequestResult = output([
@@ -279,16 +324,24 @@ async function finish(): Promise<void> {
     "view",
     branch,
     "--json",
-    "state,url",
+    "state,url,headRefOid",
   ]);
   const pullRequest = JSON.parse(pullRequestResult.stdout) as {
     state: string;
     url: string;
+    headRefOid: string;
   };
-  if (pullRequest.state !== "MERGED") {
-    throw new Error(
-      `PR is ${pullRequest.state}, not MERGED: ${pullRequest.url}`
-    );
+  const currentHead = output(["git", "rev-parse", "HEAD"]).stdout;
+  const errors = validateFinishSafety({
+    branch,
+    clean,
+    pullRequestState: pullRequest.state,
+    currentHead,
+    pullRequestHead: pullRequest.headRefOid,
+  });
+  if (errors.length > 0) {
+    errors.push(`Pull request: ${pullRequest.url}`);
+    printErrors(errors);
   }
 
   if (

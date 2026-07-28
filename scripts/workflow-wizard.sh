@@ -190,6 +190,9 @@ finish() {
 # Replace the example below. Set the two totals to match the stages you write.
 # ──────────────────────────────────────────────────────────────────────────
 
+# The standard library above supports setup wizards that manage environment
+# values. This learning wizard never calls those helpers or reads secret values.
+
 TOTAL_STAGES=7
 TOTAL_MINUTES=30
 

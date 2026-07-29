@@ -33,6 +33,16 @@ describe("profile image lightbox", () => {
     expect(homeStyles).toContain("@keyframes profile-border-orbit");
     expect(homeStyles).toContain(".profile-image-trigger::after");
     expect(homeStyles).toContain("conic-gradient(");
+    for (const stop of [
+      "#6675e8 0deg",
+      "#d98bcf 68deg",
+      "#b9dfce 132deg",
+      "#f1c33a 205deg",
+      "#ff6b3f 286deg",
+      "#6675e8 360deg",
+    ]) {
+      expect(homeStyles).toContain(stop);
+    }
     expect(homeStyles).not.toContain("transform: scale(1.02)");
   });
 

@@ -81,12 +81,12 @@ h3 {
 .profile-image-trigger::after {
   background: conic-gradient(
     from var(--profile-border-angle),
-    #134e4a 0deg,
-    #0f766e 72deg,
-    #14b8a6 144deg,
-    #5eead4 216deg,
-    #14b8a6 288deg,
-    #134e4a 360deg
+    #6675e8 0deg,
+    #d98bcf 68deg,
+    #b9dfce 132deg,
+    #f1c33a 205deg,
+    #ff6b3f 286deg,
+    #6675e8 360deg
   );
   border-radius: inherit;
   content: "";

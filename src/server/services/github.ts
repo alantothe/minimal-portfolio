@@ -12,7 +12,7 @@ type FetchFunction = (
   init?: RequestInit
 ) => Promise<Response>;
 
-interface GitHubCommitCounterOptions {
+interface GitHubApiOptions {
   fetch?: FetchFunction;
   now?: () => Date;
   ttlMs?: number;
@@ -90,7 +90,7 @@ export class GitHubCommitCounter {
   private readonly cache = new Map<string, CacheEntry>();
   private readonly inFlight = new Map<string, Promise<number>>();
 
-  constructor(options: GitHubCommitCounterOptions = {}) {
+  constructor(options: GitHubApiOptions = {}) {
     this.fetchImpl = options.fetch || fetch;
     this.now = options.now || (() => new Date());
     this.ttlMs = options.ttlMs ?? 15 * 60 * 1000;
@@ -186,7 +186,7 @@ export class GitHubContributionCalendar {
     Promise<GitHubYearlyActivity | null>
   >();
 
-  constructor(options: GitHubCommitCounterOptions = {}) {
+  constructor(options: GitHubApiOptions = {}) {
     this.fetchImpl = options.fetch || fetch;
     this.now = options.now || (() => new Date());
     this.ttlMs = options.ttlMs ?? 15 * 60 * 1000;

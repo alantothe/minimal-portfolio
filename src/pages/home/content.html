@@ -18,10 +18,13 @@
     <!-- Statistics Section -->
     <div class="stats">
       <!-- GitHub Commits Stat -->
-      <details class="github-activity">
-        <summary
+      <div class="github-activity">
+        <button
+          type="button"
           class="github-activity__trigger stat-item"
           aria-controls="github-activity-panel"
+          aria-expanded="false"
+          data-github-activity-trigger
         >
           <svg
             viewBox="0 0 16 16"
@@ -50,9 +53,9 @@
               stroke-linejoin="round"
             />
           </svg>
-        </summary>
+        </button>
         {{metrics.githubActivityPanel}}
-      </details>
+      </div>
 
       <!-- Blog Posts Stat -->
       <div class="stat-item">

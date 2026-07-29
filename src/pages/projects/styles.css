@@ -56,12 +56,13 @@
   padding: 2px;
   background: conic-gradient(
     from var(--project-border-angle),
-    #6675e8 0deg,
-    #d98bcf 68deg,
-    #b9dfce 132deg,
-    #f1c33a 205deg,
-    #ff6b3f 286deg,
-    #6675e8 360deg
+    #4c78ed 0deg,
+    #3b9eea 60deg,
+    #2bc0d8 120deg,
+    #27c9aa 180deg,
+    #45c982 240deg,
+    #35b7bd 300deg,
+    #4c78ed 360deg
   );
   content: "";
   opacity: 0;

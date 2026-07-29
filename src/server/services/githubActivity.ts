@@ -44,7 +44,7 @@ function renderHeatmap(activity: GitHubYearlyActivity) {
       viewBox="0 0 ${width} 68"
       role="img"
       aria-label="${numberFormatter.format(activity.totalContributions)} GitHub contributions in the past year"
-      preserveAspectRatio="xMinYMin meet"
+      preserveAspectRatio="xMidYMid meet"
     >${cells}
     </svg>`;
 }
@@ -83,18 +83,11 @@ export function renderGitHubActivityPanel(
       aria-label="GitHub activity for the past year"
     >
       <header class="github-activity__header">
+        <p>${formatCount(activity.totalContributions, "contribution")}</p>
         <span class="github-activity__eyebrow">Past year</span>
-        <p>${formatCount(activity.totalContributions, "contribution")} in the past year</p>
       </header>
       <div class="github-activity__map-frame">
         ${renderHeatmap(activity)}
       </div>
-      <footer class="github-activity__footer">
-        <span>${formatCount(activity.totalCommitContributions, "commit")}</span>
-        <a href="${profileUrl}" target="_blank" rel="noreferrer">
-          View GitHub
-          <span aria-hidden="true">↗</span>
-        </a>
-      </footer>
     </div>`;
 }

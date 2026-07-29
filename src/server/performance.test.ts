@@ -76,7 +76,7 @@ describe("production response performance", () => {
     const decompressed = gunzipSync(
       new Uint8Array(await response.arrayBuffer())
     );
-    expect(new TextDecoder().decode(decompressed)).toContain("<!DOCTYPE html>");
+    expect(new TextDecoder().decode(decompressed)).toMatch(/^<!doctype html>/i);
   });
 });
 

@@ -195,6 +195,7 @@ h3 {
   flex-direction: column;
   gap: 12px;
   padding-top: 4px;
+  position: relative;
 }
 
 .stat-item {
@@ -210,21 +211,118 @@ h3 {
   flex-shrink: 0;
 }
 
-.github-activity {
-  position: relative;
+.stat-link {
+  cursor: pointer;
+  text-decoration: none;
   width: max-content;
 }
 
+.stat-link svg {
+  transition: color 140ms ease;
+}
+
+.stat-link span {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition:
+    color 140ms ease,
+    text-decoration-color 140ms ease;
+}
+
+.stat-link:hover svg,
+.stat-link:focus-visible svg,
+.stat-link:hover span,
+.stat-link:focus-visible span {
+  color: #5eead4;
+  text-decoration-color: #5eead4;
+}
+
+.stat-link:focus-visible {
+  border-radius: 4px;
+  outline: 1px solid #5eead4;
+  outline-offset: 3px;
+}
+
+.stat-highlight {
+  cursor: default;
+  transition: color 140ms ease;
+}
+
+.stat-highlight svg {
+  transition: color 140ms ease;
+}
+
+.stat-highlight:hover,
+.stat-highlight:hover svg {
+  color: #5eead4;
+}
+
+.github-activity {
+  position: static;
+  width: max-content;
+}
+
+.github-activity__row {
+  gap: 6px;
+}
+
 .github-activity__trigger {
+  align-items: center;
   background: none;
   border: 0;
   color: inherit;
   cursor: pointer;
+  display: flex;
   font: inherit;
   outline: none;
   padding: 0;
   text-align: left;
   user-select: none;
+}
+
+.github-activity__profile-link {
+  align-items: center;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.github-activity__profile-link svg {
+  transition: color 140ms ease;
+}
+
+.github-activity__profile-label {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.github-activity__profile-text {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition:
+    color 140ms ease,
+    text-decoration-color 140ms ease;
+}
+
+.github-activity:hover .github-activity__profile-link svg,
+.github-activity:focus-within .github-activity__profile-link svg,
+.github-activity.is-open .github-activity__profile-link svg,
+.github-activity:hover .github-activity__profile-text,
+.github-activity:focus-within .github-activity__profile-text,
+.github-activity.is-open .github-activity__profile-text {
+  color: #5eead4;
+  text-decoration-color: #5eead4;
+}
+
+.github-activity__profile-link:focus-visible {
+  border-radius: 4px;
+  outline: 1px solid #5eead4;
+  outline-offset: 3px;
 }
 
 .github-activity__trigger:focus-visible {
@@ -237,10 +335,8 @@ h3 {
 .github-activity__chevron {
   margin-left: 1px;
   opacity: 0;
-  transform: translateY(1px);
-  transition:
-    opacity 140ms ease,
-    transform 140ms ease;
+  transform: rotate(-90deg);
+  transition: opacity 140ms ease;
 }
 
 .github-activity:hover .github-activity__chevron,
@@ -249,46 +345,44 @@ h3 {
   opacity: 0.7;
 }
 
-.github-activity.is-open .github-activity__chevron {
-  transform: rotate(180deg) translateY(-1px);
-}
-
 .github-activity__panel {
   background: #121212;
   border: 1px solid #2a2a2a;
   border-radius: 8px;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
   color: #cccccc;
-  display: block;
-  left: -124px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  left: calc(100% + 14px);
   opacity: 0;
-  padding: 18px;
+  padding: 7px;
   pointer-events: none;
   position: absolute;
-  top: calc(100% + 12px);
-  transform: translateY(-5px);
+  top: 0;
+  transform: translateX(-5px);
   transition:
     opacity 150ms ease,
     transform 150ms ease,
     visibility 150ms ease;
   visibility: hidden;
-  width: min(620px, calc(100vw - 40px));
+  width: min(420px, calc(100vw - 40px));
   z-index: 20;
 }
 
 .github-activity__panel::before {
   content: "";
-  height: 12px;
-  left: 0;
+  height: 100%;
+  left: -14px;
   position: absolute;
-  top: -12px;
-  width: 100%;
+  top: 0;
+  width: 14px;
 }
 
 .github-activity.is-open > .github-activity__panel {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0);
+  transform: translateX(0);
   visibility: visible;
 }
 
@@ -296,7 +390,7 @@ h3 {
   .github-activity:hover > .github-activity__panel {
     opacity: 1;
     pointer-events: auto;
-    transform: translateY(0);
+    transform: translateX(0);
     visibility: visible;
   }
 }
@@ -305,40 +399,39 @@ h3 {
   align-items: baseline;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 4px;
 }
 
-.github-activity__header p,
-.github-activity__panel--empty p {
+.github-activity__header p {
   color: #f5f5f5;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
+  line-height: 1;
   margin: 0;
-}
-
-.github-activity__eyebrow,
-.github-activity__footer {
-  font-family: "IBM Plex Mono", monospace;
 }
 
 .github-activity__eyebrow {
   color: #707070;
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-size: 8px;
+  font-family: "IBM Plex Mono", monospace;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .github-activity__map-frame {
+  align-items: center;
   background: #0d0d0d;
   border: 1px solid #202020;
   border-radius: 5px;
-  padding: 12px;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: 3px;
 }
 
 .github-activity__heatmap {
   display: block;
-  height: auto;
-  max-height: 76px;
+  height: 100%;
   overflow: visible;
   width: 100%;
 }
@@ -364,33 +457,20 @@ h3 {
   fill: #5eead4;
 }
 
-.github-activity__footer {
-  align-items: center;
-  color: #777777;
-  display: flex;
-  font-size: 10px;
-  justify-content: space-between;
-  margin-top: 12px;
-}
-
-.github-activity__footer a,
 .github-activity__panel--empty a {
   color: #999999;
   text-decoration: none;
 }
 
-.github-activity__footer a:hover,
-.github-activity__footer a:focus-visible,
 .github-activity__panel--empty a:hover,
 .github-activity__panel--empty a:focus-visible {
   color: #5eead4;
 }
 
-.github-activity__panel--empty {
-  width: 280px;
-}
-
 .github-activity__panel--empty p {
+  color: #f5f5f5;
+  font-size: 13px;
+  font-weight: 500;
   margin: 6px 0 12px;
 }
 
@@ -415,6 +495,12 @@ h3 {
   cursor: pointer;
   position: relative;
   display: inline-block;
+  transition: color 140ms ease;
+}
+
+#copy-email:hover,
+#copy-email:focus-visible {
+  color: #5eead4;
 }
 
 #copy-tooltip {
@@ -443,25 +529,34 @@ h3 {
   transform: translateX(-50%) translateY(0);
 }
 
+@media (max-width: 900px) {
+  .github-activity__panel {
+    left: 0;
+    top: calc(100% + 10px);
+    transform: translateY(-5px);
+  }
+
+  .github-activity__panel::before {
+    height: 10px;
+    left: 0;
+    top: -10px;
+    width: 100%;
+  }
+
+  .github-activity.is-open > .github-activity__panel {
+    transform: translateY(0);
+  }
+}
+
+@media (hover: hover) and (max-width: 900px) {
+  .github-activity:hover > .github-activity__panel {
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 480px) {
   .github-activity {
     max-width: 100%;
-  }
-
-  .github-activity__panel {
-    left: 0;
-    padding: 14px;
-    width: calc(100vw - 40px);
-  }
-
-  .github-activity__header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .github-activity__map-frame {
-    padding: 9px;
   }
 }
 

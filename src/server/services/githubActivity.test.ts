@@ -26,18 +26,19 @@ const activity: GitHubYearlyActivity = {
 };
 
 describe("GitHub activity panel", () => {
-  test("renders yearly totals and an accessible daily heatmap", () => {
+  test("renders a concise contribution total and accessible daily heatmap", () => {
     const html = renderGitHubActivityPanel(activity, "alantothe");
 
-    expect(html).toContain("621 contributions in the past year");
-    expect(html).toContain("512 commits");
+    expect(html).toContain("621 contributions");
+    expect(html).not.toContain("512 commits");
+    expect(html).not.toContain("View GitHub");
     expect(html).toContain('role="img"');
     expect(html).toContain(
       'aria-label="621 GitHub contributions in the past year"'
     );
+    expect(html).toContain('preserveAspectRatio="xMidYMid meet"');
     expect(html).toContain('data-level="FOURTH_QUARTILE"');
     expect(html).toContain("7 contributions on July 28, 2026");
-    expect(html).toContain('href="https://github.com/alantothe"');
   });
 
   test("renders a useful fallback when GitHub is unavailable", () => {

@@ -7,6 +7,9 @@ const homeStyles = await Bun.file(import.meta.dir + "/home/styles.css").text();
 const imageLoader = await Bun.file(
   import.meta.dir + "/../public/image-loader.js"
 ).text();
+const projectStyles = await Bun.file(
+  import.meta.dir + "/projects/styles.css"
+).text();
 
 describe("profile image lightbox", () => {
   test("exposes the avatar as an accessible dialog trigger", () => {
@@ -23,5 +26,25 @@ describe("profile image lightbox", () => {
       /\.profile-image-trigger \{[^}]*cursor: pointer;/
     );
     expect(homeStyles).toContain(".avatar-lightbox::backdrop");
+  });
+
+  test("reuses the project-card orbit as an inset avatar ring without scaling", () => {
+    expect(projectStyles).toContain("@keyframes project-border-orbit");
+    expect(homeStyles).toContain("@keyframes profile-border-orbit");
+    expect(homeStyles).toContain(".profile-image-trigger::after");
+    expect(homeStyles).toContain("conic-gradient(");
+    expect(homeStyles).not.toContain("transform: scale(1.02)");
+  });
+
+  test("links avatar and GitHub activity hover states in both directions", () => {
+    expect(homeStyles).toMatch(
+      /\.profile-section:has\(\.profile-image-trigger:hover\)\s+\.github-activity__profile-text/
+    );
+    expect(homeStyles).toMatch(
+      /\.profile-section:has\(\.profile-image-trigger:hover\)\s+\.github-activity\s+>\s+\.github-activity__panel/
+    );
+    expect(homeStyles).toMatch(
+      /\.profile-section:has\(\s*\.github-activity:is\(:hover, :focus-within, \.is-open\)\s*\)/
+    );
   });
 });

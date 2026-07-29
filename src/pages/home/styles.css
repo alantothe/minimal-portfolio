@@ -1,3 +1,15 @@
+@property --profile-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes profile-border-orbit {
+  to {
+    --profile-border-angle: 360deg;
+  }
+}
+
 /* Home tab specific font sizes */
 #home::selection,
 #home ::selection {
@@ -51,14 +63,45 @@ h3 {
 }
 
 .profile-image-trigger {
+  --profile-border-angle: 0deg;
+
   appearance: none;
   background: none;
   border: 0;
   border-radius: 50%;
   cursor: pointer;
   flex-shrink: 0;
+  isolation: isolate;
   line-height: 0;
+  overflow: hidden;
   padding: 0;
+  position: relative;
+}
+
+.profile-image-trigger::after {
+  background: conic-gradient(
+    from var(--profile-border-angle),
+    #134e4a 0deg,
+    #0f766e 72deg,
+    #14b8a6 144deg,
+    #5eead4 216deg,
+    #14b8a6 288deg,
+    #134e4a 360deg
+  );
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  opacity: 0;
+  padding: 2px;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity 160ms ease;
+  z-index: 1;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 .profile-img {
@@ -68,24 +111,24 @@ h3 {
   border-radius: 50%;
   background-color: #1a1a1a;
   flex-shrink: 0;
-  transition:
-    box-shadow 140ms ease,
-    transform 140ms ease;
+  transition: filter 160ms ease;
 }
 
-.profile-image-trigger:hover .profile-img {
-  box-shadow: 0 0 0 2px #5eead4;
-  transform: scale(1.02);
+.profile-image-trigger:is(:hover, :focus-visible)::after,
+.profile-section:has(.github-activity:is(:hover, :focus-within, .is-open))
+  .profile-image-trigger::after {
+  animation: profile-border-orbit 2.8s linear infinite;
+  opacity: 1;
+}
+
+.profile-image-trigger:is(:hover, :focus-visible) .profile-img,
+.profile-section:has(.github-activity:is(:hover, :focus-within, .is-open))
+  .profile-img {
+  filter: brightness(1.06) saturate(1.06);
 }
 
 .profile-image-trigger:focus-visible {
   outline: none;
-}
-
-.profile-image-trigger:focus-visible .profile-img {
-  box-shadow:
-    0 0 0 2px #0a0a0a,
-    0 0 0 4px #5eead4;
 }
 
 .avatar-lightbox {
@@ -423,6 +466,11 @@ h3 {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .profile-image-trigger::after {
+    animation: none;
+    transition: none;
+  }
+
   .profile-img,
   .avatar-lightbox__close {
     transition: none;
@@ -431,5 +479,56 @@ h3 {
   .github-activity__chevron,
   .github-activity__panel {
     transition: none;
+  }
+}
+
+/* Keep avatar and GitHub activity visually coupled */
+.github-activity__trigger > span {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition:
+    color 140ms ease,
+    text-decoration-color 140ms ease;
+}
+
+.profile-section:has(.profile-image-trigger:hover)
+  .github-activity
+  .stat-item
+  svg,
+.profile-section:has(.profile-image-trigger:hover)
+  .github-activity
+  .stat-item
+  > span,
+.profile-section:has(.profile-image-trigger:hover)
+  .github-activity__profile-text,
+.profile-section:has(.profile-image-trigger:focus-visible)
+  .github-activity
+  .stat-item
+  svg,
+.profile-section:has(.profile-image-trigger:focus-visible)
+  .github-activity
+  .stat-item
+  > span,
+.profile-section:has(.profile-image-trigger:focus-visible)
+  .github-activity__profile-text {
+  color: #5eead4;
+  text-decoration-color: #5eead4;
+}
+
+.profile-section:has(.profile-image-trigger:hover) .github-activity__chevron,
+.profile-section:has(.profile-image-trigger:focus-visible)
+  .github-activity__chevron {
+  opacity: 0.7;
+}
+
+@media (hover: hover) {
+  .profile-section:has(.profile-image-trigger:hover)
+    .github-activity
+    > .github-activity__panel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    visibility: visible;
   }
 }

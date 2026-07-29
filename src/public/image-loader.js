@@ -5,6 +5,7 @@
  */
 
 import("/public/github-activity.js");
+import("/public/avatar-lightbox.js");
 
 function initializeImageLoaders() {
   const images = document.querySelectorAll("img");

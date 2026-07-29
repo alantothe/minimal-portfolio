@@ -5,15 +5,61 @@
 
   <!-- Profile Section -->
   <div class="profile-section">
-    <img
-      src="{{author.photo}}"
-      alt="{{author.name}}"
-      width="512"
-      height="510"
-      decoding="async"
-      fetchpriority="high"
-      class="profile-img"
-    />
+    <button
+      type="button"
+      class="profile-image-trigger"
+      aria-label="View full-size portrait of {{author.name}}"
+      aria-controls="profile-image-lightbox"
+      aria-haspopup="dialog"
+      data-avatar-lightbox-trigger
+    >
+      <img
+        src="{{author.photo}}"
+        alt="{{author.name}}"
+        width="512"
+        height="510"
+        decoding="async"
+        fetchpriority="high"
+        class="profile-img"
+      />
+    </button>
+
+    <dialog
+      class="avatar-lightbox"
+      id="profile-image-lightbox"
+      aria-label="Full-size portrait of {{author.name}}"
+      data-avatar-lightbox
+    >
+      <img
+        class="avatar-lightbox__image"
+        src="{{author.photo}}"
+        alt="{{author.name}}"
+        width="512"
+        height="510"
+        decoding="async"
+      />
+      <button
+        type="button"
+        class="avatar-lightbox__close"
+        aria-label="Close full-size portrait"
+        data-avatar-lightbox-close
+      >
+        <svg
+          viewBox="0 0 16 16"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            d="m4 4 8 8m0-8-8 8"
+            stroke-linecap="round"
+            stroke-width="1.5"
+          />
+        </svg>
+      </button>
+    </dialog>
 
     <!-- Statistics Section -->
     <div class="stats">

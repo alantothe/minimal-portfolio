@@ -41,6 +41,14 @@ export function attachGitHubActivityListener(root = document) {
       }
     }
   });
+
+  root.addEventListener("focusout", (event) => {
+    const activity = event.target.closest(activitySelector);
+
+    if (activity && !activity.contains(event.relatedTarget)) {
+      closeGitHubActivity(activity);
+    }
+  });
 }
 
 attachGitHubActivityListener();

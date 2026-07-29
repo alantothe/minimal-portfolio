@@ -153,8 +153,7 @@ h3 {
   width: 100%;
 }
 
-.github-activity.is-open > .github-activity__panel,
-.github-activity:focus-within > .github-activity__panel {
+.github-activity.is-open > .github-activity__panel {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);

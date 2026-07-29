@@ -33,6 +33,7 @@ describe("SPA navigation", () => {
     expect(imageLoader).toContain('import("/public/github-activity.js")');
     expect(githubActivity).toContain("attachGitHubActivityListener");
     expect(githubActivity).toContain('event.key === "Escape"');
+    expect(githubActivity).toContain('"focusout"');
     expect(githubActivity).toContain("aria-expanded");
   });
 });

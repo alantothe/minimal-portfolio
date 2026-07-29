@@ -2,7 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { RequestHandler } from "./core/requestHandler";
 import { Router } from "./core/router";
 import { setupRoutes } from "./routes";
-import { GitHubCommitCounter } from "./services/github";
+import {
+  GitHubCommitCounter,
+  GitHubContributionCalendar,
+} from "./services/github";
 import { gunzipSync } from "node:zlib";
 
 function createRequestHandler() {
@@ -15,13 +18,13 @@ describe("production response performance", () => {
   test("static assets are cacheable and support conditional requests", async () => {
     const handler = createRequestHandler();
     const first = await handler.handleRequest(
-      new Request("http://portfolio.test/public/css/global.css"),
+      new Request("http://portfolio.test/public/css/global.css")
     );
     const etag = first.headers.get("ETag");
     const second = await handler.handleRequest(
       new Request("http://portfolio.test/public/css/global.css", {
         headers: { "If-None-Match": etag! },
-      }),
+      })
     );
 
     expect(first.status).toBe(200);
@@ -33,10 +36,10 @@ describe("production response performance", () => {
 
   test("HTML stays revalidatable and reserves profile image space", async () => {
     const response = await createRequestHandler().handleRequest(
-      new Request("http://portfolio.test/about"),
+      new Request("http://portfolio.test/about")
     );
     const homeResponse = await createRequestHandler().handleRequest(
-      new Request("http://portfolio.test/"),
+      new Request("http://portfolio.test/")
     );
     const home = await homeResponse.text();
 
@@ -48,30 +51,30 @@ describe("production response performance", () => {
 
   test("SSR loads only the current route stylesheet", async () => {
     const response = await createRequestHandler().handleRequest(
-      new Request("http://portfolio.test/projects"),
+      new Request("http://portfolio.test/projects")
     );
     const html = await response.text();
 
     expect(html).toContain(
-      '<link id="page-css" rel="stylesheet" href="/pages/projects/styles.css">',
+      '<link id="page-css" rel="stylesheet" href="/pages/projects/styles.css">'
     );
-    expect(html).not.toContain('/pages/home/styles.css');
-    expect(html).not.toContain('/pages/about/styles.css');
-    expect(html).not.toContain('/pages/blog/styles.css');
+    expect(html).not.toContain("/pages/home/styles.css");
+    expect(html).not.toContain("/pages/about/styles.css");
+    expect(html).not.toContain("/pages/blog/styles.css");
   });
 
   test("compresses text responses when the client accepts gzip", async () => {
     const response = await createRequestHandler().handleRequest(
       new Request("http://portfolio.test/", {
         headers: { "Accept-Encoding": "gzip" },
-      }),
+      })
     );
 
     expect(response.headers.get("Content-Encoding")).toBe("gzip");
     expect(response.headers.get("Vary")).toContain("Accept-Encoding");
 
     const decompressed = gunzipSync(
-      new Uint8Array(await response.arrayBuffer()),
+      new Uint8Array(await response.arrayBuffer())
     );
     expect(new TextDecoder().decode(decompressed)).toContain("<!DOCTYPE html>");
   });
@@ -133,5 +136,90 @@ describe("GitHub commit metric", () => {
     expect(await counter.getMonthlyCommitCount("token", "alantothe")).toBe(263);
     expect(await counter.getMonthlyCommitCount("token", "alantothe")).toBe(263);
     expect(fetchCalls).toBe(2);
+  });
+});
+
+describe("GitHub contribution calendar", () => {
+  test("coalesces requests and returns daily activity for the past year", async () => {
+    let fetchCalls = 0;
+    const calendar = new GitHubContributionCalendar({
+      now: () => new Date("2026-07-29T12:00:00Z"),
+      fetch: async () => {
+        fetchCalls += 1;
+        return Response.json({
+          data: {
+            user: {
+              contributionsCollection: {
+                totalCommitContributions: 512,
+                contributionCalendar: {
+                  totalContributions: 621,
+                  weeks: [
+                    {
+                      contributionDays: [
+                        {
+                          contributionCount: 0,
+                          contributionLevel: "NONE",
+                          date: "2026-07-27",
+                          weekday: 1,
+                        },
+                        {
+                          contributionCount: 7,
+                          contributionLevel: "FOURTH_QUARTILE",
+                          date: "2026-07-28",
+                          weekday: 2,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        });
+      },
+    });
+
+    const [first, concurrent] = await Promise.all([
+      calendar.getYearlyActivity("token", "alantothe"),
+      calendar.getYearlyActivity("token", "alantothe"),
+    ]);
+    const cached = await calendar.getYearlyActivity("token", "alantothe");
+
+    expect(first).toEqual({
+      totalContributions: 621,
+      totalCommitContributions: 512,
+      weeks: [
+        [
+          {
+            count: 0,
+            date: "2026-07-27",
+            level: "NONE",
+            weekday: 1,
+          },
+          {
+            count: 7,
+            date: "2026-07-28",
+            level: "FOURTH_QUARTILE",
+            weekday: 2,
+          },
+        ],
+      ],
+    });
+    expect(concurrent).toEqual(first);
+    expect(cached).toEqual(first);
+    expect(fetchCalls).toBe(1);
+  });
+
+  test("returns null without credentials and does not call GitHub", async () => {
+    let fetchCalls = 0;
+    const calendar = new GitHubContributionCalendar({
+      fetch: async () => {
+        fetchCalls += 1;
+        return Response.json({});
+      },
+    });
+
+    expect(await calendar.getYearlyActivity()).toBeNull();
+    expect(fetchCalls).toBe(0);
   });
 });

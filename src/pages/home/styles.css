@@ -78,6 +78,195 @@ h3 {
   flex-shrink: 0;
 }
 
+.github-activity {
+  position: relative;
+  width: max-content;
+}
+
+.github-activity__trigger {
+  cursor: pointer;
+  list-style: none;
+  outline: none;
+  user-select: none;
+}
+
+.github-activity__trigger::-webkit-details-marker {
+  display: none;
+}
+
+.github-activity__trigger:focus-visible {
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 2px #0a0a0a,
+    0 0 0 3px #5eead4;
+}
+
+.github-activity__chevron {
+  margin-left: 1px;
+  opacity: 0;
+  transform: translateY(1px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.github-activity:hover .github-activity__chevron,
+.github-activity:focus-within .github-activity__chevron,
+.github-activity[open] .github-activity__chevron {
+  opacity: 0.7;
+}
+
+.github-activity[open] .github-activity__chevron {
+  transform: rotate(180deg) translateY(-1px);
+}
+
+.github-activity__panel {
+  background: #121212;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  color: #cccccc;
+  display: block;
+  left: -124px;
+  opacity: 0;
+  padding: 18px;
+  pointer-events: none;
+  position: absolute;
+  top: calc(100% + 12px);
+  transform: translateY(-5px);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease,
+    visibility 150ms ease;
+  visibility: hidden;
+  width: min(620px, calc(100vw - 40px));
+  z-index: 20;
+}
+
+.github-activity__panel::before {
+  content: "";
+  height: 12px;
+  left: 0;
+  position: absolute;
+  top: -12px;
+  width: 100%;
+}
+
+.github-activity[open] > .github-activity__panel,
+.github-activity:focus-within > .github-activity__panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+@media (hover: hover) {
+  .github-activity:hover > .github-activity__panel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+  }
+}
+
+.github-activity__header {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.github-activity__header p,
+.github-activity__panel--empty p {
+  color: #f5f5f5;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.github-activity__eyebrow,
+.github-activity__footer {
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.github-activity__eyebrow {
+  color: #707070;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.github-activity__map-frame {
+  background: #0d0d0d;
+  border: 1px solid #202020;
+  border-radius: 5px;
+  padding: 12px;
+}
+
+.github-activity__heatmap {
+  display: block;
+  height: auto;
+  max-height: 76px;
+  overflow: visible;
+  width: 100%;
+}
+
+.github-activity__heatmap rect {
+  fill: #202020;
+  outline: none;
+}
+
+.github-activity__heatmap rect[data-level="FIRST_QUARTILE"] {
+  fill: #134e4a;
+}
+
+.github-activity__heatmap rect[data-level="SECOND_QUARTILE"] {
+  fill: #0f766e;
+}
+
+.github-activity__heatmap rect[data-level="THIRD_QUARTILE"] {
+  fill: #14b8a6;
+}
+
+.github-activity__heatmap rect[data-level="FOURTH_QUARTILE"] {
+  fill: #5eead4;
+}
+
+.github-activity__footer {
+  align-items: center;
+  color: #777777;
+  display: flex;
+  font-size: 10px;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.github-activity__footer a,
+.github-activity__panel--empty a {
+  color: #999999;
+  text-decoration: none;
+}
+
+.github-activity__footer a:hover,
+.github-activity__footer a:focus-visible,
+.github-activity__panel--empty a:hover,
+.github-activity__panel--empty a:focus-visible {
+  color: #5eead4;
+}
+
+.github-activity__panel--empty {
+  width: 280px;
+}
+
+.github-activity__panel--empty p {
+  margin: 6px 0 12px;
+}
+
+.github-activity__panel--empty a {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+}
+
 /* Description */
 .description {
   color: #cccccc;
@@ -120,4 +309,33 @@ h3 {
 #copy-tooltip.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 480px) {
+  .github-activity {
+    max-width: 100%;
+  }
+
+  .github-activity__panel {
+    left: 0;
+    padding: 14px;
+    width: calc(100vw - 40px);
+  }
+
+  .github-activity__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .github-activity__map-frame {
+    padding: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .github-activity__chevron,
+  .github-activity__panel {
+    transition: none;
+  }
 }

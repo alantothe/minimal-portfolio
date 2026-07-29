@@ -147,4 +147,16 @@ describe("public HTTP behavior", () => {
     expect(data.content).toContain('href="/projects/questurian"');
     expect(data.content).toContain('href="/projects/minimal-portfolio"');
   });
+
+  test("home exposes GitHub activity through an interactive details panel", async () => {
+    const response = await createRequestHandler().handleRequest(
+      new Request("http://portfolio.test/")
+    );
+    const html = await response.text();
+
+    expect(html).toContain('<details class="github-activity">');
+    expect(html).toContain('class="github-activity__trigger');
+    expect(html).toContain("commits this month");
+    expect(html).toContain("Yearly activity unavailable");
+  });
 });

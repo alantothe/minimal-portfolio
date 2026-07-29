@@ -34,6 +34,9 @@ export const homeConfig = {
     // Your email address - users can click to copy and contact you
     email: "alanmalpartida@gmail.com",
 
+    // GitHub username used by the activity popover
+    githubUsername: "alantothe",
+
     // Path to your avatar image
     // Recommended: Store in src/public/ and reference as "src/public/avatar.webp"
     // or upload to a CDN and use the URL
@@ -55,12 +58,14 @@ export const homeConfig = {
   },
 
   // These values are automatically populated by the server
-  // GitHub commits are fetched from GitHub API (requires GITHUB_TOKEN in .env)
+  // GitHub commits and yearly activity are fetched from GitHub API
+  // (requires GITHUB_TOKEN in .env)
   // Blog post count is calculated from files in src/content/blog/
   // Total views are tracked from src/data/blog-views.json
   // DO NOT manually change these - they update automatically
   metrics: {
     githubCommits: 0,
+    githubActivityPanel: "",
     blogPostCount: 0,
     totalViews: 0,
   },

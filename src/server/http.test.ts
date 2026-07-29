@@ -170,6 +170,6 @@ describe("public HTTP behavior", () => {
       '<a class="stat-item stat-link" href="/blog" data-spa-link>'
     );
     expect(html).toContain('<div class="stat-item stat-highlight">');
-    expect(html).toContain("Yearly activity unavailable");
+    expect(html).toContain('id="github-activity-panel"');
   });
 });

@@ -26,10 +26,12 @@ Follow this checklist to get your portfolio ready:
 ## Image Hosting
 
 **Avatar & Logo:**
+
 - Store locally in `src/public/` folder, or
 - Upload to a CDN (Cloudinary, etc.) and use the URL
 
 **Blog & Project Cover Images:**
+
 - Upload to Cloudinary or similar CDN
 - Use the CDN URL in the `image` field when creating projects
 - Recommended size for project covers: 300×180px
@@ -39,11 +41,13 @@ Follow this checklist to get your portfolio ready:
 ### Blog Posts
 
 Run the interactive script:
+
 ```bash
 bun scripts/new-blog.ts
 ```
 
 It will prompt you for:
+
 - Blog title
 - Excerpt (brief summary)
 - Date (defaults to today)
@@ -53,11 +57,13 @@ Creates a markdown file in `src/content/blog/` with frontmatter.
 ### Projects
 
 Run the interactive script:
+
 ```bash
 bun scripts/new-project.ts
 ```
 
 It will prompt you for:
+
 - Project title
 - Description
 - Cloudinary image URL
@@ -69,17 +75,20 @@ Both scripts generate files with boilerplate content you can edit.
 
 ## GitHub Token Setup
 
-To display live GitHub commit counts on your home page:
+To display live GitHub commit counts and the yearly contribution heatmap:
 
 1. Go to https://github.com/settings/tokens
 2. Click "Generate new token (classic)"
 3. Select `public_repo` scope
 4. Copy the token
+   - Add `read:user` only if you want anonymized private contribution counts.
 5. Create a `.env` file in the project root:
+
 ```
 GITHUB_TOKEN=ghp_your_token_here
 GITHUB_USERNAME=your_github_username
 ```
+
 6. Restart dev server: `bun run dev`
 
 The `.env` file is already in `.gitignore` so your token stays safe.

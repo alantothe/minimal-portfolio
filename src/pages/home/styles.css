@@ -1,114 +1,629 @@
+@property --profile-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes profile-border-orbit {
+  to {
+    --profile-border-angle: 360deg;
+  }
+}
+
 /* Home tab specific font sizes */
+#home::selection,
+#home ::selection {
+  background-color: #5eead4;
+  color: #000000;
+  text-shadow: none;
+}
+
 #home h1 {
-    font-size: 31px;
+  font-size: 31px;
 }
 
 #home .intro {
-    font-size: 15px;
-    max-width: 453px;
+  font-size: 15px;
+  max-width: 453px;
 }
 
 #home .stat-item {
-    font-size: 15px;
+  font-size: 15px;
 }
 
 #home .description {
-    font-size: 15px;
-    max-width: 630px;
+  font-size: 15px;
+  max-width: 630px;
 }
 
 h3 {
-    color: #ffffff;
-    margin: 24px 0 12px 0;
+  color: #ffffff;
+  margin: 24px 0 12px 0;
 }
 
 .intro {
-    color: #cccccc;
-    font-size: 16px;
-    line-height: 1.7;
-    margin-bottom: 24px;
-    max-width: 500px;
+  color: #cccccc;
+  font-size: 16px;
+  line-height: 1.7;
+  margin-bottom: 24px;
+  max-width: 500px;
 }
 
 .intro strong {
-    color: #ffffff;
-    font-weight: 600;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 /* Profile Section */
 .profile-section {
-    display: flex;
-    gap: 24px;
-    align-items: flex-start;
-    margin-bottom: 24px;
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.profile-image-trigger {
+  --profile-border-angle: 0deg;
+
+  appearance: none;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  isolation: isolate;
+  line-height: 0;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+}
+
+.profile-image-trigger::after {
+  background: conic-gradient(
+    from var(--profile-border-angle),
+    #6675e8 0deg,
+    #d98bcf 68deg,
+    #b9dfce 132deg,
+    #f1c33a 205deg,
+    #ff6b3f 286deg,
+    #6675e8 360deg
+  );
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  opacity: 0;
+  padding: 2px;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity 160ms ease;
+  z-index: 1;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 .profile-img {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background-color: #1a1a1a;
-    flex-shrink: 0;
+  display: block;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: #1a1a1a;
+  flex-shrink: 0;
+  transition: filter 160ms ease;
+}
+
+.profile-image-trigger:is(:hover, :focus-visible)::after,
+.profile-section:has(.github-activity:is(:hover, :focus-within, .is-open))
+  .profile-image-trigger::after {
+  animation: profile-border-orbit 2.8s linear infinite;
+  opacity: 1;
+}
+
+.profile-image-trigger:is(:hover, :focus-visible) .profile-img,
+.profile-section:has(.github-activity:is(:hover, :focus-within, .is-open))
+  .profile-img {
+  filter: brightness(1.06) saturate(1.06);
+}
+
+.profile-image-trigger:focus-visible {
+  outline: none;
+}
+
+.avatar-lightbox {
+  background: transparent;
+  border: 0;
+  inset: 0;
+  margin: auto;
+  max-height: none;
+  max-width: none;
+  overflow: visible;
+  padding: 0;
+  position: fixed;
+  width: min(512px, calc(100vw - 40px), calc(100vh - 40px));
+}
+
+.avatar-lightbox::backdrop {
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.82);
+}
+
+.avatar-lightbox__image {
+  border-radius: 12px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  display: block;
+  height: auto;
+  max-height: calc(100vh - 40px);
+  object-fit: contain;
+  width: 100%;
+}
+
+.avatar-lightbox__close {
+  align-items: center;
+  appearance: none;
+  background: rgba(10, 10, 10, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  height: 32px;
+  justify-content: center;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+  width: 32px;
+}
+
+.avatar-lightbox__close:hover,
+.avatar-lightbox__close:focus-visible {
+  background: #0a0a0a;
+  border-color: #5eead4;
+}
+
+.avatar-lightbox__close:focus-visible {
+  outline: 2px solid #5eead4;
+  outline-offset: 2px;
 }
 
 .stats {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+  position: relative;
 }
 
 .stat-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #999999;
-    font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #999999;
+  font-size: 16px;
 }
 
 .stat-item svg {
-    color: #666666;
-    flex-shrink: 0;
+  color: #666666;
+  flex-shrink: 0;
+}
+
+.stat-link {
+  cursor: pointer;
+  text-decoration: none;
+  width: max-content;
+}
+
+.stat-link svg {
+  transition: color 140ms ease;
+}
+
+.stat-link span {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition:
+    color 140ms ease,
+    text-decoration-color 140ms ease;
+}
+
+.stat-link:hover svg,
+.stat-link:focus-visible svg,
+.stat-link:hover span,
+.stat-link:focus-visible span {
+  color: #5eead4;
+  text-decoration-color: #5eead4;
+}
+
+.stat-link:focus-visible {
+  border-radius: 4px;
+  outline: 1px solid #5eead4;
+  outline-offset: 3px;
+}
+
+.stat-highlight {
+  cursor: default;
+  transition: color 140ms ease;
+}
+
+.stat-highlight svg {
+  transition: color 140ms ease;
+}
+
+.stat-highlight:hover,
+.stat-highlight:hover svg {
+  color: #5eead4;
+}
+
+.github-activity {
+  position: static;
+  width: max-content;
+}
+
+.github-activity__row {
+  gap: 6px;
+}
+
+.github-activity__trigger {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  outline: none;
+  padding: 0;
+  text-align: left;
+  user-select: none;
+}
+
+.github-activity__profile-link {
+  align-items: center;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.github-activity__profile-link svg {
+  transition: color 140ms ease;
+}
+
+.github-activity__profile-label {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.github-activity__profile-text {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition:
+    color 140ms ease,
+    text-decoration-color 140ms ease;
+}
+
+.github-activity:hover .github-activity__profile-link svg,
+.github-activity:focus-within .github-activity__profile-link svg,
+.github-activity.is-open .github-activity__profile-link svg,
+.github-activity:hover .github-activity__profile-text,
+.github-activity:focus-within .github-activity__profile-text,
+.github-activity.is-open .github-activity__profile-text {
+  color: #5eead4;
+  text-decoration-color: #5eead4;
+}
+
+.github-activity__profile-link:focus-visible {
+  border-radius: 4px;
+  outline: 1px solid #5eead4;
+  outline-offset: 3px;
+}
+
+.github-activity__trigger:focus-visible {
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 2px #0a0a0a,
+    0 0 0 3px #5eead4;
+}
+
+.github-activity__chevron {
+  margin-left: 1px;
+  opacity: 0;
+  transform: rotate(-90deg);
+  transition: opacity 140ms ease;
+}
+
+.github-activity:hover .github-activity__chevron,
+.github-activity:focus-within .github-activity__chevron,
+.github-activity.is-open .github-activity__chevron {
+  opacity: 0.7;
+}
+
+.github-activity__panel {
+  background: #121212;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  color: #cccccc;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  left: calc(100% + 14px);
+  opacity: 0;
+  padding: 7px;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  transform: translateX(-5px);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease,
+    visibility 150ms ease;
+  visibility: hidden;
+  width: min(420px, calc(100vw - 40px));
+  z-index: 20;
+}
+
+.github-activity__panel::before {
+  content: "";
+  height: 100%;
+  left: -14px;
+  position: absolute;
+  top: 0;
+  width: 14px;
+}
+
+.github-activity.is-open > .github-activity__panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+  visibility: visible;
+}
+
+@media (hover: hover) {
+  .github-activity:hover > .github-activity__panel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+    visibility: visible;
+  }
+}
+
+.github-activity__header {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.github-activity__header p {
+  color: #f5f5f5;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  margin: 0;
+}
+
+.github-activity__eyebrow {
+  color: #707070;
+  font-size: 8px;
+  font-family: "IBM Plex Mono", monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.github-activity__map-frame {
+  align-items: center;
+  background: #0d0d0d;
+  border: 1px solid #202020;
+  border-radius: 5px;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: 3px;
+}
+
+.github-activity__heatmap {
+  display: block;
+  height: 100%;
+  overflow: visible;
+  width: 100%;
+}
+
+.github-activity__heatmap rect {
+  fill: #202020;
+  outline: none;
+}
+
+.github-activity__heatmap rect[data-level="FIRST_QUARTILE"] {
+  fill: #134e4a;
+}
+
+.github-activity__heatmap rect[data-level="SECOND_QUARTILE"] {
+  fill: #0f766e;
+}
+
+.github-activity__heatmap rect[data-level="THIRD_QUARTILE"] {
+  fill: #14b8a6;
+}
+
+.github-activity__heatmap rect[data-level="FOURTH_QUARTILE"] {
+  fill: #5eead4;
+}
+
+.github-activity__panel--empty a {
+  color: #999999;
+  text-decoration: none;
+}
+
+.github-activity__panel--empty a:hover,
+.github-activity__panel--empty a:focus-visible {
+  color: #5eead4;
+}
+
+.github-activity__panel--empty p {
+  color: #f5f5f5;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 6px 0 12px;
+}
+
+.github-activity__panel--empty a {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
 }
 
 /* Description */
 .description {
-    color: #cccccc;
-    font-size: 16px;
-    line-height: 1.7;
-    margin-bottom: 100px;
-    max-width: 700px;
+  color: #cccccc;
+  font-size: 16px;
+  line-height: 1.7;
+  margin-bottom: 100px;
+  max-width: 700px;
 }
 
 /* Email copy functionality */
 #copy-email {
-    text-decoration: underline;
-    color: #999999;
-    cursor: pointer;
-    position: relative;
-    display: inline-block;
+  text-decoration: underline;
+  color: #999999;
+  cursor: pointer;
+  position: relative;
+  display: inline-block;
+  transition: color 140ms ease;
+}
+
+#copy-email:hover,
+#copy-email:focus-visible {
+  color: #5eead4;
 }
 
 #copy-tooltip {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    top: 100%;
-    background: #1a1a1a;
-    color: #999999;
-    padding: 4px 8px;
-    border-radius: 3px;
-    font-size: 12px;
-    white-space: nowrap;
-    margin-top: 4px;
-    border: 1px solid #333;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateX(-50%) translateY(-4px);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 100%;
+  background: #1a1a1a;
+  color: #999999;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  margin-top: 4px;
+  border: 1px solid #333;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(-50%) translateY(-4px);
 }
 
 #copy-tooltip.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 900px) {
+  .github-activity__panel {
+    left: 0;
+    top: calc(100% + 10px);
+    transform: translateY(-5px);
+  }
+
+  .github-activity__panel::before {
+    height: 10px;
+    left: 0;
+    top: -10px;
+    width: 100%;
+  }
+
+  .github-activity.is-open > .github-activity__panel {
+    transform: translateY(0);
+  }
+}
+
+@media (hover: hover) and (max-width: 900px) {
+  .github-activity:hover > .github-activity__panel {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .github-activity {
+    max-width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-image-trigger::after {
+    animation: none;
+    transition: none;
+  }
+
+  .profile-img,
+  .avatar-lightbox__close {
+    transition: none;
+  }
+
+  .github-activity__chevron,
+  .github-activity__panel {
+    transition: none;
+  }
+}
+
+/* Keep avatar and GitHub activity visually coupled */
+.github-activity__trigger > span {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition:
+    color 140ms ease,
+    text-decoration-color 140ms ease;
+}
+
+.profile-section:has(.profile-image-trigger:hover)
+  .github-activity
+  .stat-item
+  svg,
+.profile-section:has(.profile-image-trigger:hover)
+  .github-activity
+  .stat-item
+  > span,
+.profile-section:has(.profile-image-trigger:hover)
+  .github-activity__profile-text,
+.profile-section:has(.profile-image-trigger:focus-visible)
+  .github-activity
+  .stat-item
+  svg,
+.profile-section:has(.profile-image-trigger:focus-visible)
+  .github-activity
+  .stat-item
+  > span,
+.profile-section:has(.profile-image-trigger:focus-visible)
+  .github-activity__profile-text {
+  color: #5eead4;
+  text-decoration-color: #5eead4;
+}
+
+.profile-section:has(.profile-image-trigger:hover) .github-activity__chevron,
+.profile-section:has(.profile-image-trigger:focus-visible)
+  .github-activity__chevron {
+  opacity: 0.7;
+}
+
+@media (hover: hover) {
+  .profile-section:has(.profile-image-trigger:hover)
+    .github-activity
+    > .github-activity__panel {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+    transform: none;
+    visibility: visible;
+  }
 }

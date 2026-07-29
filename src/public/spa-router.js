@@ -31,17 +31,17 @@ class SPARouter {
     this.attachResizeListener();
     window.addEventListener("popstate", (event) => {
       if (event.state) {
-        if (event.state.page === 'blog-post' && event.state.slug) {
+        if (event.state.page === "blog-post" && event.state.slug) {
           this.loadBlogPost(
             event.state.slug,
             false,
-            event.state.returnPage || 1,
+            event.state.returnPage || 1
           );
-        } else if (event.state.page === 'project' && event.state.slug) {
+        } else if (event.state.page === "project" && event.state.slug) {
           this.loadProject(
             event.state.slug,
             false,
-            event.state.returnPage || 1,
+            event.state.returnPage || 1
           );
         } else if (event.state.page) {
           this.switchPage(event.state.page, event.state.pageNumber || 1);
@@ -51,50 +51,50 @@ class SPARouter {
 
     const initialRoute = this.getInitialRoute(
       window.location.pathname,
-      window.location.search,
+      window.location.search
     );
     window.history.replaceState(
       initialRoute,
       "",
-      `${window.location.pathname}${window.location.search}`,
+      `${window.location.pathname}${window.location.search}`
     );
 
-    const activePage = initialRoute.page === 'blog-post'
-      ? 'blog'
-      : initialRoute.page === 'project'
-        ? 'projects'
-        : initialRoute.page;
+    const activePage =
+      initialRoute.page === "blog-post"
+        ? "blog"
+        : initialRoute.page === "project"
+          ? "projects"
+          : initialRoute.page;
     this.updateActiveNav(activePage);
 
-    const initialContainer = document.querySelector('.page-container.active');
+    const initialContainer = document.querySelector(".page-container.active");
     if (initialContainer) {
-      initialContainer.dataset.loaded = 'true';
-      initialContainer.dataset.pageNumber = String(initialRoute.pageNumber || 1);
-    }
-    if (['home', 'about', 'projects', 'blog'].includes(initialRoute.page)) {
-      const key = pageCacheKey(
-        initialRoute.page,
-        initialRoute.pageNumber || 1,
+      initialContainer.dataset.loaded = "true";
+      initialContainer.dataset.pageNumber = String(
+        initialRoute.pageNumber || 1
       );
+    }
+    if (["home", "about", "projects", "blog"].includes(initialRoute.page)) {
+      const key = pageCacheKey(initialRoute.page, initialRoute.pageNumber || 1);
       this.pagesData[key] = { title: document.title };
     }
-    if (initialRoute.page === 'blog-post' && initialRoute.slug) {
+    if (initialRoute.page === "blog-post" && initialRoute.slug) {
       this.recordInitialBlogView(initialRoute.slug);
     }
 
     // SSR content is already complete. Reveal it without client fetches.
-    document.querySelector('.container')?.classList.add('ready');
+    document.querySelector(".container")?.classList.add("ready");
   }
 
   getInitialRoute(pathname, search = "") {
     const blogPostMatch = pathname.match(/^\/blog\/([^/]+)$/);
     if (blogPostMatch) {
-      return { page: 'blog-post', slug: blogPostMatch[1] };
+      return { page: "blog-post", slug: blogPostMatch[1] };
     }
 
     const projectMatch = pathname.match(/^\/projects\/([^/]+)$/);
     if (projectMatch) {
-      return { page: 'project', slug: projectMatch[1] };
+      return { page: "project", slug: projectMatch[1] };
     }
 
     const page = this.getPageFromPath(pathname);
@@ -120,7 +120,7 @@ class SPARouter {
 
     const pageData = await response.json();
     this.setPageContent(pageContainer, pageData.content);
-    pageContainer.dataset.loaded = 'true';
+    pageContainer.dataset.loaded = "true";
     pageContainer.dataset.pageNumber = String(pageNumber);
     this.pagesData[pageCacheKey(pageName, pageNumber)] = pageData;
     return pageData;
@@ -129,7 +129,7 @@ class SPARouter {
   attachNavListeners() {
     document.addEventListener("click", (e) => {
       const target = e.target;
-      const link = target.closest("a.nav-link");
+      const link = target.closest("a.nav-link, a[data-spa-link]");
       if (link) {
         e.preventDefault();
         e.stopPropagation();
@@ -161,9 +161,9 @@ class SPARouter {
         const slug = postLink.dataset.slug;
         const returnPage = getCollectionPage(window.location.search);
         window.history.pushState(
-          { page: 'blog-post', slug, returnPage },
-          '',
-          postLink.href,
+          { page: "blog-post", slug, returnPage },
+          "",
+          postLink.href
         );
         this.loadBlogPost(slug, true, returnPage);
         return;
@@ -175,9 +175,9 @@ class SPARouter {
         const slug = projectLink.dataset.projectId;
         const returnPage = getCollectionPage(window.location.search);
         window.history.pushState(
-          { page: 'project', slug, returnPage },
-          '',
-          projectLink.href,
+          { page: "project", slug, returnPage },
+          "",
+          projectLink.href
         );
         this.loadProject(slug, true, returnPage);
       }
@@ -196,7 +196,7 @@ class SPARouter {
    */
   attachResizeListener() {
     let resizeTimeout;
-    window.addEventListener('resize', () => {
+    window.addEventListener("resize", () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         // If resizing into tablet+ range and mobile nav is open, close it
@@ -208,33 +208,32 @@ class SPARouter {
   }
 
   attachHamburgerListener() {
-    const hamburger = document.getElementById('hamburger-toggle');
-    const mobileNav = document.getElementById('mobile-nav');
+    const hamburger = document.getElementById("hamburger-toggle");
+    const mobileNav = document.getElementById("mobile-nav");
 
     if (hamburger) {
-      hamburger.addEventListener('click', () => {
+      hamburger.addEventListener("click", () => {
         // Only allow toggle if in mobile breakpoint
         if (this.isMobileBreakpoint()) {
-          hamburger.classList.toggle('active');
-          mobileNav.classList.toggle('active');
+          hamburger.classList.toggle("active");
+          mobileNav.classList.toggle("active");
         }
       });
     }
   }
 
   closeMobileNav() {
-    const hamburger = document.getElementById('hamburger-toggle');
-    const mobileNav = document.getElementById('mobile-nav');
+    const hamburger = document.getElementById("hamburger-toggle");
+    const mobileNav = document.getElementById("mobile-nav");
 
     if (hamburger && mobileNav) {
-      hamburger.classList.remove('active');
-      mobileNav.classList.remove('active');
+      hamburger.classList.remove("active");
+      mobileNav.classList.remove("active");
     }
   }
 
   getPageFromPath(pathname) {
-    if (pathname === "/" || pathname === "/home")
-      return "home";
+    if (pathname === "/" || pathname === "/home") return "home";
     return pathname.replace("/", "");
   }
 
@@ -259,18 +258,19 @@ class SPARouter {
 
       const cacheKey = pageCacheKey(pageName, pageNumber);
       const cachedPage = this.pagesData[cacheKey];
-      const pageData = pageContainer.dataset.loaded === 'true'
-        && Number(pageContainer.dataset.pageNumber || 1) === pageNumber
-        && cachedPage?.seo
-        ? cachedPage
-        : await this.loadPage(pageName, pageContainer, pageNumber);
+      const pageData =
+        pageContainer.dataset.loaded === "true" &&
+        Number(pageContainer.dataset.pageNumber || 1) === pageNumber &&
+        cachedPage?.seo
+          ? cachedPage
+          : await this.loadPage(pageName, pageContainer, pageNumber);
 
       await this.updatePageCSS(pageData.pageCSS);
 
-      document.querySelectorAll('.page-container').forEach(container => {
-        container.classList.remove('active');
+      document.querySelectorAll(".page-container").forEach((container) => {
+        container.classList.remove("active");
       });
-      pageContainer.classList.add('active');
+      pageContainer.classList.add("active");
 
       if (pageData?.seo) {
         this.applySeoMetadata(pageData.seo);
@@ -314,45 +314,49 @@ class SPARouter {
     const setMeta = (attribute, name, content) => {
       let element = document.querySelector(`meta[${attribute}="${name}"]`);
       if (!element) {
-        element = document.createElement('meta');
+        element = document.createElement("meta");
         element.setAttribute(attribute, name);
         document.head.appendChild(element);
       }
       element.content = content;
     };
 
-    setMeta('name', 'description', metadata.description);
-    setMeta('property', 'og:site_name', metadata.siteName);
-    setMeta('property', 'og:type', metadata.type);
-    setMeta('property', 'og:title', metadata.title);
-    setMeta('property', 'og:description', metadata.description);
-    setMeta('property', 'og:url', metadata.canonical);
-    setMeta('property', 'og:image', metadata.image);
-    setMeta('name', 'twitter:card', 'summary_large_image');
-    setMeta('name', 'twitter:title', metadata.title);
-    setMeta('name', 'twitter:description', metadata.description);
-    setMeta('name', 'twitter:image', metadata.image);
+    setMeta("name", "description", metadata.description);
+    setMeta("property", "og:site_name", metadata.siteName);
+    setMeta("property", "og:type", metadata.type);
+    setMeta("property", "og:title", metadata.title);
+    setMeta("property", "og:description", metadata.description);
+    setMeta("property", "og:url", metadata.canonical);
+    setMeta("property", "og:image", metadata.image);
+    setMeta("name", "twitter:card", "summary_large_image");
+    setMeta("name", "twitter:title", metadata.title);
+    setMeta("name", "twitter:description", metadata.description);
+    setMeta("name", "twitter:image", metadata.image);
 
     let canonical = document.querySelector('link[rel="canonical"]');
     if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.rel = 'canonical';
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
       document.head.appendChild(canonical);
     }
     canonical.href = metadata.canonical;
 
-    const published = document.querySelector('meta[property="article:published_time"]');
+    const published = document.querySelector(
+      'meta[property="article:published_time"]'
+    );
     if (metadata.publishedTime) {
-      setMeta('property', 'article:published_time', metadata.publishedTime);
+      setMeta("property", "article:published_time", metadata.publishedTime);
     } else {
       published?.remove();
     }
 
-    let structuredData = document.querySelector('script[type="application/ld+json"]');
+    let structuredData = document.querySelector(
+      'script[type="application/ld+json"]'
+    );
     if (metadata.structuredData) {
       if (!structuredData) {
-        structuredData = document.createElement('script');
-        structuredData.type = 'application/ld+json';
+        structuredData = document.createElement("script");
+        structuredData.type = "application/ld+json";
         document.head.appendChild(structuredData);
       }
       structuredData.textContent = JSON.stringify(metadata.structuredData);
@@ -366,7 +370,7 @@ class SPARouter {
       link.classList.remove("active");
       const linkHref = link.getAttribute("href");
       const linkPage = linkHref === "/" ? "home" : linkHref?.replace("/", "");
-      if (linkPage === pageName || pageName === "home" && linkHref === "/") {
+      if (linkPage === pageName || (pageName === "home" && linkHref === "/")) {
         link.classList.add("active");
       }
     });
@@ -382,26 +386,29 @@ class SPARouter {
         const email = emailElement.getAttribute("data-email");
         if (email) {
           // Copy to clipboard
-          navigator.clipboard.writeText(email).then(() => {
-            // Create or get tooltip
-            let tooltip = emailElement.querySelector("#copy-tooltip");
-            if (!tooltip) {
-              tooltip = document.createElement("span");
-              tooltip.id = "copy-tooltip";
-              tooltip.textContent = "Email copied to clipboard";
-              emailElement.appendChild(tooltip);
-            }
+          navigator.clipboard
+            .writeText(email)
+            .then(() => {
+              // Create or get tooltip
+              let tooltip = emailElement.querySelector("#copy-tooltip");
+              if (!tooltip) {
+                tooltip = document.createElement("span");
+                tooltip.id = "copy-tooltip";
+                tooltip.textContent = "Email copied to clipboard";
+                emailElement.appendChild(tooltip);
+              }
 
-            // Show tooltip
-            tooltip.classList.add("show");
+              // Show tooltip
+              tooltip.classList.add("show");
 
-            // Auto-hide after 1 second
-            setTimeout(() => {
-              tooltip.classList.remove("show");
-            }, 1000);
-          }).catch(err => {
-            console.error("[SPA Router] Failed to copy email:", err);
-          });
+              // Auto-hide after 1 second
+              setTimeout(() => {
+                tooltip.classList.remove("show");
+              }, 1000);
+            })
+            .catch((err) => {
+              console.error("[SPA Router] Failed to copy email:", err);
+            });
         }
         return false;
       }
@@ -410,7 +417,7 @@ class SPARouter {
 
   getViewedPosts() {
     try {
-      return JSON.parse(localStorage.getItem('viewedBlogPosts') || '{}');
+      return JSON.parse(localStorage.getItem("viewedBlogPosts") || "{}");
     } catch {
       return {};
     }
@@ -419,7 +426,7 @@ class SPARouter {
   saveViewedPost(slug, viewedPosts) {
     try {
       viewedPosts[slug] = true;
-      localStorage.setItem('viewedBlogPosts', JSON.stringify(viewedPosts));
+      localStorage.setItem("viewedBlogPosts", JSON.stringify(viewedPosts));
     } catch {
       // View tracking must never block navigation.
     }
@@ -427,13 +434,13 @@ class SPARouter {
 
   getVisitorId() {
     try {
-      const existing = localStorage.getItem('portfolioVisitorId');
+      const existing = localStorage.getItem("portfolioVisitorId");
       if (existing) {
         return existing;
       }
 
       const visitorId = crypto.randomUUID();
-      localStorage.setItem('portfolioVisitorId', visitorId);
+      localStorage.setItem("portfolioVisitorId", visitorId);
       return visitorId;
     } catch {
       return crypto.randomUUID();
@@ -459,7 +466,7 @@ class SPARouter {
   async loadBlogPost(slug, addTransition, returnPage = 1) {
     this.isNavigating = true;
     try {
-      const blogPostContainer = document.getElementById('blog-post-page');
+      const blogPostContainer = document.getElementById("blog-post-page");
 
       if (blogPostContainer && addTransition) {
         blogPostContainer.style.opacity = "0";
@@ -470,24 +477,21 @@ class SPARouter {
       const viewedPosts = this.getViewedPosts();
       const hasBeenViewed = viewedPosts[slug] === true;
       const response = await fetch(
-        blogPostApiPath(
-          slug,
-          hasBeenViewed ? undefined : this.getVisitorId(),
-        ),
+        blogPostApiPath(slug, hasBeenViewed ? undefined : this.getVisitorId())
       );
       if (!response.ok) {
         throw new Error(`Failed to load blog post: ${response.statusText}`);
       }
       const data = await response.json();
-      await this.updatePageCSS('/pages/blog/styles.css');
+      await this.updatePageCSS("/pages/blog/styles.css");
 
       if (!hasBeenViewed) {
         this.saveViewedPost(slug, viewedPosts);
       }
 
       // Hide all pages and show blog-post-page
-      document.querySelectorAll('.page-container').forEach(container => {
-        container.classList.remove('active');
+      document.querySelectorAll(".page-container").forEach((container) => {
+        container.classList.remove("active");
       });
 
       if (blogPostContainer) {
@@ -499,26 +503,26 @@ class SPARouter {
             </div>
           </article>
         `;
-        blogPostContainer.classList.add('active');
+        blogPostContainer.classList.add("active");
 
-        const backLink = blogPostContainer.querySelector('.back-to-blog');
+        const backLink = blogPostContainer.querySelector(".back-to-blog");
         if (backLink) {
-          backLink.addEventListener('click', (e) => {
+          backLink.addEventListener("click", (e) => {
             e.preventDefault();
-            const backUrl = collectionPath('blog', returnPage);
+            const backUrl = collectionPath("blog", returnPage);
             window.history.pushState(
-              { page: 'blog', pageNumber: returnPage },
-              '',
-              backUrl,
+              { page: "blog", pageNumber: returnPage },
+              "",
+              backUrl
             );
-            this.switchPage('blog', returnPage);
+            this.switchPage("blog", returnPage);
           });
         }
       }
 
       this.applySeoMetadata(data.seo);
 
-      this.updateActiveNav('blog');
+      this.updateActiveNav("blog");
 
       if (blogPostContainer && addTransition) {
         // Trigger reflow for CSS transition (CSS transition uses opacity)
@@ -527,9 +531,10 @@ class SPARouter {
       }
     } catch (error) {
       console.error("[SPA Router] Error loading blog post:", error);
-      const blogPostContainer = document.getElementById('blog-post-page');
+      const blogPostContainer = document.getElementById("blog-post-page");
       if (blogPostContainer) {
-        blogPostContainer.innerHTML = "<h1>Error loading post</h1><p>Please try again.</p>";
+        blogPostContainer.innerHTML =
+          "<h1>Error loading post</h1><p>Please try again.</p>";
       }
     } finally {
       this.isNavigating = false;
@@ -539,7 +544,7 @@ class SPARouter {
   async loadProject(slug, addTransition, returnPage = 1) {
     this.isNavigating = true;
     try {
-      const projectContainer = document.getElementById('project-page');
+      const projectContainer = document.getElementById("project-page");
 
       if (projectContainer && addTransition) {
         projectContainer.style.opacity = "0";
@@ -552,11 +557,11 @@ class SPARouter {
         throw new Error(`Failed to load project: ${response.statusText}`);
       }
       const data = await response.json();
-      await this.updatePageCSS('/pages/projects/styles.css');
+      await this.updatePageCSS("/pages/projects/styles.css");
 
       // Hide all pages and show project-page
-      document.querySelectorAll('.page-container').forEach(container => {
-        container.classList.remove('active');
+      document.querySelectorAll(".page-container").forEach((container) => {
+        container.classList.remove("active");
       });
 
       if (projectContainer) {
@@ -566,26 +571,26 @@ class SPARouter {
             ${data.html}
           </div>
         `;
-        projectContainer.classList.add('active');
+        projectContainer.classList.add("active");
 
-        const backLink = projectContainer.querySelector('.back-to-projects');
+        const backLink = projectContainer.querySelector(".back-to-projects");
         if (backLink) {
-          backLink.addEventListener('click', (e) => {
+          backLink.addEventListener("click", (e) => {
             e.preventDefault();
-            const backUrl = collectionPath('projects', returnPage);
+            const backUrl = collectionPath("projects", returnPage);
             window.history.pushState(
-              { page: 'projects', pageNumber: returnPage },
-              '',
-              backUrl,
+              { page: "projects", pageNumber: returnPage },
+              "",
+              backUrl
             );
-            this.switchPage('projects', returnPage);
+            this.switchPage("projects", returnPage);
           });
         }
       }
 
       this.applySeoMetadata(data.seo);
 
-      this.updateActiveNav('projects');
+      this.updateActiveNav("projects");
 
       if (projectContainer && addTransition) {
         // Trigger reflow for CSS transition (CSS transition uses opacity)
@@ -594,9 +599,10 @@ class SPARouter {
       }
     } catch (error) {
       console.error("[SPA Router] Error loading project:", error);
-      const projectContainer = document.getElementById('project-page');
+      const projectContainer = document.getElementById("project-page");
       if (projectContainer) {
-        projectContainer.innerHTML = "<h1>Error loading project</h1><p>Please try again.</p>";
+        projectContainer.innerHTML =
+          "<h1>Error loading project</h1><p>Please try again.</p>";
       }
     } finally {
       this.isNavigating = false;
@@ -605,8 +611,8 @@ class SPARouter {
 }
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
-    new SPARouter;
+    new SPARouter();
   });
 } else {
-  new SPARouter;
+  new SPARouter();
 }

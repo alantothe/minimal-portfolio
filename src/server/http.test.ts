@@ -147,4 +147,29 @@ describe("public HTTP behavior", () => {
     expect(data.content).toContain('href="/projects/questurian"');
     expect(data.content).toContain('href="/projects/minimal-portfolio"');
   });
+
+  test("home exposes GitHub activity through an interactive popover", async () => {
+    const response = await createRequestHandler().handleRequest(
+      new Request("http://portfolio.test/")
+    );
+    const html = await response.text();
+
+    expect(html).toContain('<div class="github-activity">');
+    expect(html).toContain('type="button"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("data-github-activity-trigger");
+    expect(html).toContain("commits this month");
+    expect(html).toContain('class="github-activity__profile-link"');
+    expect(html).toContain('class="github-activity__external-icon"');
+    expect(html).toMatch(
+      /class="github-activity__external-icon"[\s\S]*?width="16"[\s\S]*?height="16"/
+    );
+    expect(html).toContain('href="https://github.com/alantothe"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain(
+      '<a class="stat-item stat-link" href="/blog" data-spa-link>'
+    );
+    expect(html).toContain('<div class="stat-item stat-highlight">');
+    expect(html).toContain('id="github-activity-panel"');
+  });
 });

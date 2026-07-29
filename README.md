@@ -15,7 +15,7 @@ https://github.com/user-attachments/assets/3516996e-6c8c-4123-bc20-fbfcd3a6d133
 
 - single config file for all your info
 - cli tools to create blogs and projects instantly
-- real-time github commit stats
+- real-time github commit stats with a yearly contribution heatmap
 - lightning fast spa with instant page switching
 - responsive mobile-first design
 - markdown-based content

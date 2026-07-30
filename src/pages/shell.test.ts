@@ -8,6 +8,9 @@ const githubActivity = await Bun.file(
   import.meta.dir + "/../public/github-activity.js"
 ).text();
 const homeStyles = await Bun.file(import.meta.dir + "/home/styles.css").text();
+const globalStyles = await Bun.file(
+  import.meta.dir + "/../public/css/global.css"
+).text();
 const imageLoader = await Bun.file(
   import.meta.dir + "/../public/image-loader.js"
 ).text();
@@ -34,6 +37,15 @@ describe("SPA navigation", () => {
     expect(router).toContain("a.nav-link, a[data-spa-link]");
   });
 
+  test("accounts for the desktop top inset in the sticky sidebar height", () => {
+    expect(globalStyles).not.toMatch(
+      /\.sidebar\s*\{[^}]*height:\s*100vh;[^}]*\}/
+    );
+    expect(globalStyles).toMatch(
+      /\.sidebar\s*\{[^}]*height:\s*calc\(100vh - 130px\);[^}]*\}/
+    );
+  });
+
   test("supports pinning and dismissing the GitHub activity popover", () => {
     expect(imageLoader).toContain('import("/public/github-activity.js")');
     expect(githubActivity).toContain("attachGitHubActivityListener");
@@ -48,10 +60,26 @@ describe("SPA navigation", () => {
       /\.github-activity__panel \{[^}]*height: 100%;[^}]*left: calc\(100% \+ 14px\);[^}]*width: min\(420px, calc\(100vw - 40px\)\);/
     );
     expect(homeStyles).toMatch(
-      /\.github-activity__chevron \{[^}]*opacity: 0;[^}]*transform: rotate\(-90deg\);[^}]*transition: opacity 140ms ease;/
+      /\.github-activity__chevron \{[^}]*opacity: 0\.85;[^}]*transform: rotate\(-90deg\);[^}]*transition: opacity 140ms ease;/
     );
     expect(homeStyles).toMatch(
-      /\.github-activity:hover \.github-activity__profile-link svg,[^}]*color: #5eead4;[^}]*text-decoration-color: #5eead4;/
+      /\.github-activity__profile-link \{[^}]*color: var\(--github-accent\);/
+    );
+    expect(homeStyles).toContain("var(--home-accent) 42%");
+    expect(homeStyles).toMatch(
+      /\.github-activity__profile-text \{[^}]*color: var\(--github-text-rest\);[^}]*text-decoration-color: var\(--github-text-rest\);/
+    );
+    expect(homeStyles).toMatch(
+      /\.github-activity:hover \.github-activity__profile-text,[^}]*color: var\(--github-accent\);[^}]*text-decoration-color: var\(--github-accent\);/
+    );
+    expect(homeStyles).toMatch(
+      /\.github-activity__profile-link svg \{[^}]*color: var\(--github-text-rest\);/
+    );
+    expect(homeStyles).toMatch(
+      /\.github-activity:hover \.github-activity__profile-link svg,[^}]*color: var\(--github-accent\);/
+    );
+    expect(homeStyles).toContain(
+      ".github-activity:focus-within > .github-activity__panel"
     );
     expect(homeStyles).toMatch(
       /\.github-activity__heatmap \{[^}]*height: 100%;[^}]*width: 100%;/
@@ -59,7 +87,12 @@ describe("SPA navigation", () => {
     expect(homeStyles).toMatch(
       /\.stat-highlight \{[^}]*cursor: default;[^}]*\}/
     );
-    expect(homeStyles).toMatch(/#copy-email:hover,[^}]*color: #5eead4;/);
+    expect(homeStyles).toMatch(
+      /#copy-email \{[^}]*color: var\(--home-accent-rest\);[^}]*text-decoration-color: var\(--home-accent-rest\);/
+    );
+    expect(homeStyles).toMatch(
+      /#copy-email:hover,[^}]*color: var\(--home-accent\);[^}]*text-decoration-color: var\(--home-accent\);/
+    );
     expect(homeStyles).toContain("@media (max-width: 900px)");
   });
 });

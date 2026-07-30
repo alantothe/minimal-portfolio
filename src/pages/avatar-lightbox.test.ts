@@ -43,18 +43,27 @@ describe("profile image lightbox", () => {
     ]) {
       expect(homeStyles).toContain(stop);
     }
+    expect(homeStyles).toMatch(
+      /\.profile-image-trigger::after \{[^}]*opacity: 1;/
+    );
+    expect(homeStyles).toMatch(
+      /@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\.profile-image-trigger::after \{[^}]*animation: profile-border-orbit/
+    );
     expect(homeStyles).not.toContain("transform: scale(1.02)");
   });
 
-  test("links avatar and GitHub activity hover states in both directions", () => {
-    expect(homeStyles).toMatch(
-      /\.profile-section:has\(\.profile-image-trigger:hover\)\s+\.github-activity__profile-text/
+  test("links avatar and GitHub activity pointer and keyboard states in both directions", () => {
+    expect(homeStyles).toContain(
+      ".profile-image-trigger:is(:hover, :focus-visible, :active)"
     );
     expect(homeStyles).toMatch(
       /\.profile-section:has\(\.profile-image-trigger:hover\)\s+\.github-activity\s+>\s+\.github-activity__panel/
     );
-    expect(homeStyles).toMatch(
-      /\.profile-section:has\(\s*\.github-activity:is\(:hover, :focus-within, \.is-open\)\s*\)/
+    expect(homeStyles).toContain(
+      ".github-activity:is(:hover, :focus-within, :active, .is-open)"
+    );
+    expect(homeStyles).toContain(
+      ".github-activity:focus-within > .github-activity__panel"
     );
   });
 });

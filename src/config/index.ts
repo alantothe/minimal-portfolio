@@ -54,7 +54,7 @@ export const homeConfig = {
     // Longer biography - HTML is allowed
     // Use <span id="copy-email" data-email="your@email.com">text here</span>
     // to make text clickable for email copying
-    bio: `I built this space to showcase my projects and share my process. The site is intentionally minimal, just my work and occasional thoughts on what I'm exploring. Take a look around — if you have questions or want to chat about something, feel free to <span id="copy-email" data-email="alanmalpartida@gmail.com">reach out</span>.`,
+    bio: `I built this space to showcase my <a class="home-inline-link" href="/projects" data-spa-link>projects</a> and share my process. The site is intentionally minimal, just my work and occasional thoughts on what I'm exploring. Take a look around — if you have questions or want to chat about something, feel free to <span id="copy-email" data-email="alanmalpartida@gmail.com">reach out</span>.`,
   },
 
   // These values are automatically populated by the server

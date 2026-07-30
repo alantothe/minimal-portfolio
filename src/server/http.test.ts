@@ -169,6 +169,9 @@ describe("public HTTP behavior", () => {
     expect(html).toContain(
       '<a class="stat-item stat-link" href="/blog" data-spa-link>'
     );
+    expect(html).toContain(
+      '<a class="home-inline-link" href="/projects" data-spa-link>projects</a>'
+    );
     expect(html).toContain('<div class="stat-item stat-highlight">');
     expect(html).toContain('id="github-activity-panel"');
   });

@@ -10,6 +10,11 @@
   }
 }
 
+#home {
+  --home-accent: #5eead4;
+  --home-accent-rest: color-mix(in srgb, var(--home-accent) 42%, #999999);
+}
+
 /* Home tab specific font sizes */
 #home::selection,
 #home ::selection {
@@ -91,7 +96,7 @@ h3 {
   border-radius: inherit;
   content: "";
   inset: 0;
-  opacity: 0;
+  opacity: 1;
   padding: 2px;
   pointer-events: none;
   position: absolute;
@@ -114,15 +119,16 @@ h3 {
   transition: filter 160ms ease;
 }
 
-.profile-image-trigger:is(:hover, :focus-visible)::after,
-.profile-section:has(.github-activity:is(:hover, :focus-within, .is-open))
+@media (prefers-reduced-motion: no-preference) {
   .profile-image-trigger::after {
-  animation: profile-border-orbit 2.8s linear infinite;
-  opacity: 1;
+    animation: profile-border-orbit 2.8s linear infinite;
+  }
 }
 
-.profile-image-trigger:is(:hover, :focus-visible) .profile-img,
-.profile-section:has(.github-activity:is(:hover, :focus-within, .is-open))
+.profile-image-trigger:is(:hover, :focus-visible, :active) .profile-img,
+.profile-section:has(
+    .github-activity:is(:hover, :focus-within, :active, .is-open)
+  )
   .profile-img {
   filter: brightness(1.06) saturate(1.06);
 }
@@ -259,6 +265,9 @@ h3 {
 }
 
 .github-activity {
+  --github-accent: var(--home-accent);
+  --github-text-rest: var(--home-accent-rest);
+
   position: static;
   width: max-content;
 }
@@ -283,7 +292,7 @@ h3 {
 
 .github-activity__profile-link {
   align-items: center;
-  color: inherit;
+  color: var(--github-accent);
   cursor: pointer;
   display: flex;
   gap: 10px;
@@ -291,6 +300,7 @@ h3 {
 }
 
 .github-activity__profile-link svg {
+  color: var(--github-text-rest);
   transition: color 140ms ease;
 }
 
@@ -301,22 +311,29 @@ h3 {
 }
 
 .github-activity__profile-text {
+  color: var(--github-text-rest);
   text-decoration: underline;
-  text-decoration-color: transparent;
+  text-decoration-color: var(--github-text-rest);
   text-underline-offset: 3px;
   transition:
     color 140ms ease,
     text-decoration-color 140ms ease;
 }
 
-.github-activity:hover .github-activity__profile-link svg,
-.github-activity:focus-within .github-activity__profile-link svg,
-.github-activity.is-open .github-activity__profile-link svg,
 .github-activity:hover .github-activity__profile-text,
 .github-activity:focus-within .github-activity__profile-text,
-.github-activity.is-open .github-activity__profile-text {
-  color: #5eead4;
-  text-decoration-color: #5eead4;
+.github-activity:active .github-activity__profile-text,
+.github-activity.is-open .github-activity__profile-text,
+.github-activity:hover .github-activity__profile-link svg,
+.github-activity:focus-within .github-activity__profile-link svg,
+.github-activity:active .github-activity__profile-link svg,
+.github-activity.is-open .github-activity__profile-link svg,
+.github-activity:hover .github-activity__chevron,
+.github-activity:focus-within .github-activity__chevron,
+.github-activity:active .github-activity__chevron,
+.github-activity.is-open .github-activity__chevron {
+  color: var(--github-accent);
+  text-decoration-color: var(--github-accent);
 }
 
 .github-activity__profile-link:focus-visible {
@@ -333,16 +350,11 @@ h3 {
 }
 
 .github-activity__chevron {
+  color: var(--github-text-rest);
   margin-left: 1px;
-  opacity: 0;
+  opacity: 0.85;
   transform: rotate(-90deg);
   transition: opacity 140ms ease;
-}
-
-.github-activity:hover .github-activity__chevron,
-.github-activity:focus-within .github-activity__chevron,
-.github-activity.is-open .github-activity__chevron {
-  opacity: 0.7;
 }
 
 .github-activity__panel {
@@ -379,7 +391,11 @@ h3 {
   width: 14px;
 }
 
-.github-activity.is-open > .github-activity__panel {
+.github-activity.is-open > .github-activity__panel,
+.github-activity:focus-within > .github-activity__panel,
+.profile-section:has(.profile-image-trigger:is(:focus-visible, :active))
+  .github-activity
+  > .github-activity__panel {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(0);
@@ -489,18 +505,27 @@ h3 {
 }
 
 /* Email copy functionality */
+.home-inline-link,
 #copy-email {
-  text-decoration: underline;
-  color: #999999;
+  color: var(--home-accent-rest);
   cursor: pointer;
-  position: relative;
   display: inline-block;
-  transition: color 140ms ease;
+  position: relative;
+  text-decoration: underline;
+  text-decoration-color: var(--home-accent-rest);
+  transition:
+    color 140ms ease,
+    text-decoration-color 140ms ease;
 }
 
+.home-inline-link:hover,
+.home-inline-link:focus-visible,
+.home-inline-link:active,
 #copy-email:hover,
-#copy-email:focus-visible {
-  color: #5eead4;
+#copy-email:focus-visible,
+#copy-email:active {
+  color: var(--home-accent);
+  text-decoration-color: var(--home-accent);
 }
 
 #copy-tooltip {
@@ -543,7 +568,11 @@ h3 {
     width: 100%;
   }
 
-  .github-activity.is-open > .github-activity__panel {
+  .github-activity.is-open > .github-activity__panel,
+  .github-activity:focus-within > .github-activity__panel,
+  .profile-section:has(.profile-image-trigger:is(:focus-visible, :active))
+    .github-activity
+    > .github-activity__panel {
     transform: translateY(0);
   }
 }
@@ -585,36 +614,6 @@ h3 {
   transition:
     color 140ms ease,
     text-decoration-color 140ms ease;
-}
-
-.profile-section:has(.profile-image-trigger:hover)
-  .github-activity
-  .stat-item
-  svg,
-.profile-section:has(.profile-image-trigger:hover)
-  .github-activity
-  .stat-item
-  > span,
-.profile-section:has(.profile-image-trigger:hover)
-  .github-activity__profile-text,
-.profile-section:has(.profile-image-trigger:focus-visible)
-  .github-activity
-  .stat-item
-  svg,
-.profile-section:has(.profile-image-trigger:focus-visible)
-  .github-activity
-  .stat-item
-  > span,
-.profile-section:has(.profile-image-trigger:focus-visible)
-  .github-activity__profile-text {
-  color: #5eead4;
-  text-decoration-color: #5eead4;
-}
-
-.profile-section:has(.profile-image-trigger:hover) .github-activity__chevron,
-.profile-section:has(.profile-image-trigger:focus-visible)
-  .github-activity__chevron {
-  opacity: 0.7;
 }
 
 @media (hover: hover) {

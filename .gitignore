@@ -51,10 +51,15 @@ ehthumbs.db
 *.tmp
 *.temp
 
-# docs
-docs/
+# Generated docs
+docs/*
+!docs/agents/
+!docs/agents/**
+!docs/adr/
+!docs/adr/**
+!docs/research/
+!docs/research/**
 
 # Claude Code
 CLAUDE.md
-
 

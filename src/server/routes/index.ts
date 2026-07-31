@@ -11,6 +11,13 @@ import {
   createSitemapHandler,
 } from "../handlers/discovery";
 import { readinessHandler } from "../handlers/readiness";
+import {
+  adminHomeHandler,
+  adminLoginHandler,
+  adminLogoutHandler,
+  adminSignInCallbackHandler,
+  adminSignInStartHandler,
+} from "../handlers/admin";
 
 export function setupRoutes(router: Router): void {
   router.addRoute(
@@ -46,4 +53,17 @@ export function setupRoutes(router: Router): void {
   // Projects API routes
   router.addRoute("/api/projects/list", fromResponder(projectsListHandler));
   router.addRoute("/api/projects/:slug", fromUrlFactory(createProjectHandler));
+
+  // Owner workspace. Everything under /admin passes the boundary in
+  // `requestHandler.ts` before reaching any of these, including paths that
+  // match no route at all — registration here decides what exists, not what is
+  // protected.
+  router.addRoute("/admin", adminHomeHandler);
+  router.addRoute("/admin/login", adminLoginHandler);
+  router.addRoute("/admin/auth/github/start", adminSignInStartHandler);
+  router.addRoute("/admin/auth/github/callback", adminSignInCallbackHandler);
+  // Sign-out changes server state, so it is a POST and nothing else. Declaring
+  // the method here is what makes `GET /admin/logout` a 405 rather than a
+  // logout link an attacker can put in an <img> tag.
+  router.addRoute("/admin/logout", adminLogoutHandler, { methods: ["POST"] });
 }

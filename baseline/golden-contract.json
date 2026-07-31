@@ -1,0 +1,753 @@
+{
+  "version": 1,
+  "origin": "https://baseline.test",
+  "routes": [
+    {
+      "path": "/healthz",
+      "kind": "health",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": null,
+      "location": null,
+      "bodyHash": "a29ee2b15c494311c52521766e44af56a3ad2248e7a8ab465e5206463c13d288",
+      "textHash": null,
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/robots.txt",
+      "kind": "discovery",
+      "status": 200,
+      "contentType": "text/plain; charset=utf-8",
+      "cacheControl": "public, max-age=3600",
+      "location": null,
+      "bodyHash": "5437f34651348971a32cfd5cd52943eb2187d5b84621ffff7c7ef8365ff12195",
+      "textHash": "dbf90a14d65434b2420ff137e386f66b4f67488199e87190be3e4685999f2fe3",
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/sitemap.xml",
+      "kind": "discovery",
+      "status": 200,
+      "contentType": "application/xml; charset=utf-8",
+      "cacheControl": "public, max-age=3600",
+      "location": null,
+      "bodyHash": "8deff1eebede7e7ad7283c184f62c1a106cad2916276091b8aa8a6b401e20b6c",
+      "textHash": "d6d52c4ecd1cb9ffb09cbfa42c356a84ea7d26c8bcda06195eef38b6c5e0e455",
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/",
+      "kind": "page",
+      "status": 200,
+      "contentType": "text/html",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "257110d4dc94f0bc450b2e366ad9804f98e85f564f97a9677b610f88a88c576f",
+      "textHash": "0e9c4c313907dfb3caa6ab13285903e273d88f530afb51a489ad39f9ac5d5c20",
+      "headings": ["h1:Alan Malpartida"],
+      "internalLinks": ["/", "/about", "/blog", "/projects"],
+      "images": [
+        {
+          "src": "/avatar.webp",
+          "alt": "Alan Malpartida"
+        },
+        {
+          "src": "/avatar.webp",
+          "alt": "Alan Malpartida"
+        },
+        {
+          "src": "/public/logo.png",
+          "alt": "Alan Malpartida"
+        }
+      ],
+      "seo": {
+        "title": "Alan Malpartida — Founding Engineer at Questurian",
+        "description": "Alan Malpartida is a full-stack software engineer working as Founding Engineer at Questurian, building web platforms and sharing technical projects.",
+        "canonical": "https://baseline.test/",
+        "ogSiteName": "Alan Malpartida",
+        "ogType": "website",
+        "ogTitle": "Alan Malpartida — Founding Engineer at Questurian",
+        "ogDescription": "Alan Malpartida is a full-stack software engineer working as Founding Engineer at Questurian, building web platforms and sharing technical projects.",
+        "ogUrl": "https://baseline.test/",
+        "ogImage": "https://baseline.test/public/og.png",
+        "twitterCard": "summary_large_image",
+        "twitterTitle": "Alan Malpartida — Founding Engineer at Questurian",
+        "twitterDescription": "Alan Malpartida is a full-stack software engineer working as Founding Engineer at Questurian, building web platforms and sharing technical projects.",
+        "twitterImage": "https://baseline.test/public/og.png",
+        "articlePublishedTime": null,
+        "structuredData": [
+          {
+            "@context": "https://schema.org",
+            "@type": "Person",
+            "@id": "https://baseline.test/#alan-malpartida",
+            "name": "Alan Malpartida",
+            "url": "https://baseline.test/",
+            "image": "https://baseline.test/avatar.webp",
+            "jobTitle": "Founding Engineer at Questurian",
+            "sameAs": ["https://github.com/alantothe"]
+          }
+        ]
+      }
+    },
+    {
+      "path": "/home",
+      "kind": "redirect",
+      "status": 308,
+      "contentType": null,
+      "cacheControl": null,
+      "location": "/",
+      "bodyHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "textHash": null,
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/about",
+      "kind": "page",
+      "status": 200,
+      "contentType": "text/html",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "d524adba36f8703831d46f84d806d52ddb78116910b3802f1722bf1a8b701fd5",
+      "textHash": "47170ce903b16f9ad3f4135a50fbf477217caff561f73feb105b20e65a856228",
+      "headings": ["h1:About", "h1:About Questurian"],
+      "internalLinks": ["/", "/about", "/blog", "/projects"],
+      "images": [
+        {
+          "src": "/public/logo.png",
+          "alt": "Alan Malpartida"
+        }
+      ],
+      "seo": {
+        "title": "About Alan Malpartida",
+        "description": "Learn about Alan Malpartida, their software engineering background, current work, and selected interests.",
+        "canonical": "https://baseline.test/about",
+        "ogSiteName": "Alan Malpartida",
+        "ogType": "website",
+        "ogTitle": "About Alan Malpartida",
+        "ogDescription": "Learn about Alan Malpartida, their software engineering background, current work, and selected interests.",
+        "ogUrl": "https://baseline.test/about",
+        "ogImage": "https://baseline.test/public/og.png",
+        "twitterCard": "summary_large_image",
+        "twitterTitle": "About Alan Malpartida",
+        "twitterDescription": "Learn about Alan Malpartida, their software engineering background, current work, and selected interests.",
+        "twitterImage": "https://baseline.test/public/og.png",
+        "articlePublishedTime": null,
+        "structuredData": [
+          {
+            "@context": "https://schema.org",
+            "@type": "ProfilePage",
+            "mainEntity": {
+              "@context": "https://schema.org",
+              "@type": "Person",
+              "@id": "https://baseline.test/#alan-malpartida",
+              "name": "Alan Malpartida",
+              "url": "https://baseline.test/",
+              "image": "https://baseline.test/avatar.webp",
+              "jobTitle": "Founding Engineer at Questurian",
+              "sameAs": ["https://github.com/alantothe"]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/blog",
+      "kind": "collection",
+      "status": 200,
+      "contentType": "text/html",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "fb9833963e6eefe82e8f9182988610cc48036796ab0ffb2c1412f8be102f9dec",
+      "textHash": "93782f695fe80f7dada6b7f1fac84ac50ada0cb4a0b24dbf88805cfe83a0df77",
+      "headings": [
+        "h1:Blog",
+        "h2:Who Is Alan Malpartida - Software Engineer, Founder, and Builder"
+      ],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/blog",
+        "/blog/who-is-alan-malpartida-software-engineer-and-founder",
+        "/projects"
+      ],
+      "images": [
+        {
+          "src": "/public/logo.png",
+          "alt": "Alan Malpartida"
+        }
+      ],
+      "seo": {
+        "title": "Alan Malpartida’s Software Engineering Blog",
+        "description": "Software engineering, architecture, startup building, and project notes from Alan Malpartida.",
+        "canonical": "https://baseline.test/blog",
+        "ogSiteName": "Alan Malpartida",
+        "ogType": "website",
+        "ogTitle": "Alan Malpartida’s Software Engineering Blog",
+        "ogDescription": "Software engineering, architecture, startup building, and project notes from Alan Malpartida.",
+        "ogUrl": "https://baseline.test/blog",
+        "ogImage": "https://baseline.test/public/og.png",
+        "twitterCard": "summary_large_image",
+        "twitterTitle": "Alan Malpartida’s Software Engineering Blog",
+        "twitterDescription": "Software engineering, architecture, startup building, and project notes from Alan Malpartida.",
+        "twitterImage": "https://baseline.test/public/og.png",
+        "articlePublishedTime": null,
+        "structuredData": []
+      }
+    },
+    {
+      "path": "/projects",
+      "kind": "collection",
+      "status": 200,
+      "contentType": "text/html",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "796af1761188e563dff4df491878bcbebc26fa094ac46e9042b08c3be06c39e3",
+      "textHash": "4d486fc758c8989bb8abb3e6797b1f01d2dc9c29516936f573525a25a7b812b6",
+      "headings": ["h1:Projects", "h2:Questurian", "h2:Minimal Portfolio"],
+      "internalLinks": [
+        "/",
+        "/about",
+        "/blog",
+        "/projects",
+        "/projects/minimal-portfolio",
+        "/projects/questurian"
+      ],
+      "images": [
+        {
+          "src": "/public/logo.png",
+          "alt": "Alan Malpartida"
+        },
+        {
+          "src": "/public/og.png",
+          "alt": ""
+        },
+        {
+          "src": "https://res.cloudinary.com/dz18m79a1/image/upload/c_fill,w_300,h_180/v1761780791/questura_rbayjx.png",
+          "alt": ""
+        }
+      ],
+      "seo": {
+        "title": "Software Projects by Alan Malpartida",
+        "description": "Selected software projects built and contributed to by Alan Malpartida, with implementation details and technical context.",
+        "canonical": "https://baseline.test/projects",
+        "ogSiteName": "Alan Malpartida",
+        "ogType": "website",
+        "ogTitle": "Software Projects by Alan Malpartida",
+        "ogDescription": "Selected software projects built and contributed to by Alan Malpartida, with implementation details and technical context.",
+        "ogUrl": "https://baseline.test/projects",
+        "ogImage": "https://baseline.test/public/og.png",
+        "twitterCard": "summary_large_image",
+        "twitterTitle": "Software Projects by Alan Malpartida",
+        "twitterDescription": "Selected software projects built and contributed to by Alan Malpartida, with implementation details and technical context.",
+        "twitterImage": "https://baseline.test/public/og.png",
+        "articlePublishedTime": null,
+        "structuredData": []
+      }
+    },
+    {
+      "path": "/blog/who-is-alan-malpartida-software-engineer-and-founder",
+      "kind": "blog-post",
+      "status": 200,
+      "contentType": "text/html",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "742cfd3fe196c147f63a2781eb82e535b8f0fef6d4e29667a861a6195517d723",
+      "textHash": "b20fc2f3e63665303ceebe98284ad1c26958f530231052eac304d6812b5d57f9",
+      "headings": [
+        "h1:Who Is Alan Malpartida - Software Engineer, Founder, and Builder",
+        "h2:What I Do",
+        "h2:My Background",
+        "h2:Why I Built This Site",
+        "h2:What You'll Find Here",
+        "h2:Where I Am Now"
+      ],
+      "internalLinks": ["/", "/about", "/blog", "/projects"],
+      "images": [
+        {
+          "src": "/public/logo.png",
+          "alt": "Alan Malpartida"
+        }
+      ],
+      "seo": {
+        "title": "Who Is Alan Malpartida - Software Engineer, Founder, and Builder | Alan Malpartida",
+        "description": "Alan Malpartida is a software engineer and founding engineer at Questurian, a travel tech startup. Based in South America, he builds full-stack web applications and shares his journey through code, travel, and startup life.",
+        "canonical": "https://baseline.test/blog/who-is-alan-malpartida-software-engineer-and-founder",
+        "ogSiteName": "Alan Malpartida",
+        "ogType": "article",
+        "ogTitle": "Who Is Alan Malpartida - Software Engineer, Founder, and Builder | Alan Malpartida",
+        "ogDescription": "Alan Malpartida is a software engineer and founding engineer at Questurian, a travel tech startup. Based in South America, he builds full-stack web applications and shares his journey through code, travel, and startup life.",
+        "ogUrl": "https://baseline.test/blog/who-is-alan-malpartida-software-engineer-and-founder",
+        "ogImage": "https://baseline.test/public/og.png",
+        "twitterCard": "summary_large_image",
+        "twitterTitle": "Who Is Alan Malpartida - Software Engineer, Founder, and Builder | Alan Malpartida",
+        "twitterDescription": "Alan Malpartida is a software engineer and founding engineer at Questurian, a travel tech startup. Based in South America, he builds full-stack web applications and shares his journey through code, travel, and startup life.",
+        "twitterImage": "https://baseline.test/public/og.png",
+        "articlePublishedTime": "2026-02-11T00:00:00.000Z",
+        "structuredData": [
+          {
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            "headline": "Who Is Alan Malpartida - Software Engineer, Founder, and Builder",
+            "description": "Alan Malpartida is a software engineer and founding engineer at Questurian, a travel tech startup. Based in South America, he builds full-stack web applications and shares his journey through code, travel, and startup life.",
+            "datePublished": "2026-02-11T00:00:00.000Z",
+            "mainEntityOfPage": "https://baseline.test/blog/who-is-alan-malpartida-software-engineer-and-founder",
+            "author": {
+              "@id": "https://baseline.test/#alan-malpartida",
+              "@type": "Person",
+              "name": "Alan Malpartida",
+              "url": "https://baseline.test/"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/projects/minimal-portfolio",
+      "kind": "project",
+      "status": 200,
+      "contentType": "text/html",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "93cdc786d89cc36d01672172c5a4cdb57949a1c2a54d4b1ff66a28a6052f2e07",
+      "textHash": "6a2c6fab5c3c9850ae3d32ec2dce9107c052f624464339c5c6e8bc616e30f595",
+      "headings": [
+        "h1:Minimal Portfolio",
+        "h2:Context",
+        "h2:What I built",
+        "h2:How it works",
+        "h2:Engineering decisions",
+        "h2:What this demonstrates"
+      ],
+      "internalLinks": ["/", "/about", "/blog", "/projects"],
+      "images": [
+        {
+          "src": "/public/logo.png",
+          "alt": "Alan Malpartida"
+        }
+      ],
+      "seo": {
+        "title": "Minimal Portfolio | Alan Malpartida",
+        "description": "A source-controlled portfolio and publishing system with server-rendered pages, SPA navigation, durable view tracking, and production web safeguards.",
+        "canonical": "https://baseline.test/projects/minimal-portfolio",
+        "ogSiteName": "Alan Malpartida",
+        "ogType": "website",
+        "ogTitle": "Minimal Portfolio | Alan Malpartida",
+        "ogDescription": "A source-controlled portfolio and publishing system with server-rendered pages, SPA navigation, durable view tracking, and production web safeguards.",
+        "ogUrl": "https://baseline.test/projects/minimal-portfolio",
+        "ogImage": "https://baseline.test/public/og.png",
+        "twitterCard": "summary_large_image",
+        "twitterTitle": "Minimal Portfolio | Alan Malpartida",
+        "twitterDescription": "A source-controlled portfolio and publishing system with server-rendered pages, SPA navigation, durable view tracking, and production web safeguards.",
+        "twitterImage": "https://baseline.test/public/og.png",
+        "articlePublishedTime": null,
+        "structuredData": []
+      }
+    },
+    {
+      "path": "/projects/questurian",
+      "kind": "project",
+      "status": 200,
+      "contentType": "text/html",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "ebc95e8be99994010e1457c6b911a35495cc55a956438f6c88cef1ccc99dbfed",
+      "textHash": "309e2a655b329c9ec5ce7f6b7293dc35e8d7623a7a4b4897cb5e40d56e9377c1",
+      "headings": [
+        "h1:Questurian",
+        "h2:Context",
+        "h2:What I built",
+        "h2:How it works",
+        "h2:Engineering decisions",
+        "h2:What this demonstrates"
+      ],
+      "internalLinks": ["/", "/about", "/blog", "/projects"],
+      "images": [
+        {
+          "src": "/public/logo.png",
+          "alt": "Alan Malpartida"
+        }
+      ],
+      "seo": {
+        "title": "Questurian | Alan Malpartida",
+        "description": "A full-stack travel publishing platform connecting structured destination data, editorial tooling, media pipelines, and location-first discovery.",
+        "canonical": "https://baseline.test/projects/questurian",
+        "ogSiteName": "Alan Malpartida",
+        "ogType": "website",
+        "ogTitle": "Questurian | Alan Malpartida",
+        "ogDescription": "A full-stack travel publishing platform connecting structured destination data, editorial tooling, media pipelines, and location-first discovery.",
+        "ogUrl": "https://baseline.test/projects/questurian",
+        "ogImage": "https://baseline.test/public/og.png",
+        "twitterCard": "summary_large_image",
+        "twitterTitle": "Questurian | Alan Malpartida",
+        "twitterDescription": "A full-stack travel publishing platform connecting structured destination data, editorial tooling, media pipelines, and location-first discovery.",
+        "twitterImage": "https://baseline.test/public/og.png",
+        "articlePublishedTime": null,
+        "structuredData": []
+      }
+    },
+    {
+      "path": "/api/page?name=home",
+      "kind": "api",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "f3dd88e568184d743f69878608bdfd6b546389ac7de8ef6819e3242d233f4244",
+      "textHash": null,
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/api/page?name=about",
+      "kind": "api",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "4ba1b273cd4e8f8d97e27ed706e4d40c68172fca5be900c705adbfb3f7c05a3a",
+      "textHash": null,
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/api/page?name=blog",
+      "kind": "api",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "57297c32e9a558b55d5d26bca481011f17abcb2898b320582cfe4ad90fb85e94",
+      "textHash": null,
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/api/page?name=projects",
+      "kind": "api",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "4e5d096ea856c3cda39b8f2e4a682bce26bf55e69e94a2b570f0c7286961fa0d",
+      "textHash": null,
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/api/blog/list",
+      "kind": "api",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "df70cb7f1dd90435beabdabb5e2cf098e2a50affa2884a5df17b056c6b073f7b",
+      "textHash": null,
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/api/projects/list",
+      "kind": "api",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "e97c12e610674413a33b405fbf64e0493213464c7e4a3837895f7ff53ae1483e",
+      "textHash": null,
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/api/blog/who-is-alan-malpartida-software-engineer-and-founder",
+      "kind": "api",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "2b9456b5a32a37c364c591c3b4f037092e3fd9bd85cf185616629821724ef998",
+      "textHash": null,
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/api/projects/minimal-portfolio",
+      "kind": "api",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "7e14a85b8e257832f52cc032fa73f16289c7a4d94c271441a764d7cf65e91bda",
+      "textHash": null,
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/api/projects/questurian",
+      "kind": "api",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache",
+      "location": null,
+      "bodyHash": "aaa9690a908900958034070439c37215890d7f17355280d0f47e9e27a1638988",
+      "textHash": null,
+      "headings": [],
+      "internalLinks": [],
+      "images": [],
+      "seo": null
+    },
+    {
+      "path": "/blog/does-not-exist",
+      "kind": "not-found",
+      "status": 404,
+      "contentType": "text/html",
+      "cacheControl": null,
+      "location": null,
+      "bodyHash": "9da9027c5acf1ca2292d988d6302b6597bbc6d20a0953e02d00b17e15c3b952b",
+      "textHash": "16f90ccd2378f8a53e56435b775178f76ea1e95e83c6273d49c7fb4982d60800",
+      "headings": ["h1:404 - NotFoundError"],
+      "internalLinks": ["/"],
+      "images": [],
+      "seo": {
+        "title": "404 - NotFoundError",
+        "description": null,
+        "canonical": null,
+        "ogSiteName": null,
+        "ogType": null,
+        "ogTitle": null,
+        "ogDescription": null,
+        "ogUrl": null,
+        "ogImage": null,
+        "twitterCard": null,
+        "twitterTitle": null,
+        "twitterDescription": null,
+        "twitterImage": null,
+        "articlePublishedTime": null,
+        "structuredData": []
+      }
+    },
+    {
+      "path": "/projects/does-not-exist",
+      "kind": "not-found",
+      "status": 404,
+      "contentType": "text/html",
+      "cacheControl": null,
+      "location": null,
+      "bodyHash": "e387cae7b8a5dffafc37aa8f2987675b62e174b0861664b72fbc64a6d4f6cbb2",
+      "textHash": "804a2cc70c074e175a1e84c6c718827bae7b61ac666236e8efe25486e62e3c95",
+      "headings": ["h1:404 - NotFoundError"],
+      "internalLinks": ["/"],
+      "images": [],
+      "seo": {
+        "title": "404 - NotFoundError",
+        "description": null,
+        "canonical": null,
+        "ogSiteName": null,
+        "ogType": null,
+        "ogTitle": null,
+        "ogDescription": null,
+        "ogUrl": null,
+        "ogImage": null,
+        "twitterCard": null,
+        "twitterTitle": null,
+        "twitterDescription": null,
+        "twitterImage": null,
+        "articlePublishedTime": null,
+        "structuredData": []
+      }
+    },
+    {
+      "path": "/projects/%2e%2e%2fprojects%2fminimal-portfolio",
+      "kind": "not-found",
+      "status": 404,
+      "contentType": "text/html",
+      "cacheControl": null,
+      "location": null,
+      "bodyHash": "e387cae7b8a5dffafc37aa8f2987675b62e174b0861664b72fbc64a6d4f6cbb2",
+      "textHash": "804a2cc70c074e175a1e84c6c718827bae7b61ac666236e8efe25486e62e3c95",
+      "headings": ["h1:404 - NotFoundError"],
+      "internalLinks": ["/"],
+      "images": [],
+      "seo": {
+        "title": "404 - NotFoundError",
+        "description": null,
+        "canonical": null,
+        "ogSiteName": null,
+        "ogType": null,
+        "ogTitle": null,
+        "ogDescription": null,
+        "ogUrl": null,
+        "ogImage": null,
+        "twitterCard": null,
+        "twitterTitle": null,
+        "twitterDescription": null,
+        "twitterImage": null,
+        "articlePublishedTime": null,
+        "structuredData": []
+      }
+    },
+    {
+      "path": "/blog?page=99",
+      "kind": "not-found",
+      "status": 404,
+      "contentType": "text/html",
+      "cacheControl": null,
+      "location": null,
+      "bodyHash": "efc64f5225e54ecd6392d4a38c11f1747b1265b514d764ff97cf4ec62d4de80e",
+      "textHash": "ceb633ee08049c65fa91ba9a591b9c266af428e864dba97d82dc99180b9ef410",
+      "headings": ["h1:404 - NotFoundError"],
+      "internalLinks": ["/"],
+      "images": [],
+      "seo": {
+        "title": "404 - NotFoundError",
+        "description": null,
+        "canonical": null,
+        "ogSiteName": null,
+        "ogType": null,
+        "ogTitle": null,
+        "ogDescription": null,
+        "ogUrl": null,
+        "ogImage": null,
+        "twitterCard": null,
+        "twitterTitle": null,
+        "twitterDescription": null,
+        "twitterImage": null,
+        "articlePublishedTime": null,
+        "structuredData": []
+      }
+    },
+    {
+      "path": "/projects?page=99",
+      "kind": "not-found",
+      "status": 404,
+      "contentType": "text/html",
+      "cacheControl": null,
+      "location": null,
+      "bodyHash": "efc64f5225e54ecd6392d4a38c11f1747b1265b514d764ff97cf4ec62d4de80e",
+      "textHash": "ceb633ee08049c65fa91ba9a591b9c266af428e864dba97d82dc99180b9ef410",
+      "headings": ["h1:404 - NotFoundError"],
+      "internalLinks": ["/"],
+      "images": [],
+      "seo": {
+        "title": "404 - NotFoundError",
+        "description": null,
+        "canonical": null,
+        "ogSiteName": null,
+        "ogType": null,
+        "ogTitle": null,
+        "ogDescription": null,
+        "ogUrl": null,
+        "ogImage": null,
+        "twitterCard": null,
+        "twitterTitle": null,
+        "twitterDescription": null,
+        "twitterImage": null,
+        "articlePublishedTime": null,
+        "structuredData": []
+      }
+    }
+  ],
+  "content": [
+    {
+      "path": "src/config/index.ts",
+      "bytes": 5669,
+      "sha256": "03e58009d47224ee538036706575caf951e38d8c27583c9e3a9d2600a3415c69"
+    },
+    {
+      "path": "src/content/blog/who-is-alan-malpartida-software-engineer-and-founder.md",
+      "bytes": 3170,
+      "sha256": "fc0ad49223c0da4f8473c802fa0a835d4d20a4a2984aa5bdd020ed820b87b665"
+    },
+    {
+      "path": "src/content/projects/minimal-portfolio/content.md",
+      "bytes": 4928,
+      "sha256": "75dc06d660fd8d9622aed538711e67a6256c52f7b9d8899247730691bb8385b5"
+    },
+    {
+      "path": "src/content/projects/questurian/content.md",
+      "bytes": 4717,
+      "sha256": "fcfb416f35093d1dd62c269f0031e0fb38cfef36bea5140932624c0c96e6e5f0"
+    },
+    {
+      "path": "src/pages/about/content.html",
+      "bytes": 1918,
+      "sha256": "4b03ec17d9228a902c42cdd385985cd723ed6cd208c05af3a004818bc4c675d6"
+    },
+    {
+      "path": "src/pages/blog/content.html",
+      "bytes": 241,
+      "sha256": "ba24c958c61dfbbdcbd10cd55590764ad9d9d441e8acd1ef67843f76e7e89e62"
+    },
+    {
+      "path": "src/pages/home/content.html",
+      "bytes": 6146,
+      "sha256": "f30a8a8227ca6d07d235b0714bda477e2608b692ae3927a093da386992414eb2"
+    },
+    {
+      "path": "src/pages/projects/content.html",
+      "bytes": 326,
+      "sha256": "39b2bbb5d54ee3f3a27761f0612eb3416b4f2fa1be0bd01708ab5269e7c51b92"
+    },
+    {
+      "path": "src/pages/shell.html",
+      "bytes": 4098,
+      "sha256": "6ad09af1d8c1c52f987ceec1472dab8baca64ef1a910d836183fa03ecfcbbc9c"
+    }
+  ],
+  "media": [
+    {
+      "path": "src/public/avatar.webp",
+      "bytes": 20326,
+      "sha256": "99dca6b246fd3c50eaef07446c5a2a6d6665afc2d8bd00e40cb44d282a7e40a4"
+    },
+    {
+      "path": "src/public/favicon.svg",
+      "bytes": 554,
+      "sha256": "fbf2a4a206fdb5603681a9cbe2faabc51f945b1d0e432629921e465ff74ba8a9"
+    },
+    {
+      "path": "src/public/logo.png",
+      "bytes": 9327,
+      "sha256": "b56ea11800eba60aa1fe1a4a5d74ba2bc1babbdb33c51f69f047f93e65b07b2c"
+    },
+    {
+      "path": "src/public/og.png",
+      "bytes": 693562,
+      "sha256": "315b5b8541f1da2788e0eab3f7b559d5235e9a33a4488620a4da1b26c2cd1e67"
+    }
+  ],
+  "views": {
+    "source": "src/data/blog-views.json",
+    "perSlug": {
+      "who-is-alan-malpartida-software-engineer-and-founder": 4
+    },
+    "total": 4
+  }
+}

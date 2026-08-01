@@ -154,4 +154,73 @@ export const MIGRATIONS: Migration[] = [
          ON media_assets (status, created_at)`,
     ],
   },
+  {
+    id: 4,
+    name: "create_content_items",
+    statements: [
+      // One table for every editable thing. The alternative — a table per type —
+      // would duplicate identity, ordering, provenance, and the publication
+      // pointer five times, and every query that spans types (the sitemap, the
+      // import ledger, the reconciliation report) would become a union.
+      //
+      // The type-specific fields live in `data` as validated JSON. They are
+      // never queried individually, only read whole and rendered, so columns
+      // would buy nothing. What *is* queried — slug, ordering, publication date
+      // — is a column precisely because it needs a constraint or an index.
+      `CREATE TABLE content_items (
+         id TEXT PRIMARY KEY,
+         type TEXT NOT NULL
+           CHECK (type IN ('home', 'about', 'branding', 'project', 'blog_post')),
+         slug TEXT,
+         schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+         data TEXT NOT NULL,
+         display_order INTEGER,
+         published_at TEXT,
+         origin TEXT NOT NULL CHECK (origin IN ('import', 'owner')),
+         owner_edited_at TEXT,
+         created_at TEXT NOT NULL,
+         updated_at TEXT NOT NULL,
+         -- Singletons have no public address of their own; collection items
+         -- must have one. Expressed here so neither can be written the wrong
+         -- way round by a code path that forgot.
+         CHECK (
+           (type IN ('home', 'about', 'branding') AND slug IS NULL)
+           OR
+           (type IN ('project', 'blog_post') AND slug IS NOT NULL)
+         )
+       )`,
+      // Slugs are unique inside a collection, not across them: #32 permits a
+      // Project and a Blog post to share one, and they live at different route
+      // prefixes.
+      `CREATE UNIQUE INDEX content_items_type_slug
+         ON content_items (type, slug)
+         WHERE slug IS NOT NULL`,
+      // "There is exactly one Home." A partial unique index makes that a
+      // storage guarantee rather than a convention the importer has to keep.
+      `CREATE UNIQUE INDEX content_items_singleton
+         ON content_items (type)
+         WHERE type IN ('home', 'about', 'branding')`,
+      // Projects are ordered by the Owner; Blog posts by publication date,
+      // newest first.
+      `CREATE INDEX content_items_type_order
+         ON content_items (type, display_order)`,
+      `CREATE INDEX content_items_type_published
+         ON content_items (type, published_at DESC)`,
+      // #32: singletons cannot be deleted, and an ID is never reused. Both are
+      // identity rules, so they are enforced where identity lives rather than
+      // in whichever code path happens to be doing the writing.
+      `CREATE TRIGGER content_singletons_are_permanent
+         BEFORE DELETE ON content_items
+         WHEN OLD.type IN ('home', 'about', 'branding')
+         BEGIN
+           SELECT RAISE(ABORT, 'singleton content cannot be deleted');
+         END`,
+      `CREATE TRIGGER content_identity_is_immutable
+         BEFORE UPDATE ON content_items
+         WHEN NEW.id <> OLD.id OR NEW.type <> OLD.type
+         BEGIN
+           SELECT RAISE(ABORT, 'content identity cannot change');
+         END`,
+    ],
+  },
 ];

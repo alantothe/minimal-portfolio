@@ -293,3 +293,87 @@ describe("the public site", () => {
     expect(response.headers.get("X-Robots-Tag")).toBeNull();
   });
 });
+
+/**
+ * The media endpoint is guarded by the same boundary as everything else under
+ * /admin, but "the prefix covers it" is worth proving against the real
+ * registered route rather than inferred from a path that happens to match.
+ */
+describe("the media endpoint inherits the boundary", () => {
+  test("refuses an anonymous upload with 401 JSON", async () => {
+    const response = await send("/admin/api/media", { method: "POST" });
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "authentication_required" });
+  });
+
+  test("refuses an upload with no Origin", async () => {
+    const { cookie, csrfToken } = establishSession();
+
+    const response = await send("/admin/api/media", {
+      method: "POST",
+      cookie,
+      headers: { "X-CSRF-Token": csrfToken },
+    });
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "origin_rejected" });
+  });
+
+  test("refuses an upload from another origin", async () => {
+    const { cookie, csrfToken } = establishSession();
+
+    const response = await send("/admin/api/media", {
+      method: "POST",
+      cookie,
+      headers: { Origin: "https://attacker.test", "X-CSRF-Token": csrfToken },
+    });
+
+    expect(response.status).toBe(403);
+  });
+
+  test("refuses an upload with no CSRF token", async () => {
+    const { cookie } = establishSession();
+
+    const response = await send("/admin/api/media", {
+      method: "POST",
+      cookie,
+      headers: { Origin: ORIGIN },
+    });
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "csrf_rejected" });
+  });
+
+  test("refuses an upload attempted through GET", async () => {
+    const { cookie } = establishSession();
+
+    const response = await send("/admin/api/media", { cookie });
+
+    expect(response.status).toBe(405);
+    expect(response.headers.get("Allow")).toContain("POST");
+  });
+
+  test("reaches the handler once authenticated, and fails on configuration", async () => {
+    // No Cloudinary credentials are set in this environment, so a fully
+    // authorised request should get past the boundary and be refused by the
+    // handler instead. That is what proves the boundary let it through.
+    const { cookie, csrfToken } = establishSession();
+
+    const response = await send("/admin/api/media", {
+      method: "POST",
+      cookie,
+      headers: { Origin: ORIGIN, "X-CSRF-Token": csrfToken },
+    });
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "media_not_configured" });
+  });
+
+  test("never caches a media response", async () => {
+    const response = await send("/admin/api/media/list");
+
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(response.headers.get("X-Robots-Tag")).toBe("noindex, nofollow");
+  });
+});

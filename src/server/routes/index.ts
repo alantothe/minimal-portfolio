@@ -18,6 +18,7 @@ import {
   adminSignInCallbackHandler,
   adminSignInStartHandler,
 } from "../handlers/admin";
+import { mediaListHandler, mediaUploadHandler } from "../handlers/media";
 
 export function setupRoutes(router: Router): void {
   router.addRoute(
@@ -66,4 +67,12 @@ export function setupRoutes(router: Router): void {
   // the method here is what makes `GET /admin/logout` a 405 rather than a
   // logout link an attacker can put in an <img> tag.
   router.addRoute("/admin/logout", adminLogoutHandler, { methods: ["POST"] });
+
+  // Owner media. Uploads are POST-only for the same reason logout is: the
+  // method list is what makes a mutation-through-GET a 405 rather than
+  // something an <img> tag can trigger.
+  router.addRoute("/admin/api/media", mediaUploadHandler, {
+    methods: ["POST"],
+  });
+  router.addRoute("/admin/api/media/list", mediaListHandler);
 }

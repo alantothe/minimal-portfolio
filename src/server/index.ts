@@ -7,6 +7,7 @@ import { validateProductionSiteUrl } from "./services/seo";
 import { logDevelopmentWorkflowBanner } from "./core/developmentWorkflow";
 import { initializeDatabase } from "./database";
 import { validateAuthConfigAtStartup } from "./auth/config";
+import { validateMediaConfigAtStartup } from "./media/config";
 
 const router = new Router();
 setupRoutes(router);
@@ -20,6 +21,11 @@ validateProductionSiteUrl();
 // or half-present OAuth App is a security boundary in an unknown state, and the
 // only safe response is to refuse to start.
 validateAuthConfigAtStartup();
+
+// Media configuration is optional even in production — absent credentials
+// disable uploading, which costs the public site nothing. A contradictory
+// configuration is still fatal, because it means someone meant to set this up.
+validateMediaConfigAtStartup();
 
 // Sync view data with blog posts on startup
 await syncViewsWithBlogPosts();

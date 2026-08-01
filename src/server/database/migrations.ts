@@ -91,4 +91,67 @@ export const MIGRATIONS: Migration[] = [
          ON owner_sessions (revoked_at, absolute_expires_at)`,
     ],
   },
+  {
+    id: 3,
+    name: "create_media_assets",
+    statements: [
+      // Media assets are immutable. "Replace this image" uploads a new row and
+      // repoints the draft; the old row is left alone so that restoring an
+      // older published revision still resolves to the image that revision was
+      // published with. That is also why the provider must never overwrite a
+      // public ID, and why a public ID is never reused even after deletion.
+      //
+      // `provider_asset_id` is the provider's own immutable identifier and is
+      // what deletion is keyed on. `provider_public_id` appears in delivery
+      // URLs. They are kept separate because a parsed delivery URL is not proof
+      // of identity — only the asset id is.
+      `CREATE TABLE media_assets (
+         id TEXT PRIMARY KEY,
+         provider TEXT NOT NULL CHECK (provider IN ('cloudinary')),
+         provider_asset_id TEXT UNIQUE,
+         provider_public_id TEXT NOT NULL UNIQUE,
+         provider_version TEXT,
+         format TEXT CHECK (format IN ('jpg', 'png', 'webp')),
+         bytes INTEGER CHECK (bytes IS NULL OR bytes > 0),
+         width INTEGER CHECK (width IS NULL OR width > 0),
+         height INTEGER CHECK (height IS NULL OR height > 0),
+         status TEXT NOT NULL
+           CHECK (status IN (
+             'uploading',
+             'ready',
+             'tombstoned',
+             'delete_pending',
+             'deleted',
+             'failed'
+           )),
+         original_filename TEXT,
+         alt_text TEXT,
+         digest TEXT,
+         created_at TEXT NOT NULL,
+         tombstoned_at TEXT,
+         deleted_at TEXT
+       )`,
+      // Provider metadata is absent while a row is `uploading` and required
+      // once it is `ready`. Expressing that as a table constraint means a
+      // half-finalized row cannot exist even if a future code path forgets a
+      // field — the insert fails rather than producing an asset that renders
+      // as a broken image.
+      `CREATE TRIGGER media_assets_ready_requires_metadata
+         BEFORE UPDATE OF status ON media_assets
+         WHEN NEW.status = 'ready'
+           AND (NEW.provider_asset_id IS NULL
+             OR NEW.provider_version IS NULL
+             OR NEW.format IS NULL
+             OR NEW.bytes IS NULL
+             OR NEW.width IS NULL
+             OR NEW.height IS NULL)
+         BEGIN
+           SELECT RAISE(ABORT, 'ready media asset is missing provider metadata');
+         END`,
+      // The picker lists ready assets newest first; garbage collection scans by
+      // status and age. One index serves both.
+      `CREATE INDEX media_assets_status_created
+         ON media_assets (status, created_at)`,
+    ],
+  },
 ];

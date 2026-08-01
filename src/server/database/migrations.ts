@@ -223,4 +223,51 @@ export const MIGRATIONS: Migration[] = [
          END`,
     ],
   },
+  {
+    id: 5,
+    name: "create_import_ledger",
+    statements: [
+      // What was imported, from what, by which importer. #36 requires source
+      // key, source hash, importer version, resulting entity ID, and
+      // reconciliation totals to be recorded — this is the row that makes a
+      // completed import auditable after the fact, when the repository files it
+      // read may already have moved on.
+      `CREATE TABLE import_runs (
+         id TEXT PRIMARY KEY,
+         importer_version INTEGER NOT NULL,
+         source_fingerprint TEXT NOT NULL,
+         mode TEXT NOT NULL CHECK (mode IN ('rehearsal', 'production')),
+         entities_created INTEGER NOT NULL,
+         entities_replaced INTEGER NOT NULL,
+         entities_unchanged INTEGER NOT NULL,
+         media_resolved INTEGER NOT NULL,
+         views_imported INTEGER NOT NULL,
+         view_total INTEGER NOT NULL,
+         started_at TEXT NOT NULL,
+         completed_at TEXT NOT NULL
+       )`,
+      // One row per imported entity, so a later question — "where did this
+      // Project come from, and has the file changed since?" — is answerable
+      // without re-deriving anything.
+      `CREATE TABLE import_entities (
+         run_id TEXT NOT NULL REFERENCES import_runs(id),
+         content_id TEXT NOT NULL,
+         source_key TEXT NOT NULL,
+         source_hash TEXT NOT NULL,
+         outcome TEXT NOT NULL
+           CHECK (outcome IN ('created', 'replaced', 'unchanged')),
+         PRIMARY KEY (run_id, content_id)
+       )`,
+      // Views are keyed by immutable content ID, not by slug: #36 requires the
+      // count to survive a later slug change, which keying by slug would not.
+      `CREATE TABLE content_view_counts (
+         content_id TEXT PRIMARY KEY
+           REFERENCES content_items(id),
+         views INTEGER NOT NULL CHECK (views >= 0),
+         imported_from_slug TEXT NOT NULL,
+         updated_at TEXT NOT NULL
+       )`,
+      `CREATE INDEX import_entities_content ON import_entities (content_id)`,
+    ],
+  },
 ];

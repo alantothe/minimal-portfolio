@@ -60,6 +60,8 @@ copy `.env.example` to your deployment environment and configure:
 - `SITE_URL` — public HTTPS origin used for canonical and social URLs
 - `HOST` / `PORT` — bind address assigned by your host
 - `BLOG_VIEWS_FILE` — path on a writable persistent volume for blog view data
+- `CONTENT_DATABASE_FILE` — path on the same volume for the content database;
+  defaults to `/data/content.sqlite` in production and must be absolute there
 - `GITHUB_USERNAME` / `GITHUB_TOKEN` — optional commit statistics
 
 before sending production traffic:
@@ -67,7 +69,18 @@ before sending production traffic:
 - set `SITE_URL` to the final public origin
 - mount persistent storage and point `BLOG_VIEWS_FILE` at it
 - run `bun run check`
+- verify `GET /readyz` reports `"status": "ready"`
 - verify `GET /healthz`, `/robots.txt`, and `/sitemap.xml`
+
+`/healthz` is liveness: the process is running. `/readyz` is readiness: the
+content database opened, migrated, and passed its integrity check. railway
+health-checks `/readyz`, so a deployment whose volume is missing or whose
+migrations failed never replaces the instance currently serving visitors.
+
+the content database runs one writer at a time with WAL and `synchronous=FULL`.
+migrations apply automatically at startup and are append-only; never edit a
+migration that has shipped, because startup refuses a database whose recorded
+migrations no longer match the code.
 
 the JSON view store safely serializes writes within one application process. run
 one instance when view counts matter. use shared database or KV storage before
@@ -81,6 +94,7 @@ railway's us east region. attach a persistent volume at `/data`, then configure:
 ```text
 SITE_URL=https://your-domain.example
 BLOG_VIEWS_FILE=/data/blog-views.json
+CONTENT_DATABASE_FILE=/data/content.sqlite
 GITHUB_USERNAME=your-github-username
 ```
 

@@ -37,6 +37,11 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .bun
 bun.lockb
 
+# Local content database (production lives on the Railway volume at /data)
+src/data/content.sqlite
+src/data/content.sqlite-wal
+src/data/content.sqlite-shm
+
 # IDE/Editor files
 .vscode/
 *.swp

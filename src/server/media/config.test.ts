@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { resolveMediaConfig, validateMediaConfigAtStartup } from "./config";
+import {
+  resolveLegacyCloudName,
+  resolveMediaConfig,
+  validateMediaConfigAtStartup,
+} from "./config";
 
 const KEYS = [
   "MEDIA_PROVIDER",
@@ -7,6 +11,7 @@ const KEYS = [
   "CLOUDINARY_API_KEY",
   "CLOUDINARY_API_SECRET",
   "MEDIA_MAX_UPLOAD_BYTES",
+  "MEDIA_LEGACY_CLOUD_NAME",
   "NODE_ENV",
 ] as const;
 
@@ -38,6 +43,37 @@ afterEach(() => {
       process.env[key] = value;
     }
   }
+});
+
+describe("the legacy cloud name", () => {
+  test("defaults to the value that used to be compiled into the renderer", () => {
+    withEnvironment({});
+
+    // Published pages contain URLs built from this. Changing the default is a
+    // public content change, and the golden contract would catch it.
+    expect(resolveLegacyCloudName()).toBe("dz18m79a1");
+  });
+
+  test("can be pointed elsewhere without editing code", () => {
+    withEnvironment({ MEDIA_LEGACY_CLOUD_NAME: "migrated-cloud" });
+
+    expect(resolveLegacyCloudName()).toBe("migrated-cloud");
+  });
+
+  test("an empty or whitespace value falls back rather than producing a broken URL", () => {
+    withEnvironment({ MEDIA_LEGACY_CLOUD_NAME: "   " });
+
+    expect(resolveLegacyCloudName()).toBe("dz18m79a1");
+  });
+
+  test("is independent of whether uploads are configured", () => {
+    // Legacy images must keep rendering on a site that has no Cloudinary
+    // credentials at all — which is every local checkout today.
+    withEnvironment({});
+
+    expect(resolveMediaConfig().status).toBe("unconfigured");
+    expect(resolveLegacyCloudName()).toBe("dz18m79a1");
+  });
 });
 
 describe("media configuration", () => {

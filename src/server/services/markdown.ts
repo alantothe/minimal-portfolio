@@ -2,10 +2,12 @@
  * Markdown parsing service with YAML frontmatter and syntax highlighting
  */
 
-import { marked, Renderer } from 'marked';
-import matter from 'gray-matter';
-import hljs from 'highlight.js';
-import { readTextFile, fileExists } from '../core/file';
+import { marked, Renderer } from "marked";
+import matter from "gray-matter";
+import hljs from "highlight.js";
+import { readTextFile, fileExists } from "../core/file";
+import { resolveLegacyCloudName } from "../media/config";
+import { legacyMarkdownImageUrl } from "../media/legacy";
 
 export interface BlogPostMetadata {
   title: string;
@@ -24,7 +26,7 @@ export interface BlogPost {
  * Configure marked with syntax highlighting via custom renderer
  */
 const renderer = new Renderer();
-renderer.code = function({ text, lang }: { text: string; lang?: string }) {
+renderer.code = function ({ text, lang }: { text: string; lang?: string }) {
   let highlighted: string;
   if (lang && hljs.getLanguage(lang)) {
     try {
@@ -35,25 +37,29 @@ renderer.code = function({ text, lang }: { text: string; lang?: string }) {
   } else {
     highlighted = hljs.highlightAuto(text).value;
   }
-  return `<pre><code class="hljs language-${lang || ''}">${highlighted}</code></pre>`;
+  return `<pre><code class="hljs language-${lang || ""}">${highlighted}</code></pre>`;
 };
 
 marked.use({ renderer });
 
 /**
  * Transform image URLs from placeholder paths to Cloudinary URLs
- * Converts /images/{slug}/{name} to https://res.cloudinary.com/dz18m79a1/image/upload/{slug}/{name}
+ * Converts /images/{slug}/{name} to a delivery URL under the legacy cloud.
+ *
+ * The cloud name used to be compiled in here. It now comes from configuration
+ * so the migration can point it somewhere else without editing code, and it
+ * defaults to the value that was hard-coded — the URLs this produces are
+ * unchanged, which the golden contract checks.
  */
 function transformImageUrls(html: string): string {
+  const cloudName = resolveLegacyCloudName();
+
   return html.replace(
     /src="\/images\/([^\/]+)\/([^"]+)"/g,
-    (match, slug, imageName) => {
-      const cloudinaryUrl = `https://res.cloudinary.com/dz18m79a1/image/upload/${slug}/${imageName}`;
-      return `src="${cloudinaryUrl}"`;
-    }
+    (match, slug, imageName) =>
+      `src="${legacyMarkdownImageUrl(slug, imageName, cloudName)}"`
   );
 }
-
 
 /**
  * Parse markdown file with YAML frontmatter
@@ -64,7 +70,7 @@ export function parseMarkdown(markdownContent: string): BlogPost {
 
   // Validate required fields
   if (!data.title || !data.date) {
-    throw new Error('Blog post must have title and date in frontmatter');
+    throw new Error("Blog post must have title and date in frontmatter");
   }
 
   // Convert markdown to HTML
@@ -76,7 +82,7 @@ export function parseMarkdown(markdownContent: string): BlogPost {
   return {
     metadata: data as BlogPostMetadata,
     content,
-    html
+    html,
   };
 }
 
@@ -85,10 +91,10 @@ export function parseMarkdown(markdownContent: string): BlogPost {
  */
 export function generateSlug(filename: string): string {
   return filename
-    .replace(/\.md$/, '')
+    .replace(/\.md$/, "")
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /**

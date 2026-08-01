@@ -30,6 +30,74 @@ export type AllowedFormat = (typeof ALLOWED_FORMATS)[number];
 /** Upper bounds on provider-reported dimensions, as a sanity check. */
 export const MAX_IMAGE_DIMENSION = 12_000;
 
+/**
+ * The single hostname images may be delivered from.
+ *
+ * Cloudinary serves every account from this host and distinguishes them by the
+ * first path segment, so this constant is what the CSP can pin and the cloud
+ * name is not. Narrowing further is the renderer's job, not the browser's.
+ */
+export const DELIVERY_HOST = "res.cloudinary.com";
+
+/**
+ * The cloud that holds assets uploaded before this migration.
+ *
+ * It was hard-coded in the Markdown service; naming it here makes it
+ * configuration without changing what any existing page renders. The default is
+ * the value that was compiled in, so an environment that sets nothing keeps
+ * producing byte-identical URLs.
+ */
+const DEFAULT_LEGACY_CLOUD_NAME = "dz18m79a1";
+
+export function resolveLegacyCloudName(): string {
+  return readVariable("MEDIA_LEGACY_CLOUD_NAME") ?? DEFAULT_LEGACY_CLOUD_NAME;
+}
+
+/**
+ * Every transformation the application is allowed to ask for.
+ *
+ * This is the security boundary for delivery. Owners choose a variant, never a
+ * transformation string, so the set has to be closed at build time — a variant
+ * that came from Content or a query string would let anyone generate arbitrary
+ * billable derivatives, which is exactly what Cloudinary's Strict
+ * Transformations setting exists to prevent.
+ *
+ * The names must match named transformations defined in the Cloudinary product
+ * environment. Format and quality selection (`f_auto`, `q_auto`) belong *inside*
+ * those definitions rather than being appended here: under Strict
+ * Transformations only the named transformation is permitted, and a URL that
+ * combined `t_portfolio_card` with extra parameters would be refused.
+ *
+ * `fill` crops to an exact box, so the rendered size is known from the variant
+ * alone. `limit` never upscales, so the rendered size depends on the asset and
+ * is computed from its stored dimensions.
+ */
+export type VariantSpec =
+  | { fit: "fill"; width: number; height: number }
+  | { fit: "limit"; maxWidth: number };
+
+export const MEDIA_VARIANTS = {
+  portfolio_avatar: { fit: "fill", width: 800, height: 800 },
+  portfolio_card: { fit: "fill", width: 600, height: 360 },
+  portfolio_wide: { fit: "limit", maxWidth: 1600 },
+} as const satisfies Record<string, VariantSpec>;
+
+export type MediaVariant = keyof typeof MEDIA_VARIANTS;
+
+/**
+ * The guard that keeps the enum closed at runtime.
+ *
+ * The type alone is not enough: variants will arrive from the database and from
+ * Owner form submissions, both of which are `string` as far as the compiler is
+ * concerned.
+ *
+ * `Object.hasOwn` rather than `in`, because `in` walks the prototype chain and
+ * would accept `"toString"` and `"constructor"` as variant names.
+ */
+export function isMediaVariant(value: unknown): value is MediaVariant {
+  return typeof value === "string" && Object.hasOwn(MEDIA_VARIANTS, value);
+}
+
 export interface MediaConfig {
   provider: "cloudinary";
   cloudName: string;

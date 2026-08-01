@@ -6,6 +6,7 @@ import {
   guardOwnerRequest,
   isOwnerPath,
 } from "../auth/ownerBoundary";
+import { applyImagePolicy } from "./securityHeaders";
 
 async function compressResponse(
   request: Request,
@@ -117,6 +118,10 @@ export class RequestHandler {
     if (isOwnerRequest) {
       response = applyPrivateHeaders(response);
     }
+
+    // After routing so it covers error and static HTML too, and before
+    // compression so the header survives onto the encoded response.
+    response = applyImagePolicy(response);
 
     response = await compressResponse(request, response);
 

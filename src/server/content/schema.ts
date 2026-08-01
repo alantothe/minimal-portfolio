@@ -32,6 +32,7 @@ import {
   type Finding,
   type ValidationMode,
 } from "./validation";
+import { validateMarkdown, type MarkdownProfile } from "./markdown";
 import type { ContentType } from "./identity";
 
 /**
@@ -184,6 +185,36 @@ function rejectUnknownFields(
   return Object.keys(raw)
     .filter((key) => !allowed.has(key))
     .map((key) => error(key, "unknown_field"));
+}
+
+/**
+ * Sizes a Markdown field and checks what is inside it.
+ *
+ * The two always travel together: a body that is short enough but contains a
+ * `<script>` is not acceptable, and neither is a clean one that is 300,000
+ * characters long. Keeping them in one call means no caller can do half of it.
+ */
+function validateMarkdownField(
+  field: string,
+  value: string,
+  profile: MarkdownProfile,
+  max: number,
+  required: boolean
+): Finding[] {
+  const findings = validateText(
+    field,
+    value,
+    { max, kind: "block" },
+    { required }
+  );
+
+  // Only worth parsing if there is something to parse and it is not already
+  // over the hard limit.
+  if (value !== "" && !findings.some((f) => f.code === "too_long")) {
+    findings.push(...validateMarkdown(field, value, profile));
+  }
+
+  return findings;
 }
 
 function readString(raw: Record<string, unknown>, field: string): string {
@@ -367,17 +398,19 @@ function parseHome(
     ...validateText("githubUsername", githubUsername, LIMITS.label, {
       required,
     }),
-    ...validateText(
+    ...validateMarkdownField(
       "introMarkdown",
       introMarkdown,
-      { max: LIMITS.shortMarkdown.max, kind: "block" },
-      { required }
+      "short",
+      LIMITS.shortMarkdown.max,
+      required
     ),
-    ...validateText(
+    ...validateMarkdownField(
       "bioMarkdown",
       bioMarkdown,
-      { max: LIMITS.shortMarkdown.max, kind: "block" },
-      { required }
+      "short",
+      LIMITS.shortMarkdown.max,
+      required
     ),
     ...portrait.findings,
     ...seo.findings
@@ -462,24 +495,27 @@ function parseAbout(
   const seo = parseSeo(raw.seo, mode);
 
   findings.push(
-    ...validateText(
+    ...validateMarkdownField(
       "introMarkdown",
       introMarkdown,
-      { max: LIMITS.shortMarkdown.max, kind: "block" },
-      { required }
+      "short",
+      LIMITS.shortMarkdown.max,
+      required
     ),
-    ...validateText(
+    ...validateMarkdownField(
       "hobbiesMarkdown",
       hobbiesMarkdown,
-      { max: LIMITS.shortMarkdown.max, kind: "block" },
-      { required }
+      "short",
+      LIMITS.shortMarkdown.max,
+      required
     ),
     ...validateText("featuredTitle", featuredTitle, LIMITS.title, { required }),
-    ...validateText(
+    ...validateMarkdownField(
       "featuredBodyMarkdown",
       featuredBodyMarkdown,
-      { max: LIMITS.shortMarkdown.max, kind: "block" },
-      { required }
+      "short",
+      LIMITS.shortMarkdown.max,
+      required
     ),
     ...seo.findings
   );
@@ -549,11 +585,12 @@ function parseProject(
     ...validateText("role", role, LIMITS.label, { required }),
     ...validateText("status", status, LIMITS.label, { required }),
     ...validateText("period", period, LIMITS.label, { required }),
-    ...validateText(
+    ...validateMarkdownField(
       "bodyMarkdown",
       bodyMarkdown,
-      { max: LIMITS.bodyMarkdown.max, kind: "block" },
-      { required }
+      "body",
+      LIMITS.bodyMarkdown.max,
+      required
     ),
     ...technologies.findings,
     ...validateCount(
@@ -625,11 +662,12 @@ function parseBlogPost(
   findings.push(
     ...validateText("title", title, LIMITS.title, { required }),
     ...validateText("excerpt", excerpt, LIMITS.summary, { required }),
-    ...validateText(
+    ...validateMarkdownField(
       "bodyMarkdown",
       bodyMarkdown,
-      { max: LIMITS.bodyMarkdown.max, kind: "block" },
-      { required }
+      "body",
+      LIMITS.bodyMarkdown.max,
+      required
     ),
     ...sharingImage.findings,
     ...seo.findings

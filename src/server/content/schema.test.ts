@@ -299,6 +299,83 @@ describe("field-level refusals", () => {
   });
 });
 
+describe("the Markdown boundary is wired in, not just the size limit", () => {
+  test("a Project body containing raw HTML blocks", () => {
+    expect(
+      isPublishable("project", {
+        ...PROJECT,
+        bodyMarkdown: "## Context\n\n<script>alert(1)</script>",
+      })
+    ).toBe(false);
+  });
+
+  test("a Blog post body with an H1 blocks, because the title owns it", () => {
+    expect(
+      isPublishable("blog_post", {
+        ...BLOG_POST,
+        bodyMarkdown: "# Competing title\n\nText.",
+      })
+    ).toBe(false);
+  });
+
+  test("a Home intro using body-only structure blocks", () => {
+    // Home copy sits inside a template that owns the page structure.
+    expect(
+      isPublishable("home", { ...HOME, introMarkdown: "## A heading" })
+    ).toBe(false);
+  });
+
+  test("an unsafe link inside prose blocks", () => {
+    expect(
+      isPublishable("home", {
+        ...HOME,
+        bioMarkdown: "Click [here](javascript:alert(1)) now.",
+      })
+    ).toBe(false);
+  });
+
+  test("an arbitrary image URL in a body blocks", () => {
+    expect(
+      isPublishable("project", {
+        ...PROJECT,
+        bodyMarkdown: "## Context\n\n![x](https://evil.test/tracker.gif)",
+      })
+    ).toBe(false);
+  });
+
+  test("a draft is still blocked by unsafe Markdown", () => {
+    // Safety is a storage property, so it does not wait for publish.
+    expect(
+      hasBlockingError(
+        parseContentData(
+          "project",
+          { bodyMarkdown: "<iframe src='https://evil.test'></iframe>" },
+          "draft"
+        ).findings
+      )
+    ).toBe(true);
+  });
+
+  test("an over-limit body is rejected on size without being parsed", () => {
+    // The body is over the limit *and* full of raw HTML. Only the size finding
+    // should appear: parsing a quarter-million-character string that is already
+    // rejected spends exactly the time an attacker wanted to cost us.
+    const findings = parseContentData(
+      "project",
+      {
+        ...PROJECT,
+        bodyMarkdown: "<script>alert(1)</script>".repeat(11_000),
+      },
+      "publish"
+    ).findings;
+
+    expect(codes(findings)).toContain("too_long");
+    expect(codes(findings).some((code) => code.startsWith("disallowed"))).toBe(
+      false
+    );
+  });
+});
+
 describe("normalisation", () => {
   test("accent colours are stored lowercase", () => {
     const parsed = parseContentData("project", PROJECT, "publish");

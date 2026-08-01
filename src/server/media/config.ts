@@ -31,6 +31,19 @@ export type AllowedFormat = (typeof ALLOWED_FORMATS)[number];
 export const MAX_IMAGE_DIMENSION = 12_000;
 
 /**
+ * The content type sent to the provider for each detected format.
+ *
+ * Keyed by the format the *magic bytes* reported, never by what a filename or a
+ * client-supplied header claimed, so the value here always describes the bytes
+ * being sent.
+ */
+export const CONTENT_TYPE_FOR_FORMAT: Record<AllowedFormat, string> = {
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
+
+/**
  * The single hostname images may be delivered from.
  *
  * Cloudinary serves every account from this host and distinguishes them by the

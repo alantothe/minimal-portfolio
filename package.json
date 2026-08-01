@@ -19,6 +19,8 @@
     "typecheck": "tsc --noEmit",
     "check": "bun run typecheck && bun test",
     "help": "bun scripts/help.ts",
+    "baseline:check": "bun scripts/baseline.ts check",
+    "baseline:capture": "bun scripts/baseline.ts capture",
     "prepare": "if command -v husky >/dev/null 2>&1; then husky; fi",
     "work:start": "bun scripts/workflow.ts start",
     "work:status": "bun scripts/workflow.ts status",

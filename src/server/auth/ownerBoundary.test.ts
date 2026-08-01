@@ -28,6 +28,23 @@ const ENVIRONMENT_KEYS = [
   "GITHUB_OAUTH_CLIENT_ID",
   "GITHUB_OAUTH_CLIENT_SECRET",
   "GITHUB_OWNER_ID",
+  // Listed so the media variables are *cleared*, not inherited. Bun loads
+  // `.env` into the test process, so once a developer holds real Cloudinary
+  // credentials this suite would otherwise start exercising a different code
+  // path than it does in CI — which is how a green suite quietly stops
+  // testing what it claims to.
+  "MEDIA_PROVIDER",
+  "CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
+] as const;
+
+/** Variables every test in this file requires to be absent. */
+const CLEARED_KEYS = [
+  "MEDIA_PROVIDER",
+  "CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
 ] as const;
 
 const previousEnvironment = new Map(
@@ -48,6 +65,10 @@ beforeEach(() => {
   process.env.GITHUB_OAUTH_CLIENT_ID = "Ov23liExampleClientId";
   process.env.GITHUB_OAUTH_CLIENT_SECRET = "0".repeat(40);
   process.env.GITHUB_OWNER_ID = "104442054";
+
+  for (const key of CLEARED_KEYS) {
+    delete process.env[key];
+  }
 
   initializeDatabase();
 
@@ -355,9 +376,10 @@ describe("the media endpoint inherits the boundary", () => {
   });
 
   test("reaches the handler once authenticated, and fails on configuration", async () => {
-    // No Cloudinary credentials are set in this environment, so a fully
-    // authorised request should get past the boundary and be refused by the
-    // handler instead. That is what proves the boundary let it through.
+    // Media configuration is cleared in `beforeEach`, so a fully authorised
+    // request gets past the boundary and is refused by the *handler* instead.
+    // That is what proves the boundary let it through — the 503 comes from a
+    // place only reachable after authentication, CSRF, and origin all passed.
     const { cookie, csrfToken } = establishSession();
 
     const response = await send("/admin/api/media", {

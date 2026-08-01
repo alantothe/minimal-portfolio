@@ -55,12 +55,28 @@ export interface MediaProvider {
    */
   lookup(publicId: string): Promise<LookupOutcome>;
 
-  /** Deletes by the provider's immutable asset id, not by public ID. */
-  destroy(providerAssetId: string): Promise<boolean>;
+  /**
+   * Deletes an asset, using the immutable asset id as proof rather than as the
+   * address.
+   *
+   * Cloudinary's destroy endpoint addresses assets by public ID and offers no
+   * delete-by-asset-id at all, so the id cannot be the address. It is still the
+   * authority: the asset currently at that public ID is looked up first and the
+   * delete is refused unless its immutable id is the one expected. Deleting by
+   * public ID alone would remove whatever happens to live there now.
+   */
+  destroy(publicId: string, expectedAssetId: string): Promise<boolean>;
 }
 
 /** Bounded so a hung provider cannot hold an owner request open indefinitely. */
 const REQUEST_TIMEOUT_MS = 30_000;
+
+/** Content type to the extension used for the multipart filename. */
+const UPLOAD_EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
 function isAllowedFormat(value: unknown): value is AllowedFormat {
   return (
@@ -176,9 +192,19 @@ export class CloudinaryProvider implements MediaProvider {
     const form = new FormData();
     // Copied into a plain ArrayBuffer: a Uint8Array may be backed by a
     // SharedArrayBuffer, which `Blob` does not accept.
+    //
+    // The third argument is not decoration. Without a filename the multipart
+    // part carries no `filename` parameter, and Cloudinary answers
+    // "Missing required parameter - file" — it identifies the upload by that
+    // parameter, not by the field name. This is a constant rather than the
+    // uploader's filename for the same reason the public ID is: filenames are
+    // attacker-chosen and leak information. The extension is derived from the
+    // content type the magic-byte check already agreed with, so it describes
+    // the bytes rather than what the client claimed.
     form.append(
       "file",
-      new Blob([bytes.slice().buffer as ArrayBuffer], { type: contentType })
+      new Blob([bytes.slice().buffer as ArrayBuffer], { type: contentType }),
+      `upload.${UPLOAD_EXTENSIONS[contentType] ?? "bin"}`
     );
     form.append("public_id", publicId);
     form.append("upload_preset", UPLOAD_PRESET);
@@ -263,7 +289,26 @@ export class CloudinaryProvider implements MediaProvider {
     return { status: "found", metadata: validated.metadata };
   }
 
-  async destroy(providerAssetId: string): Promise<boolean> {
+  async destroy(publicId: string, expectedAssetId: string): Promise<boolean> {
+    // Confirm what is actually there before removing it. An asset already gone
+    // is the desired end state, so that counts as success and keeps retries
+    // idempotent.
+    const existing = await this.lookup(publicId);
+
+    if (existing.status === "missing") {
+      return true;
+    }
+
+    if (existing.status === "unavailable") {
+      return false;
+    }
+
+    if (existing.metadata.providerAssetId !== expectedAssetId) {
+      // Something else occupies this public ID. Refusing is the only safe
+      // answer: the alternative is deleting an asset nobody asked to delete.
+      return false;
+    }
+
     try {
       const response = await fetch(this.endpoint("destroy"), {
         method: "POST",
@@ -271,7 +316,7 @@ export class CloudinaryProvider implements MediaProvider {
           Authorization: this.authorization(),
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ asset_id: providerAssetId }),
+        body: JSON.stringify({ public_id: publicId }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
@@ -280,8 +325,6 @@ export class CloudinaryProvider implements MediaProvider {
       }
 
       const payload = (await response.json()) as { result?: unknown };
-      // "not found" is the same end state as a deletion, and makes retries
-      // idempotent.
       return payload.result === "ok" || payload.result === "not found";
     } catch {
       return false;

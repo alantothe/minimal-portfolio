@@ -68,8 +68,8 @@ class StubProvider implements MediaProvider {
     return this.options.lookup ?? { status: "missing" };
   }
 
-  async destroy(providerAssetId: string): Promise<boolean> {
-    this.destroyed.push(providerAssetId);
+  async destroy(publicId: string, expectedAssetId: string): Promise<boolean> {
+    this.destroyed.push(`${publicId}|${expectedAssetId}`);
     return this.options.destroySucceeds ?? true;
   }
 }

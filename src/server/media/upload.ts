@@ -211,7 +211,7 @@ export async function handleMediaUpload(
   if (!finalized) {
     // The provider holds an asset the application failed to record. Remove it
     // rather than leaving an orphan nobody will ever reference.
-    await provider.destroy(uploaded.metadata.providerAssetId);
+    await provider.destroy(providerPublicId, uploaded.metadata.providerAssetId);
     repository.markFailed(asset.id);
     return refuse(503, "media_storage_unavailable");
   }

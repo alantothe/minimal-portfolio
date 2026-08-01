@@ -34,7 +34,11 @@ import {
 } from "../handlers/shellDocument";
 import { renderSeoHead } from "../services/seo";
 import { publishedSeoMetadata } from "./seo";
-import type { SiteSnapshot, PublishedProject } from "./snapshot";
+import type {
+  SiteSnapshot,
+  PublishedProject,
+  PublishedBlogPost,
+} from "./snapshot";
 import type { FoundPage, PublishedView } from "./target";
 
 /**
@@ -111,9 +115,31 @@ function processTemplate(html: string, data: unknown): string {
   });
 }
 
-/** A number the site can show, or the empty string when it is not known. */
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+/**
+ * A metric, rendered the way the site renders it today.
+ *
+ * An unknown value becomes `0` — not because zero is true, but because that is
+ * what a Visitor currently sees: the legacy handler falls back to
+ * `homeConfig.metrics`, whose committed values are all zero. This slice may not
+ * change what a page shows, and blanking the number would be a visible change.
+ *
+ * #34 does call for something better — an unavailable count should be omitted
+ * rather than reported as zero, because zero is a claim about somebody's month.
+ * That is a visitor-facing change, so it belongs to the cutover slice. The
+ * enrichment model already distinguishes null from zero, so making that change
+ * later is an edit to this one function.
+ */
 function metric(value: number | null): string {
-  return value === null ? "" : String(value);
+  return String(value ?? 0);
 }
 
 /**
@@ -197,8 +223,29 @@ function aboutContext(snapshot: SiteSnapshot): unknown {
   };
 }
 
+/**
+ * A Blog post's body, with its heading.
+ *
+ * The importer stripped the leading H1 out of the Markdown because #36 says the
+ * page template renders the title as the page's H1. For the Blog template that
+ * was not yet true — the legacy page rendered the body and nothing else, so the
+ * H1 in the Markdown *was* the page heading. Rendering it here is what makes
+ * #36's premise hold: stripped from content, owned by the template.
+ *
+ * Shared by the SSR page and the JSON payload because they must agree. The
+ * parity run caught them disagreeing when only the SSR path had it, which is
+ * exactly the class of bug a second copy of this string produces.
+ */
+export function blogPostBody(post: PublishedBlogPost): string {
+  return (
+    `<div class="markdown-content">` +
+    `<h1>${escapeHtml(post.title)}</h1>` +
+    `${post.bodyHtml}</div>`
+  );
+}
+
 /** The shape the legacy project renderers expect, built from a generation. */
-function toProjectDetail(project: PublishedProject): ProjectDetail {
+export function toProjectDetail(project: PublishedProject): ProjectDetail {
   return {
     slug: project.slug,
     metadata: {
@@ -321,10 +368,8 @@ export async function renderPublishedPage(
     }
 
     case "blog-post": {
-      const wrapped = `<div class="markdown-content">${view.post.bodyHtml}</div>`;
-
       return {
-        content: `<article class="blog-post"><a href="/blog" class="back-to-blog back-link">&larr; Back to Blog</a><div class="blog-post-content">${wrapped}</div></article>`,
+        content: `<article class="blog-post"><a href="/blog" class="back-to-blog back-link">&larr; Back to Blog</a><div class="blog-post-content">${blogPostBody(view.post)}</div></article>`,
         title: view.post.title,
         activePage: "blog",
         pageCSS: PAGE_CSS.blog!,

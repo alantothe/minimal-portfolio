@@ -34,6 +34,28 @@ import type { FoundPage, PublishedView } from "./target";
  */
 const FALLBACK_SHARING_IMAGE = "/public/og.png";
 
+/**
+ * A publication date as the instant `article:published_time` expects.
+ *
+ * Content stores a calendar date, because that is what an author picks and what
+ * a Blog post is actually published on. The metadata field wants a timestamp,
+ * and the legacy path produced one only incidentally — YAML parsed the
+ * unquoted frontmatter date into a `Date` at UTC midnight. Reproducing that
+ * conversion here keeps the emitted timestamp identical rather than making a
+ * storage detail visible to crawlers.
+ *
+ * An unparseable value is passed through rather than guessed at; the SEO
+ * renderer omits the field for an empty string.
+ */
+export function publicationInstant(publishedAt: string | null): string {
+  if (!publishedAt) return "";
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(publishedAt)) return publishedAt;
+
+  const parsed = new Date(`${publishedAt}T00:00:00.000Z`);
+  return Number.isNaN(parsed.getTime()) ? publishedAt : parsed.toISOString();
+}
+
 /** The SEO shape of a resolved view, before overrides. */
 function seoInputFor(view: PublishedView): SeoPageInput {
   switch (view.kind) {
@@ -51,7 +73,7 @@ function seoInputFor(view: PublishedView): SeoPageInput {
         slug: view.post.slug,
         title: view.post.title,
         description: view.post.excerpt,
-        date: view.post.publishedAt ?? "",
+        date: publicationInstant(view.post.publishedAt),
       };
     case "project":
       return {

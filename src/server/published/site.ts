@@ -19,6 +19,7 @@ import type { SiteSnapshot, SnapshotBuild } from "./snapshot";
 import {
   canonicalRouteFor,
   fixedRedirectFor,
+  ownsPath,
   parseTarget,
   type PublishedTarget,
   type PublishedView,
@@ -187,7 +188,21 @@ export class PublishedSite {
     }
 
     const target = parseTarget(url);
-    if (target === null) return null;
+
+    if (target === null) {
+      // A path we own whose address is unusable — a malformed slug, a
+      // non-numeric page. The site is the authority on those, and the answer is
+      // the same 404 the legacy site gives, not a fall-through to static files.
+      if (!ownsPath(url.pathname)) return null;
+
+      return this.active
+        ? { outcome: "not-found", generation: this.active.generation }
+        : {
+            outcome: "unavailable",
+            reason:
+              this.lastFailure?.findings[0]?.code ?? "no_active_generation",
+          };
+    }
 
     return this.resolve(target);
   }

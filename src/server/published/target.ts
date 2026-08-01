@@ -135,6 +135,26 @@ export function isPublicSlug(value: string): boolean {
 }
 
 /**
+ * Whether this path belongs to the published content routes at all.
+ *
+ * Separate from `parseTarget` because "not a content route" and "a content route
+ * with an unusable slug" need opposite answers. `/healthz` is not ours and must
+ * fall through to whoever owns it; `/projects/Not%2FA%2FSlug` *is* ours, and the
+ * honest answer is a 404 — the same one the legacy site gives. Conflating them
+ * would let a malformed slug escape into the static file handler.
+ */
+export function ownsPath(pathname: string): boolean {
+  return (
+    pathname === "/" ||
+    pathname === "/about" ||
+    pathname === "/blog" ||
+    pathname === "/projects" ||
+    /^\/blog\/.+/.test(pathname) ||
+    /^\/projects\/.+/.test(pathname)
+  );
+}
+
+/**
  * Turns a request URL into a target.
  *
  * Returns null for anything that is not a public content route — `/healthz`,

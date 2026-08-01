@@ -51,6 +51,10 @@ export function initializePublishedSite(): PublishedSiteState {
     for (const finding of outcome.findings.slice(0, 10)) {
       console.error(`  ${finding.field}: ${finding.code}`);
     }
+    // The operator's copy of the underlying error. Deliberately logged here and
+    // nowhere else: the readiness probe is public and must not carry it.
+    const detail = site.state().lastFailure?.detail;
+    if (detail) console.error(`  detail: ${detail}`);
   } else {
     console.log(
       `[published] generation ${outcome.generation} ${outcome.status}`

@@ -36,7 +36,17 @@ export type SiteStatus = "ready" | "degraded" | "unavailable";
 
 export interface SiteFailure {
   at: string;
+  /**
+   * Why the refresh was refused, as stable machine codes. Safe to publish: the
+   * readiness probe emits these, and `/readyz` is unauthenticated.
+   */
   findings: Finding[];
+  /**
+   * The underlying error text, when there was one. Never safe to publish — a
+   * driver's message can name the database file or quote a statement — so it is
+   * held apart from `findings` and is for operator logs only.
+   */
+  detail: string | null;
 }
 
 export interface PublishedSiteState {
@@ -89,7 +99,8 @@ export class PublishedSite {
       build = this.source();
     } catch (cause) {
       // A thrown error is the SQLite-went-away case. It is a refresh failure,
-      // never a reason to drop the generation already serving.
+      // never a reason to drop the generation already serving. The message goes
+      // in `detail`, not in a finding, because a finding's code is published.
       build = {
         status: "invalid",
         findings: [
@@ -98,12 +109,8 @@ export class PublishedSite {
             code: "snapshot_source_failed",
             severity: "error",
           },
-          {
-            field: "snapshot.detail",
-            code: cause instanceof Error ? cause.message : String(cause),
-            severity: "error",
-          },
         ],
+        detail: cause instanceof Error ? cause.message : String(cause),
       };
     }
 
@@ -112,6 +119,7 @@ export class PublishedSite {
       this.lastFailure = {
         at: this.clock().toISOString(),
         findings: build.findings,
+        detail: build.detail ?? null,
       };
       // #34: an invalid new generation never partially replaces the previous
       // one. A warm process stays warm and says it is degraded.

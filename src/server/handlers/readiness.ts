@@ -47,8 +47,10 @@ export async function readinessHandler(): Promise<Response> {
             builtAt: published.builtAt,
             activations: published.activations,
             rejections: published.rejections,
-            // The codes only. A finding's field can name a content id, and a
-            // readiness probe is a public endpoint.
+            // The codes only. A finding's field can name a content id and
+            // `detail` carries raw driver error text, and a readiness probe is
+            // a public endpoint. `Finding.code` is a stable token by
+            // construction — see `SiteFailure` — so codes are safe to publish.
             lastFailure: published.lastFailure
               ? {
                   at: published.lastFailure.at,

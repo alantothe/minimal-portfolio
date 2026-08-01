@@ -256,8 +256,30 @@ describe("degradation", () => {
     const state = site.state();
     expect(state.rejections).toBe(1);
     expect(state.lastFailure?.findings.map((f) => f.code)).toContain(
-      "volume not mounted"
+      "snapshot_source_failed"
     );
+    expect(state.lastFailure?.detail).toBe("volume not mounted");
+  });
+
+  // `/readyz` is unauthenticated and publishes every finding's code, so a
+  // driver's error text — which can name the database file or quote a
+  // statement — must never reach one. It belongs to `detail`, which nothing
+  // serves.
+  test("the underlying error text never reaches a finding code", () => {
+    const db = database();
+    seedSite(db);
+    const { site, fail } = controllableSite(db);
+
+    fail(
+      "SQLITE_CANTOPEN: unable to open database file /data/portfolio.sqlite"
+    );
+    site.refresh();
+
+    const codes = site.state().lastFailure?.findings.map((f) => f.code) ?? [];
+    expect(codes.length).toBeGreaterThan(0);
+    for (const code of codes) {
+      expect(code).toMatch(/^[a-z0-9_]+$/);
+    }
   });
 });
 

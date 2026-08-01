@@ -174,7 +174,17 @@ export interface SiteSnapshot {
 
 export type SnapshotBuild =
   | { status: "built"; snapshot: SiteSnapshot }
-  | { status: "invalid"; findings: Finding[] };
+  | {
+      status: "invalid";
+      findings: Finding[];
+      /**
+       * Free-text diagnostic about *why* the build failed — a driver's error
+       * message, typically. Kept out of `findings` because a `Finding.code` is
+       * a stable token that the readiness probe publishes, and `/readyz` is
+       * unauthenticated. This field is for logs only; nothing may serve it.
+       */
+      detail?: string;
+    };
 
 function error(field: string, code: string): Finding {
   return { field, code, severity: "error" };
@@ -594,13 +604,8 @@ export function buildSiteSnapshot(
 
     return {
       status: "invalid",
-      findings: [
-        error("snapshot", "content_read_failed"),
-        error(
-          "snapshot.detail",
-          cause instanceof Error ? cause.message : String(cause)
-        ),
-      ],
+      findings: [error("snapshot", "content_read_failed")],
+      detail: cause instanceof Error ? cause.message : String(cause),
     };
   }
 

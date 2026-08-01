@@ -15,6 +15,12 @@ import {
   renderSeoHead,
   type SeoPageInput,
 } from "../services/seo";
+import {
+  applySeoHead,
+  injectPageContent,
+  replacePageStylesheet,
+  type ContainerId,
+} from "./shellDocument";
 
 interface ShellDependencies {
   loadPageContent: typeof loadPageContent;
@@ -23,19 +29,6 @@ interface ShellDependencies {
 const defaultDependencies: ShellDependencies = {
   loadPageContent,
 };
-
-const pageStylesheetLink = /<link\b(?=[^>]*\bid=(["'])page-css\1)[^>]*>/;
-
-function replacePageStylesheet(html: string, pageCss: string) {
-  if (!pageStylesheetLink.test(html)) {
-    throw new Error("SSR shell is missing the page stylesheet link");
-  }
-
-  return html.replace(
-    pageStylesheetLink,
-    `<link id="page-css" rel="stylesheet" href="${pageCss}">`
-  );
-}
 
 export function createShellHandler(
   url: URL,
@@ -55,7 +48,7 @@ export function createShellHandler(
       const pathname = url.pathname;
 
       let pageContent = "";
-      let containerId = "home-page";
+      let containerId: ContainerId = "home-page";
       let seoInput: SeoPageInput = { kind: "home" };
       let pageCss = "/pages/home/styles.css";
 
@@ -123,27 +116,10 @@ export function createShellHandler(
         }
       }
 
-      // Inject SSR content into shell
-      if (pageContent) {
-        // Remove default active from home-page
-        html = html.replace(
-          'id="home-page" class="page-container active"',
-          'id="home-page" class="page-container"'
-        );
-
-        // Set active and inject content on target container
-        html = html.replace(
-          `id="${containerId}" class="page-container"`,
-          `id="${containerId}" class="page-container active"`
-        );
-        html = html.replace(
-          `<div id="${containerId}" class="page-container active"></div>`,
-          `<div id="${containerId}" class="page-container active">${pageContent}</div>`
-        );
-      }
+      html = injectPageContent(html, containerId, pageContent);
 
       const seo = createSeoMetadata(seoInput, url);
-      html = html.replace("<title>Portfolio</title>", renderSeoHead(seo));
+      html = applySeoHead(html, renderSeoHead(seo));
       html = replacePageStylesheet(html, pageCss);
 
       return new Response(html, {

@@ -6,6 +6,7 @@ import { syncViewsWithBlogPosts } from "./services/views";
 import { validateProductionSiteUrl } from "./services/seo";
 import { logDevelopmentWorkflowBanner } from "./core/developmentWorkflow";
 import { initializeDatabase } from "./database";
+import { initializePublishedSite } from "./published/lifecycle";
 import { validateAuthConfigAtStartup } from "./auth/config";
 import { validateMediaConfigAtStartup } from "./media/config";
 
@@ -40,6 +41,16 @@ console.log(
     ? `[database] ready at ${database.file} (${database.appliedMigrations} migration(s), phase ${database.cutoverPhase})`
     : `[database] NOT READY at ${database.file}: ${database.error}`
 );
+
+// Build and warm the published generation. Nothing serves it — no route reaches
+// it until the cutover slice — but warming it here means the generation is
+// validated at a known point in time, and a process that survives SQLite going
+// away later still holds a complete last-known-good site. Like the database
+// above, a failure is reported rather than fatal: during `legacy` the public
+// site is served entirely from repository content.
+if (database.status === "ok") {
+  initializePublishedSite();
+}
 
 // start server
 const server = Bun.serve({

@@ -21,6 +21,7 @@
     "help": "bun scripts/help.ts",
     "baseline:check": "bun scripts/baseline.ts check",
     "baseline:capture": "bun scripts/baseline.ts capture",
+    "shadow:parity": "bun scripts/shadow-parity.ts",
     "prepare": "if command -v husky >/dev/null 2>&1; then husky; fi",
     "work:start": "bun scripts/workflow.ts start",
     "work:status": "bun scripts/workflow.ts status",

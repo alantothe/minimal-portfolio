@@ -54,6 +54,44 @@ function isText(contentType: string | null): boolean {
   );
 }
 
+/**
+ * The recorded shape of one response.
+ *
+ * Split out from the crawl so the shadow comparison can describe a
+ * database-rendered response the *same* way the golden contract described the
+ * legacy one. Comparing two artifacts produced by two different extractors would
+ * measure the extractors as much as the renderers.
+ */
+export function snapshotResponse(
+  route: RouteRequest,
+  response: {
+    status: number;
+    contentType: string | null;
+    cacheControl: string | null;
+    location: string | null;
+    body: string;
+  }
+): RouteSnapshot {
+  const { contentType, body } = response;
+  const html = isHtml(contentType);
+
+  return {
+    path: route.path,
+    kind: route.kind,
+    status: response.status,
+    contentType,
+    cacheControl: response.cacheControl,
+    location: response.location,
+    bodyHash: isJson(contentType) ? stableJsonHash(body) : sha256(body),
+    textHash:
+      html || isText(contentType) ? sha256(normalizeVisibleText(body)) : null,
+    headings: html ? extractHeadings(body) : [],
+    internalLinks: html ? extractInternalLinks(body) : [],
+    images: html ? extractImages(body) : [],
+    seo: html ? extractSeo(body) : null,
+  };
+}
+
 async function captureRoute(
   handler: RequestHandler,
   route: RouteRequest
@@ -66,23 +104,14 @@ async function captureRoute(
 
   const contentType = response.headers.get("Content-Type");
   const body = await response.text();
-  const html = isHtml(contentType);
 
-  return {
-    path: route.path,
-    kind: route.kind,
+  return snapshotResponse(route, {
     status: response.status,
     contentType,
     cacheControl: response.headers.get("Cache-Control"),
     location: response.headers.get("Location"),
-    bodyHash: isJson(contentType) ? stableJsonHash(body) : sha256(body),
-    textHash:
-      html || isText(contentType) ? sha256(normalizeVisibleText(body)) : null,
-    headings: html ? extractHeadings(body) : [],
-    internalLinks: html ? extractInternalLinks(body) : [],
-    images: html ? extractImages(body) : [],
-    seo: html ? extractSeo(body) : null,
-  };
+    body,
+  });
 }
 
 /**

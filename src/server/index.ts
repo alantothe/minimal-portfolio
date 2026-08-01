@@ -6,6 +6,7 @@ import { syncViewsWithBlogPosts } from "./services/views";
 import { validateProductionSiteUrl } from "./services/seo";
 import { logDevelopmentWorkflowBanner } from "./core/developmentWorkflow";
 import { initializeDatabase } from "./database";
+import { validateAuthConfigAtStartup } from "./auth/config";
 
 const router = new Router();
 setupRoutes(router);
@@ -13,6 +14,12 @@ setupRoutes(router);
 const requestHandler = new RequestHandler(router);
 
 validateProductionSiteUrl();
+
+// Unlike the database, misconfigured authentication is fatal. A database that
+// cannot open leaves the public site working; an Owner workspace with a broken
+// or half-present OAuth App is a security boundary in an unknown state, and the
+// only safe response is to refuse to start.
+validateAuthConfigAtStartup();
 
 // Sync view data with blog posts on startup
 await syncViewsWithBlogPosts();

@@ -97,13 +97,13 @@ describe("methods", () => {
   test("a route can opt in to a mutation method", async () => {
     const router = new Router();
     router.addRoute(
-      "/admin/logout",
+      "/widgets/archive",
       async ({ request: received }) => ok(received.method),
       { methods: ["POST"] }
     );
 
     const response = await handlerFor(router).handleRequest(
-      request("/admin/logout", { method: "POST" })
+      request("/widgets/archive", { method: "POST" })
     );
 
     expect(response.status).toBe(200);
@@ -113,7 +113,7 @@ describe("methods", () => {
   test("a mutation route still refuses methods it did not declare", async () => {
     const router = new Router();
     router.addRoute(
-      "/admin/logout",
+      "/widgets/archive",
       fromResponder(async () => ok()),
       {
         methods: ["POST"],
@@ -121,7 +121,7 @@ describe("methods", () => {
     );
 
     const response = await handlerFor(router).handleRequest(
-      request("/admin/logout")
+      request("/widgets/archive")
     );
 
     expect(response.status).toBe(405);
@@ -146,7 +146,7 @@ describe("methods", () => {
   test("OPTIONS reports what the matched route actually accepts", async () => {
     const router = new Router();
     router.addRoute(
-      "/admin/logout",
+      "/widgets/archive",
       fromResponder(async () => ok()),
       {
         methods: ["POST"],
@@ -160,7 +160,7 @@ describe("methods", () => {
     const handler = handlerFor(router);
 
     const mutation = await handler.handleRequest(
-      request("/admin/logout", { method: "OPTIONS" })
+      request("/widgets/archive", { method: "OPTIONS" })
     );
     const page = await handler.handleRequest(
       request("/about", { method: "OPTIONS" })

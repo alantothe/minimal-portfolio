@@ -1,6 +1,11 @@
 import { DEFAULT_METHODS, Router } from "./router";
 import { StaticHandler } from "./staticHandler";
 import { gzipSync } from "node:zlib";
+import {
+  applyPrivateHeaders,
+  guardOwnerRequest,
+  isOwnerPath,
+} from "../auth/ownerBoundary";
 
 async function compressResponse(
   request: Request,
@@ -85,6 +90,20 @@ export class RequestHandler {
       });
     }
 
+    // The Owner boundary sits ahead of both static serving and routing, so it
+    // covers paths that match no route as well as any asset added under /admin
+    // later. The method check above runs first on purpose: a mutation attempted
+    // through GET is answered 405 whether or not the caller is signed in, which
+    // keeps "this route does not accept GET" from depending on session state.
+    const isOwnerRequest = isOwnerPath(url.pathname);
+
+    if (isOwnerRequest) {
+      const { denial } = guardOwnerRequest(request, url);
+      if (denial) {
+        return applyPrivateHeaders(denial);
+      }
+    }
+
     let response: Response;
 
     // Handle static assets first
@@ -93,6 +112,10 @@ export class RequestHandler {
     } else {
       // Handle API routes
       response = await this.router.handleRequest(request);
+    }
+
+    if (isOwnerRequest) {
+      response = applyPrivateHeaders(response);
     }
 
     response = await compressResponse(request, response);

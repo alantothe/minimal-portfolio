@@ -270,4 +270,21 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX import_entities_content ON import_entities (content_id)`,
     ],
   },
+  {
+    id: 6,
+    name: "index_media_digest",
+    statements: [
+      // The digest column has existed since migration 3, but nothing looked
+      // assets up by it until the importer started adopting images by content
+      // hash. Deduplication now runs once per image on every import, so the
+      // lookup gets an index.
+      //
+      // Deliberately not a UNIQUE constraint. A failed upload leaves a row
+      // holding the digest of bytes the provider never accepted, and a retry of
+      // those same bytes must be able to claim a fresh row rather than collide
+      // with the corpse of the previous attempt. Uniqueness of *usable* assets
+      // is enforced by the query, which only ever considers `ready` rows.
+      `CREATE INDEX media_assets_digest ON media_assets (digest, status)`,
+    ],
+  },
 ];

@@ -19,6 +19,7 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import { detectImageFormat } from "./imageSignature";
+import { CONTENT_TYPE_FOR_FORMAT } from "./config";
 import type { MediaConfig } from "./config";
 import type { MediaProvider } from "./cloudinary";
 import type { MediaAsset, MediaRepository } from "../database/mediaRepository";
@@ -52,12 +53,6 @@ function refuse(status: number, reason: string): Response {
   logEvent(`upload_rejected:${reason}`);
   return json(status, { error: reason });
 }
-
-const CONTENT_TYPES: Record<string, string> = {
-  jpg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-};
 
 /**
  * Reads the single uploaded file, or explains what was wrong with the form.
@@ -176,7 +171,7 @@ export async function handleMediaUpload(
   const uploaded = await provider.upload(
     bytes,
     providerPublicId,
-    CONTENT_TYPES[detected.format]!
+    CONTENT_TYPE_FOR_FORMAT[detected.format]
   );
 
   if (uploaded.status === "rejected") {

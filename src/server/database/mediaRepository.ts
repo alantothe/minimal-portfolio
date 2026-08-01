@@ -180,6 +180,32 @@ export class MediaRepository extends Repository {
       .run(id);
   }
 
+  /**
+   * Puts a failed row back into `uploading` so a retry can finish it.
+   *
+   * Only safe because of how the caller derives identity. The importer's public
+   * IDs are a pure function of the image's content hash, so a row that failed
+   * can only ever be retried with byte-identical content — the retry cannot
+   * rebind a public ID to a different image, which is the thing migration 3's
+   * "never reuse a public ID" rule exists to prevent.
+   *
+   * The digest is therefore required and checked rather than taken on trust: it
+   * is the evidence that this is a retry rather than a reuse. A row with no
+   * digest (the legacy-adoption path stores none) can never be reclaimed.
+   */
+  reclaimFailed(id: string, digest: string): MediaAsset | null {
+    const row = this.database
+      .query(
+        `UPDATE media_assets
+            SET status = 'uploading'
+          WHERE id = ? AND status = 'failed' AND digest IS NOT NULL AND digest = ?
+        RETURNING *`
+      )
+      .get(id, digest) as MediaRow | null;
+
+    return row ? toAsset(row) : null;
+  }
+
   findById(id: string): MediaAsset | null {
     const row = this.database
       .query("SELECT * FROM media_assets WHERE id = ?")
@@ -192,6 +218,30 @@ export class MediaRepository extends Repository {
     const row = this.database
       .query("SELECT * FROM media_assets WHERE provider_public_id = ?")
       .get(providerPublicId) as MediaRow | null;
+
+    return row ? toAsset(row) : null;
+  }
+
+  /**
+   * Finds a usable asset holding exactly these bytes.
+   *
+   * `ready` only, and that is the whole point. A `failed` or `uploading` row
+   * with the same digest describes an attempt, not an asset — returning one
+   * would hand the caller a record whose provider side may not exist, and the
+   * renderer would build a URL for an image that was never stored.
+   *
+   * Oldest first, so that if two rows somehow tie, the answer is the one every
+   * earlier caller already got rather than whichever the planner sorted last.
+   */
+  findReadyByDigest(digest: string): MediaAsset | null {
+    const row = this.database
+      .query(
+        `SELECT * FROM media_assets
+          WHERE digest = ? AND status = 'ready'
+          ORDER BY created_at ASC, id ASC
+          LIMIT 1`
+      )
+      .get(digest) as MediaRow | null;
 
     return row ? toAsset(row) : null;
   }

@@ -12,12 +12,15 @@ import {
 } from "../handlers/discovery";
 import { readinessHandler } from "../handlers/readiness";
 import {
-  adminHomeHandler,
   adminLoginHandler,
   adminLogoutHandler,
   adminSignInCallbackHandler,
   adminSignInStartHandler,
 } from "../handlers/admin";
+import {
+  workbenchHandler,
+  workbenchPreviewHandler,
+} from "../handlers/workbench";
 import { mediaListHandler, mediaUploadHandler } from "../handlers/media";
 
 export function setupRoutes(router: Router): void {
@@ -59,7 +62,10 @@ export function setupRoutes(router: Router): void {
   // `requestHandler.ts` before reaching any of these, including paths that
   // match no route at all — registration here decides what exists, not what is
   // protected.
-  router.addRoute("/admin", adminHomeHandler);
+  router.addRoute("/admin", workbenchHandler);
+  // The preview pane's iframe target. Inside the boundary like everything else
+  // under /admin, so the generation it renders stays owner-only.
+  router.addRoute("/admin/preview", workbenchPreviewHandler);
   router.addRoute("/admin/login", adminLoginHandler);
   router.addRoute("/admin/auth/github/start", adminSignInStartHandler);
   router.addRoute("/admin/auth/github/callback", adminSignInCallbackHandler);

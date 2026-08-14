@@ -1,4 +1,4 @@
-/** Browser autosave for singleton schema forms. */
+/** Browser autosave for schema-driven Content forms. */
 
 export const EDITOR_SCRIPT = `
 (() => {
@@ -53,6 +53,34 @@ export const EDITOR_SCRIPT = `
       .filter((link) => link.label.trim() || link.url.trim());
   }
 
+  function technologies() {
+    return Array.from(form.querySelectorAll(".technology-row"))
+      .map((row, index) => {
+        const input = row.querySelector("[data-technology]");
+        const finding = row.querySelector("[data-technology-finding]");
+        input.dataset.field = "technologies[" + index + "]";
+        finding.dataset.findingFor = "technologies[" + index + "]";
+        finding.id = "finding-technology-" + index;
+        input.setAttribute("aria-describedby", finding.id);
+        return input.value;
+      })
+      .filter((technology) => technology.trim());
+  }
+
+  function attributes() {
+    switch (form.dataset.contentType) {
+      case "project":
+        return {
+          slug: value("slug"),
+          displayOrder: value("displayOrder") === "" ? null : Number(value("displayOrder")),
+        };
+      case "blog_post":
+        return { slug: value("slug"), publishedAt: optional("publishedAt") };
+      default:
+        return undefined;
+    }
+  }
+
   function formData() {
     switch (form.dataset.contentType) {
       case "home":
@@ -80,6 +108,30 @@ export const EDITOR_SCRIPT = `
           logo: media("logo"),
           defaultSharingImage: media("defaultSharingImage"),
         };
+      case "project":
+        return {
+          title: value("title"),
+          summary: value("summary"),
+          card: media("card"),
+          kicker: value("kicker"),
+          role: value("role"),
+          status: value("status"),
+          period: value("period"),
+          technologies: technologies(),
+          liveUrl: optional("liveUrl"),
+          repositoryUrl: optional("repositoryUrl"),
+          accentColor: value("accentColor"),
+          bodyMarkdown: value("bodyMarkdown"),
+          seo: seo(),
+        };
+      case "blog_post":
+        return {
+          title: value("title"),
+          excerpt: value("excerpt"),
+          bodyMarkdown: value("bodyMarkdown"),
+          sharingImage: media("sharingImage"),
+          seo: seo(),
+        };
       default:
         throw new Error("Unsupported Content type");
     }
@@ -100,7 +152,16 @@ export const EDITOR_SCRIPT = `
     control_characters: "Contains unsupported control characters.",
     invalid_email: "Enter a valid email address.",
     invalid_url: "Enter a valid HTTPS address.",
+    malformed_url: "Enter a complete HTTPS address.",
+    insecure_url: "Only HTTPS addresses are allowed.",
     unsafe_url: "This address is not allowed.",
+    malformed_slug: "Use lowercase letters, numbers, and single hyphens.",
+    reserved_slug: "This address is reserved.",
+    duplicate_slug: "This address is already in use.",
+    invalid_display_order: "Enter a whole number of zero or greater.",
+    invalid_date: "Enter a real date in YYYY-MM-DD form.",
+    future_publication_date: "Future publication dates are not scheduled.",
+    invalid_accent_color: "Enter a six-digit colour such as #0b4fd4.",
     unknown_field: "Unknown field.",
     media_unavailable: "Choose an available Media asset.",
     alt_text_required: "Describe the image before publication.",
@@ -195,7 +256,11 @@ export const EDITOR_SCRIPT = `
             "Content-Type": "application/json",
             "X-CSRF-Token": csrf,
           },
-          body: JSON.stringify({ data: formData(), expectedUpdatedAt }),
+          body: JSON.stringify({
+            data: formData(),
+            attributes: attributes(),
+            expectedUpdatedAt,
+          }),
         }
       );
       const body = await response.json();
@@ -224,6 +289,27 @@ export const EDITOR_SCRIPT = `
       expectedUpdatedAt = body.draft.updatedAt;
       dirty = false;
       showFindings(body.draft.publishFindings);
+      const slugChanged =
+        body.draft.slug !== null && body.draft.slug !== form.dataset.slug;
+      const orderingChanged =
+        (form.dataset.contentType === "project" &&
+          String(body.draft.displayOrder ?? "") !== form.dataset.displayOrder) ||
+        (form.dataset.contentType === "blog_post" &&
+          (body.draft.publishedAt ?? "") !== form.dataset.publishedAt);
+      if (slugChanged || orderingChanged) {
+        const workspaceUrl = new URL(window.location.href);
+        workspaceUrl.searchParams.set("content", form.dataset.contentId);
+        if (orderingChanged) {
+          workspaceUrl.searchParams.set(
+            "preview",
+            form.dataset.contentType === "project" ? "/projects" : "/blog"
+          );
+        } else {
+          workspaceUrl.searchParams.delete("preview");
+        }
+        window.location.assign(workspaceUrl.toString());
+        return;
+      }
       const issueCount = body.draft.publishFindings.length;
       const previewUpdated = refreshPreview(body.preview);
       const details = [];
@@ -280,6 +366,29 @@ export const EDITOR_SCRIPT = `
       const previous = row.previousElementSibling;
       if (previous) row.parentElement.insertBefore(row, previous);
     } else if (action.dataset.socialAction === "down") {
+      const next = row.nextElementSibling;
+      if (next) row.parentElement.insertBefore(next, row);
+    }
+    schedule();
+  });
+
+  const technologyList = document.getElementById("technologies");
+  document.getElementById("add-technology")?.addEventListener("click", () => {
+    const template = document.getElementById("technology-template");
+    technologyList.append(template.content.cloneNode(true));
+    technologyList.lastElementChild.querySelector("input").focus();
+    schedule();
+  });
+  technologyList?.addEventListener("click", (event) => {
+    const action = event.target.closest("[data-list-action]");
+    if (!action) return;
+    const row = action.closest("[data-list-row]");
+    if (action.dataset.listAction === "remove") {
+      row.remove();
+    } else if (action.dataset.listAction === "up") {
+      const previous = row.previousElementSibling;
+      if (previous) row.parentElement.insertBefore(row, previous);
+    } else if (action.dataset.listAction === "down") {
       const next = row.nextElementSibling;
       if (next) row.parentElement.insertBefore(next, row);
     }

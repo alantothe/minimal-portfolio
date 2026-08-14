@@ -37,6 +37,7 @@ import type {
   ProjectContent,
   SeoOverrides,
 } from "../content/schema";
+import { validateContentAddress } from "../content/address";
 import { renderMarkdown, type MarkdownContext } from "../content/markdown";
 import {
   hasBlockingError,
@@ -386,11 +387,12 @@ function buildProject(
   const data = parsed<ProjectContent>(item, "project", context);
   const { assets, cloudName, findings, markdown } = context;
   const slug = item.slug!;
+  const route = slug ? `/projects/${encodeURIComponent(slug)}` : "/projects";
 
   return {
     id: item.id,
     slug,
-    route: `/projects/${encodeURIComponent(slug)}`,
+    route,
     title: data.title,
     summary: data.summary,
     card: resolveImage(data.card, "card", assets, cloudName),
@@ -420,11 +422,12 @@ function buildBlogPost(
   const data = parsed<BlogPostContent>(item, "blog_post", context);
   const { assets, cloudName, findings, markdown } = context;
   const slug = item.slug!;
+  const route = slug ? `/blog/${encodeURIComponent(slug)}` : "/blog";
 
   return {
     id: item.id,
     slug,
-    route: `/blog/${encodeURIComponent(slug)}`,
+    route,
     title: data.title,
     excerpt: data.excerpt,
     publishedAt: item.publishedAt,
@@ -632,6 +635,18 @@ function buildSnapshot(
     return { status: "invalid", findings };
   }
 
+  const validationDate = options.now ?? new Date();
+  for (const item of items) {
+    findings.push(
+      ...validateContentAddress(item, validationMode, validationDate).map(
+        (finding) => ({
+          ...finding,
+          field: `${item.id}.${finding.field}`,
+        })
+      )
+    );
+  }
+
   const resolution = resolveMediaConfig();
   const cloudName =
     options.cloudName ??
@@ -666,6 +681,10 @@ function buildSnapshot(
   // page that answers differently depending on load order.
   const routes = new Set<string>();
   for (const entry of [...projects, ...blogPosts]) {
+    // An incomplete draft with no slug previews on its collection page. It has
+    // no canonical detail route to collide until the Portfolio owner supplies
+    // one; publication validation still refuses the missing slug.
+    if (entry.route === "/projects" || entry.route === "/blog") continue;
     if (routes.has(entry.route)) {
       findings.push(error(entry.route, "duplicate_route"));
     }
@@ -678,7 +697,7 @@ function buildSnapshot(
 
   const snapshot: SiteSnapshot = Object.freeze({
     generation: computeGeneration(items, assetList),
-    builtAt: (options.now ?? new Date()).toISOString(),
+    builtAt: validationDate.toISOString(),
     home: publishedHome,
     about: publishedAbout,
     branding: publishedBranding,
@@ -686,14 +705,18 @@ function buildSnapshot(
     blogPosts: Object.freeze(blogPosts),
     blogPageSize: BLOG_PAGE_SIZE,
     projectPageSize: PROJECT_PAGE_SIZE,
-    routes: Object.freeze([
-      "/",
-      "/about",
-      ...collectionRoutes("/blog", blogPosts.length, BLOG_PAGE_SIZE),
-      ...collectionRoutes("/projects", projects.length, PROJECT_PAGE_SIZE),
-      ...blogPosts.map((post) => post.route),
-      ...projects.map((project) => project.route),
-    ]),
+    routes: Object.freeze(
+      Array.from(
+        new Set([
+          "/",
+          "/about",
+          ...collectionRoutes("/blog", blogPosts.length, BLOG_PAGE_SIZE),
+          ...collectionRoutes("/projects", projects.length, PROJECT_PAGE_SIZE),
+          ...blogPosts.map((post) => post.route),
+          ...projects.map((project) => project.route),
+        ])
+      )
+    ),
   });
 
   return { status: "built", snapshot };

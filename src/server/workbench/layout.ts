@@ -274,7 +274,7 @@ textarea { min-height: 7rem; resize: vertical; }
   background: var(--surface-sunken);
 }
 .media-field label + .field-finding + label { display: block; margin-top: 0.7rem; }
-.social-link-row {
+.social-link-row, .technology-row {
   display: grid;
   grid-template-columns: minmax(7rem, 0.7fr) minmax(10rem, 1.3fr) auto;
   align-items: end;
@@ -282,8 +282,11 @@ textarea { min-height: 7rem; resize: vertical; }
   padding: 0.65rem 0;
   border-bottom: 1px solid var(--border);
 }
+.technology-row { grid-template-columns: minmax(10rem, 1fr) auto; }
 .social-link-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .social-link-actions button { padding-inline: 0.55rem; }
+.list-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.list-actions button { padding-inline: 0.55rem; }
 .quiet { margin-top: 0.65rem; }
 .editor-actions {
   position: sticky;
@@ -344,7 +347,7 @@ textarea { min-height: 7rem; resize: vertical; }
 @media (max-width: 35rem) {
   .rail dl, .editor-intro { display: block; }
   .rail dl > div { margin-top: 0.2rem; }
-  .social-link-row { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .social-link-row, .technology-row { grid-template-columns: minmax(0, 1fr); align-items: start; }
   .editor-actions { flex-wrap: wrap; }
 }
 `;

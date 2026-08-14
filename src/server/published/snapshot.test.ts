@@ -140,6 +140,56 @@ describe("building an owner draft preview", () => {
       expect(preview.snapshot.home.professionalTitle).toBe("Work in progress");
     }
   });
+
+  test("retains missing slug, display order, and Publication date in preview", () => {
+    const db = database();
+    seedSite(db);
+    const repository = new ContentRepository(db);
+    repository.update(
+      importedContentId("project", "questurian"),
+      { slug: "", displayOrder: null },
+      "owner"
+    );
+    repository.update(
+      importedContentId("blog_post", "first-post"),
+      { slug: "", publishedAt: null },
+      "owner"
+    );
+
+    const publication = buildSiteSnapshot(db);
+    expect(publication.status).toBe("invalid");
+    if (publication.status === "invalid") {
+      expect(publication.findings).toContainEqual({
+        field: `${importedContentId("project", "questurian")}.slug`,
+        code: "required",
+        severity: "error",
+      });
+      expect(publication.findings).toContainEqual({
+        field: `${importedContentId("project", "questurian")}.displayOrder`,
+        code: "required",
+        severity: "error",
+      });
+      expect(publication.findings).toContainEqual({
+        field: `${importedContentId("blog_post", "first-post")}.slug`,
+        code: "required",
+        severity: "error",
+      });
+      expect(publication.findings).toContainEqual({
+        field: `${importedContentId("blog_post", "first-post")}.publishedAt`,
+        code: "required",
+        severity: "error",
+      });
+    }
+    const preview = buildDraftPreviewSnapshot(db);
+    expect(preview.status).toBe("built");
+    if (preview.status === "built") {
+      expect(preview.snapshot.projects[0]?.route).toBe("/projects");
+      expect(preview.snapshot.blogPosts[0]?.route).toBe("/blog");
+      expect(new Set(preview.snapshot.routes).size).toBe(
+        preview.snapshot.routes.length
+      );
+    }
+  });
 });
 
 describe("media", () => {
@@ -231,6 +281,20 @@ describe("refusing to build", () => {
     );
 
     expect(codes(db).length).toBeGreaterThan(0);
+  });
+
+  test("malformed Public route slug and display order block the generation", () => {
+    const db = database();
+    seedSite(db);
+    const repository = new ContentRepository(db);
+    repository.update(
+      importedContentId("project", "questurian"),
+      { slug: "Bad Slug", displayOrder: -1 },
+      "owner"
+    );
+
+    expect(codes(db)).toContain("malformed_slug");
+    expect(codes(db)).toContain("invalid_display_order");
   });
 
   test("nothing is returned alongside findings", () => {

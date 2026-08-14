@@ -44,6 +44,18 @@ afterEach(() => {
 });
 
 describe("the content library", () => {
+  test("keeps singleton Pages available before a generation exists", () => {
+    const sections = contentLibrary(null);
+
+    expect(sections[0]?.entries.map((entry) => entry.id)).toEqual([
+      "singleton:home",
+      "singleton:about",
+      "singleton:branding",
+    ]);
+    expect(sections[1]?.entries).toEqual([]);
+    expect(sections[2]?.entries).toEqual([]);
+  });
+
   test("has exactly the three groups #44 fixes", () => {
     const sections = contentLibrary(snapshot());
 

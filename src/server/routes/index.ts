@@ -22,6 +22,7 @@ import {
   workbenchPreviewHandler,
 } from "../handlers/workbench";
 import { mediaListHandler, mediaUploadHandler } from "../handlers/media";
+import { contentDraftHandler } from "../handlers/contentDraft";
 
 export function setupRoutes(router: Router): void {
   router.addRoute(
@@ -81,4 +82,7 @@ export function setupRoutes(router: Router): void {
     methods: ["POST"],
   });
   router.addRoute("/admin/api/media/list", mediaListHandler);
+  router.addRoute("/admin/api/content/:id", contentDraftHandler, {
+    methods: ["GET", "PUT"],
+  });
 }

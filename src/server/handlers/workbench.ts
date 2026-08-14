@@ -17,9 +17,13 @@
 import type { RouteContext } from "../core/router";
 import { resolveOwnerSession } from "../auth/session";
 import { applyPrivateHeaders } from "../auth/ownerBoundary";
-import { getPublishedSite } from "../published/lifecycle";
+import { getDatabase, isDatabaseAvailable } from "../database";
+import { ContentRepository } from "../database/contentRepository";
+import { MediaRepository } from "../database/mediaRepository";
 import { renderPublishedDocument } from "../published/render";
 import { collectEnrichment } from "../published/enrichment";
+import { buildDraftPreviewSnapshot } from "../published/snapshot";
+import { PublishedSite } from "../published/site";
 import {
   contentLibrary,
   defaultContentId,
@@ -29,6 +33,11 @@ import {
 } from "../workbench/library";
 import { configurePreviewDocument } from "../workbench/preview";
 import { renderWorkbench } from "../workbench/layout";
+import {
+  readSingletonDraft,
+  singletonTypeForId,
+} from "../workbench/contentDraft";
+import type { EditorPanel } from "../workbench/editor";
 
 function html(body: string, status = 200): Response {
   return applyPrivateHeaders(
@@ -56,10 +65,11 @@ export async function workbenchHandler({
     return signedOut();
   }
 
-  const site = getPublishedSite();
-  const state = site?.state() ?? null;
-  const snapshot = site?.snapshot() ?? null;
-  const sections = snapshot ? contentLibrary(snapshot) : [];
+  const database = isDatabaseAvailable() ? getDatabase() : null;
+  const previewBuild = database ? buildDraftPreviewSnapshot(database) : null;
+  const snapshot =
+    previewBuild?.status === "built" ? previewBuild.snapshot : null;
+  const sections = contentLibrary(snapshot);
 
   // A workspace with no generation still renders. The owner needs to be told
   // why the preview is empty, and a 503 here would tell them nothing and take
@@ -75,16 +85,44 @@ export async function workbenchHandler({
       : null) ||
     findLibraryEntry(sections, defaultContentId());
   const previewRoute = selectedEntry?.route ?? defaultPreviewRoute();
+  const selectedContentId = selectedEntry?.id ?? defaultContentId();
+
+  let editor: EditorPanel;
+  if (!singletonTypeForId(selectedContentId)) {
+    editor = {
+      status: "deferred",
+      label: selectedEntry?.label ?? "Collection item",
+    };
+  } else if (!database) {
+    editor = {
+      status: "missing",
+      message:
+        "Content storage is unavailable. Your public site is unaffected.",
+    };
+  } else {
+    const content = new ContentRepository(database);
+    const media = new MediaRepository(database);
+    const result = readSingletonDraft(selectedContentId, content);
+    editor =
+      result.status === "found"
+        ? { status: "ready", draft: result.draft, media: media.listReady() }
+        : {
+            status: "missing",
+            message:
+              "This Content item has not been imported yet. Run the migration before editing.",
+          };
+  }
 
   return html(
     renderWorkbench({
-      generation: state?.generation ?? null,
-      publishedSiteStatus: state?.status ?? "unavailable",
-      draftStatus: "not-opened",
+      generation: snapshot?.generation ?? null,
+      previewStatus: snapshot ? "ready" : "unavailable",
+      draftStatus: editor.status === "ready" ? "saved" : "not-opened",
       sections,
-      selectedContentId: selectedEntry?.id ?? defaultContentId(),
+      selectedContentId,
       previewRoute,
       csrfToken: resolution.session.csrfToken,
+      editor,
     })
   );
 }
@@ -105,12 +143,16 @@ export async function workbenchPreviewHandler({
     return signedOut();
   }
 
-  const site = getPublishedSite();
-  const snapshot = site?.snapshot();
-
-  if (!site || !snapshot) {
-    return html("<!doctype html><p>No published version to preview.</p>", 503);
+  if (!isDatabaseAvailable()) {
+    return html("<!doctype html><p>Draft preview is unavailable.</p>", 503);
   }
+  const build = buildDraftPreviewSnapshot(getDatabase());
+  if (build.status !== "built") {
+    return html("<!doctype html><p>Draft preview is unavailable.</p>", 503);
+  }
+  const snapshot = build.snapshot;
+  const site = new PublishedSite(() => build);
+  site.refresh();
 
   const route = url.searchParams.get("route") ?? defaultPreviewRoute();
 

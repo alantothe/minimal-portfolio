@@ -19,6 +19,9 @@ import { closeDatabase, getDatabase, initializeDatabase } from "../database";
 import { OwnerAuthRepository } from "../database/authRepository";
 import { SESSION_COOKIE } from "./policy";
 import { createToken, digestToken } from "./tokens";
+import { seedSite } from "../published/fixtures";
+import { SINGLETON_IDS } from "../content/identity";
+import { ContentRepository } from "../database/contentRepository";
 
 const ORIGIN = "https://example.test";
 
@@ -199,6 +202,46 @@ describe("the signed-in owner", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("Location")).toBe("/admin");
   });
+
+  test("opens the requested singleton in the schema editor", async () => {
+    seedSite(getDatabase());
+    const { cookie } = establishSession();
+
+    const response = await send("/admin?content=singleton%3Aabout", { cookie });
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('data-content-id="singleton:about"');
+    expect(body).toContain('data-content-type="about"');
+    expect(body).toContain("<legend>Content</legend>");
+    expect(body).toContain("<legend>Media</legend>");
+    expect(body).toContain("<legend>Metadata</legend>");
+    expect(body).toContain("Autosaves after you pause");
+  });
+
+  test("previews a safe draft even while publication-required fields are empty", async () => {
+    seedSite(getDatabase());
+    const repository = new ContentRepository(getDatabase());
+    const home = repository.findById(SINGLETON_IDS.home)!;
+    repository.update(
+      home.id,
+      {
+        data: {
+          ...(home.data as object),
+          displayName: "",
+          professionalTitle: "Draft-only title",
+        },
+      },
+      "owner"
+    );
+    const { cookie } = establishSession();
+
+    const response = await send("/admin/preview?route=/", { cookie });
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain("Draft-only title");
+  });
 });
 
 describe("mutations", () => {
@@ -280,6 +323,117 @@ describe("mutations", () => {
     // rejected even if the browser kept it.
     const afterLogout = await send("/admin", { cookie });
     expect(afterLogout.status).toBe(303);
+  });
+});
+
+describe("singleton Content draft API", () => {
+  test("reads a draft only for the signed-in Owner", async () => {
+    seedSite(getDatabase());
+
+    expect(
+      (await send(`/admin/api/content/${SINGLETON_IDS.home}`)).status
+    ).toBe(401);
+
+    const { cookie } = establishSession();
+    const response = await send(
+      `/admin/api/content/${encodeURIComponent(SINGLETON_IDS.home)}`,
+      { cookie }
+    );
+    const body = (await response.json()) as {
+      draft: { id: string; data: { displayName: string } };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.draft.id).toBe(SINGLETON_IDS.home);
+    expect(body.draft.data.displayName).toBe("Ada Lovelace");
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+  });
+
+  test("autosaves through Origin, CSRF, validation, and optimistic concurrency", async () => {
+    seedSite(getDatabase());
+    const { cookie, csrfToken } = establishSession();
+    const path = `/admin/api/content/${encodeURIComponent(SINGLETON_IDS.home)}`;
+    const read = await send(path, { cookie });
+    const current = (await read.json()) as {
+      draft: {
+        updatedAt: string;
+        data: Record<string, unknown>;
+      };
+    };
+
+    const response = await send(path, {
+      method: "PUT",
+      cookie,
+      headers: {
+        Origin: ORIGIN,
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        expectedUpdatedAt: current.draft.updatedAt,
+        data: { ...current.draft.data, displayName: "Grace Hopper" },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(
+      (
+        new ContentRepository(getDatabase()).findById(SINGLETON_IDS.home)
+          ?.data as { displayName: string }
+      ).displayName
+    ).toBe("Grace Hopper");
+
+    const stale = await send(path, {
+      method: "PUT",
+      cookie,
+      headers: {
+        Origin: ORIGIN,
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        expectedUpdatedAt: current.draft.updatedAt,
+        data: current.draft.data,
+      }),
+    });
+    expect(stale.status).toBe(409);
+    expect(await stale.json()).toHaveProperty("error", "content_conflict");
+  });
+
+  test("rejects unknown fields without changing stored content", async () => {
+    seedSite(getDatabase());
+    const { cookie, csrfToken } = establishSession();
+    const path = `/admin/api/content/${encodeURIComponent(SINGLETON_IDS.home)}`;
+    const read = await send(path, { cookie });
+    const current = (await read.json()) as {
+      draft: { updatedAt: string; data: Record<string, unknown> };
+    };
+
+    const response = await send(path, {
+      method: "PUT",
+      cookie,
+      headers: {
+        Origin: ORIGIN,
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        expectedUpdatedAt: current.draft.updatedAt,
+        data: { ...current.draft.data, arbitraryHtml: "<b>no</b>" },
+      }),
+    });
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      error: "validation_failed",
+      findings: [
+        {
+          field: "arbitraryHtml",
+          code: "unknown_field",
+          severity: "error",
+        },
+      ],
+    });
   });
 });
 

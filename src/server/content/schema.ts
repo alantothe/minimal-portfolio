@@ -482,10 +482,12 @@ function parseAbout(
 
         findings.push(
           ...validateText(`${field}.label`, label, LIMITS.label, {
-            required: true,
-          }),
-          ...validateHttpsUrl(`${field}.url`, url)
+            required,
+          })
         );
+        if (url !== "" || required) {
+          findings.push(...validateHttpsUrl(`${field}.url`, url));
+        }
 
         socialLinks.push({ label, url });
       });

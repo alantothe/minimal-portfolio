@@ -92,6 +92,13 @@ function timestamp(now: Date): string {
   return now.toISOString();
 }
 
+/** Optimistic-concurrency versions must advance even within one millisecond. */
+function nextTimestamp(previous: string, now: Date): string {
+  return new Date(
+    Math.max(now.getTime(), Date.parse(previous) + 1)
+  ).toISOString();
+}
+
 export interface WriteContentInput {
   id: string;
   type: ContentType;
@@ -101,6 +108,11 @@ export interface WriteContentInput {
   publishedAt?: string | null;
   origin: ContentOrigin;
 }
+
+export type ConditionalContentUpdate =
+  | { status: "updated"; item: ContentItem }
+  | { status: "not-found" }
+  | { status: "conflict"; currentUpdatedAt: string };
 
 export class ContentRepository extends Repository {
   /**
@@ -196,6 +208,88 @@ export class ContentRepository extends Repository {
         ) as ContentRow;
 
       return toItem(row);
+    });
+  }
+
+  /**
+   * Replaces a draft only when the caller edited the version it last read.
+   *
+   * Autosave can come from two tabs or from a delayed request. Without this
+   * comparison, whichever request arrives last wins even when it was written
+   * against older content. The check and write share one transaction so no
+   * writer can move the row between them.
+   */
+  updateIfCurrent(
+    id: string,
+    changes: {
+      slug?: string | null;
+      data?: unknown;
+      displayOrder?: number | null;
+      publishedAt?: string | null;
+    },
+    editor: ContentOrigin,
+    expectedUpdatedAt: string,
+    now: Date = new Date()
+  ): ConditionalContentUpdate {
+    return this.transaction(() => {
+      const existing = this.database
+        .query("SELECT * FROM content_items WHERE id = ?")
+        .get(id) as ContentRow | null;
+
+      if (!existing) return { status: "not-found" };
+      if (existing.updated_at !== expectedUpdatedAt) {
+        return {
+          status: "conflict",
+          currentUpdatedAt: existing.updated_at,
+        };
+      }
+
+      const at = nextTimestamp(existing.updated_at, now);
+      const ownerEditedAt = editor === "owner" ? at : existing.owner_edited_at;
+      const row = this.database
+        .query(
+          `UPDATE content_items
+              SET slug = ?,
+                  data = ?,
+                  schema_version = ?,
+                  display_order = ?,
+                  published_at = ?,
+                  owner_edited_at = ?,
+                  updated_at = ?
+            WHERE id = ? AND updated_at = ?
+          RETURNING *`
+        )
+        .get(
+          changes.slug === undefined ? existing.slug : changes.slug,
+          changes.data === undefined
+            ? existing.data
+            : JSON.stringify(changes.data),
+          CONTENT_SCHEMA_VERSION,
+          changes.displayOrder === undefined
+            ? existing.display_order
+            : changes.displayOrder,
+          changes.publishedAt === undefined
+            ? existing.published_at
+            : changes.publishedAt,
+          ownerEditedAt,
+          at,
+          id,
+          expectedUpdatedAt
+        ) as ContentRow | null;
+
+      // Defensive: another writer cannot interleave inside this transaction,
+      // but treating a missing RETURNING row as conflict is safer than saying
+      // an autosave succeeded when it did not.
+      if (!row) {
+        const current = this.database
+          .query("SELECT updated_at FROM content_items WHERE id = ?")
+          .get(id) as { updated_at: string } | null;
+        return current
+          ? { status: "conflict", currentUpdatedAt: current.updated_at }
+          : { status: "not-found" };
+      }
+
+      return { status: "updated", item: toItem(row) };
     });
   }
 

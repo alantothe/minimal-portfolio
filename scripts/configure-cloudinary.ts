@@ -8,6 +8,7 @@
  */
 
 import { createInterface } from "node:readline/promises";
+import { readHiddenInput } from "../src/shared/hiddenPrompt";
 import {
   CloudinaryAdminClient,
   PORTFOLIO_TRANSFORMATIONS,
@@ -47,14 +48,11 @@ function terminalEcho(enabled: boolean): void {
 }
 
 async function askSecret(question: string): Promise<string> {
-  process.stdout.write(question);
-  terminalEcho(false);
-  try {
-    return await ask("");
-  } finally {
-    terminalEcho(true);
-    process.stdout.write("\n");
-  }
+  return readHiddenInput(question, {
+    ask,
+    setEcho: terminalEcho,
+    write: (text) => process.stdout.write(text),
+  });
 }
 
 function requireInteractiveTerminal(): void {
@@ -122,10 +120,21 @@ async function main(): Promise<void> {
   console.log(`Railway service: ${RAILWAY_PRODUCTION_TARGET.service}`);
   console.log("No value entered below will be printed or written to disk.\n");
 
+  const cloudName = await ask("Cloudinary cloud name: ");
+  console.log("Cloud name received.");
+  const apiKey = await askSecret(
+    "Cloudinary API key (typing hidden; paste, then press Enter): "
+  );
+  console.log("API key received.");
+  const apiSecret = await askSecret(
+    "Cloudinary API secret (typing hidden; paste, then press Enter): "
+  );
+  console.log("API secret received.");
+
   const credentials: CloudinaryBootstrapCredentials = {
-    cloudName: await ask("Cloudinary cloud name: "),
-    apiKey: await askSecret("Cloudinary API key (hidden): "),
-    apiSecret: await askSecret("Cloudinary API secret (hidden): "),
+    cloudName,
+    apiKey,
+    apiSecret,
   };
   const errors = validateBootstrapCredentials(credentials);
   if (errors.length > 0) {

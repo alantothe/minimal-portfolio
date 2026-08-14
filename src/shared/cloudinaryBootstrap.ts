@@ -19,6 +19,7 @@ export interface PortfolioTransformation {
 export type CloudinaryBootstrapOperation =
   | { kind: "create-upload-preset"; name: string }
   | { kind: "create-transformation"; transformation: PortfolioTransformation }
+  | { kind: "update-transformation"; transformation: PortfolioTransformation }
   | { kind: "allow-transformation"; transformation: PortfolioTransformation };
 
 interface UploadPresetDetails {
@@ -33,6 +34,8 @@ interface TransformationDetails {
   named?: unknown;
   allowed_for_strict?: unknown;
   info?: unknown;
+  derived?: unknown;
+  next_cursor?: unknown;
 }
 
 type Lookup<T> = { status: "found"; value: T } | { status: "missing" };
@@ -213,7 +216,7 @@ export class CloudinaryAdminClient {
   ): Promise<Lookup<TransformationDetails>> {
     const response = await this.call(
       "GET",
-      `transformations/${encodeURIComponent(`t_${name}`)}`
+      `transformations/${encodeURIComponent(`t_${name}`)}?max_results=1`
     );
     if (response.status === 404) return { status: "missing" };
     return {
@@ -245,6 +248,28 @@ export class CloudinaryAdminClient {
     );
     await this.json(response, "Strict Transformations update");
   }
+
+  async updateTransformation(
+    transformation: PortfolioTransformation
+  ): Promise<void> {
+    const response = await this.call(
+      "PUT",
+      `transformations/${encodeURIComponent(`t_${transformation.name}`)}`,
+      new URLSearchParams({
+        unsafe_update: transformation.definition,
+        allowed_for_strict: "true",
+      })
+    );
+    await this.json(response, "unused transformation update");
+  }
+}
+
+function isProvenUnusedTransformation(details: TransformationDetails): boolean {
+  return (
+    Array.isArray(details.derived) &&
+    details.derived.length === 0 &&
+    details.next_cursor === undefined
+  );
 }
 
 export async function planCloudinaryBootstrap(
@@ -284,8 +309,12 @@ export async function planCloudinaryBootstrap(
       existing.value.named !== true ||
       !expectedTransformationInfo(existing.value, transformation)
     ) {
+      if (isProvenUnusedTransformation(existing.value)) {
+        operations.push({ kind: "update-transformation", transformation });
+        continue;
+      }
       throw new Error(
-        `Existing transformation "${transformation.name}" has a different definition. Refusing to overwrite it.`
+        `Existing transformation "${transformation.name}" has a different definition and is used or its usage could not be proven empty. Refusing to overwrite it.`
       );
     }
 
@@ -308,6 +337,9 @@ export async function applyCloudinaryBootstrap(
         break;
       case "create-transformation":
         await client.createTransformation(operation.transformation);
+        break;
+      case "update-transformation":
+        await client.updateTransformation(operation.transformation);
         break;
       case "allow-transformation":
         await client.allowTransformation(operation.transformation.name);

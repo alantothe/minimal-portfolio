@@ -49,7 +49,7 @@ function terminalEcho(enabled: boolean): void {
 
 async function askSecret(question: string): Promise<string> {
   return readHiddenInput(question, {
-    ask,
+    input: process.stdin,
     setEcho: terminalEcho,
     write: (text) => process.stdout.write(text),
   });
@@ -75,6 +75,8 @@ function operationLabel(operation: CloudinaryBootstrapOperation): string {
       return `create signed upload preset ${operation.name}`;
     case "create-transformation":
       return `create ${operation.transformation.name} (${operation.transformation.definition})`;
+    case "update-transformation":
+      return `repair unused ${operation.transformation.name} (${operation.transformation.definition})`;
     case "allow-transformation":
       return `allow ${operation.transformation.name} for Strict Transformations`;
   }

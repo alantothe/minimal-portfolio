@@ -138,7 +138,70 @@ describe("Cloudinary bootstrap planning", () => {
     });
 
     expect(planCloudinaryBootstrap(client)).rejects.toThrow(
-      "different definition"
+      "usage could not be proven empty"
+    );
+  });
+
+  test("repairs a different transformation only when Cloudinary proves it unused", async () => {
+    const writes: Array<{ path: string; body: string }> = [];
+    const client = new CloudinaryAdminClient(
+      CREDENTIALS,
+      async (input, init) => {
+        const path = new URL(String(input)).pathname;
+        if (path.endsWith("/ping")) return json({ status: "ok" });
+        if (path.includes("upload_presets")) {
+          return json({ name: "portfolio_owner_images", unsigned: false });
+        }
+        if (init?.method === "PUT") {
+          writes.push({ path, body: String(init.body) });
+          return json({ message: "updated" });
+        }
+        const name = path.split("/t_").at(-1)!;
+        if (name === "portfolio_avatar") {
+          return json({
+            name: "t_portfolio_avatar",
+            named: true,
+            allowed_for_strict: false,
+            info: [{ crop: "thumb", height: 100, width: 100 }],
+            derived: [],
+          });
+        }
+        return json(existingTransformation(name));
+      }
+    );
+
+    const operations = await planCloudinaryBootstrap(client);
+    expect(operations.map((operation) => operation.kind)).toEqual([
+      "update-transformation",
+    ]);
+
+    await applyCloudinaryBootstrap(client, operations);
+    expect(writes).toEqual([
+      {
+        path: "/v1_1/portfolio-cloud/transformations/t_portfolio_avatar",
+        body: "unsafe_update=c_fill%2Ch_800%2Cw_800%2Fq_auto&allowed_for_strict=true",
+      },
+    ]);
+  });
+
+  test("never repairs a transformation with a derived asset", async () => {
+    const client = new CloudinaryAdminClient(CREDENTIALS, async (input) => {
+      const path = new URL(String(input)).pathname;
+      if (path.endsWith("/ping")) return json({ status: "ok" });
+      if (path.includes("upload_presets")) {
+        return json({ name: "portfolio_owner_images", unsigned: false });
+      }
+      return json({
+        name: `t_${path.split("/t_").at(-1)}`,
+        named: true,
+        allowed_for_strict: true,
+        info: [{ crop: "thumb", height: 100, width: 100 }],
+        derived: [{ public_id: "already-used" }],
+      });
+    });
+
+    expect(planCloudinaryBootstrap(client)).rejects.toThrow(
+      "Refusing to overwrite"
     );
   });
 

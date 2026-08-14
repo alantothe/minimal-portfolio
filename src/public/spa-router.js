@@ -18,46 +18,62 @@ class SPARouter {
   isNavigating = false;
   pagesData = {};
   mobileBreakpoint = 481; // Mobile is 480px and below
+  previewRoute =
+    typeof globalThis.__PORTFOLIO_PREVIEW_ROUTE__ === "string"
+      ? globalThis.__PORTFOLIO_PREVIEW_ROUTE__
+      : null;
 
   constructor() {
     this.init();
   }
 
   init() {
-    this.attachNavListeners();
-    this.attachContentLinkListeners();
+    if (this.previewRoute) {
+      this.attachPreviewNavigation();
+    } else {
+      this.attachNavListeners();
+      this.attachContentLinkListeners();
+    }
     this.attachHamburgerListener();
     this.attachEmailListener();
     this.attachResizeListener();
-    window.addEventListener("popstate", (event) => {
-      if (event.state) {
-        if (event.state.page === "blog-post" && event.state.slug) {
-          this.loadBlogPost(
-            event.state.slug,
-            false,
-            event.state.returnPage || 1
-          );
-        } else if (event.state.page === "project" && event.state.slug) {
-          this.loadProject(
-            event.state.slug,
-            false,
-            event.state.returnPage || 1
-          );
-        } else if (event.state.page) {
-          this.switchPage(event.state.page, event.state.pageNumber || 1);
+    if (!this.previewRoute)
+      window.addEventListener("popstate", (event) => {
+        if (event.state) {
+          if (event.state.page === "blog-post" && event.state.slug) {
+            this.loadBlogPost(
+              event.state.slug,
+              false,
+              event.state.returnPage || 1
+            );
+          } else if (event.state.page === "project" && event.state.slug) {
+            this.loadProject(
+              event.state.slug,
+              false,
+              event.state.returnPage || 1
+            );
+          } else if (event.state.page) {
+            this.switchPage(event.state.page, event.state.pageNumber || 1);
+          }
         }
-      }
-    });
+      });
 
+    const logicalUrl = new URL(
+      this.previewRoute ||
+        `${window.location.pathname}${window.location.search}`,
+      window.location.origin
+    );
     const initialRoute = this.getInitialRoute(
-      window.location.pathname,
-      window.location.search
+      logicalUrl.pathname,
+      logicalUrl.search
     );
-    window.history.replaceState(
-      initialRoute,
-      "",
-      `${window.location.pathname}${window.location.search}`
-    );
+    if (!this.previewRoute) {
+      window.history.replaceState(
+        initialRoute,
+        "",
+        `${window.location.pathname}${window.location.search}`
+      );
+    }
 
     const activePage =
       initialRoute.page === "blog-post"
@@ -78,12 +94,52 @@ class SPARouter {
       const key = pageCacheKey(initialRoute.page, initialRoute.pageNumber || 1);
       this.pagesData[key] = { title: document.title };
     }
-    if (initialRoute.page === "blog-post" && initialRoute.slug) {
+    if (
+      !this.previewRoute &&
+      initialRoute.page === "blog-post" &&
+      initialRoute.slug
+    ) {
       this.recordInitialBlogView(initialRoute.slug);
     }
 
     // SSR content is already complete. Reveal it without client fetches.
     document.querySelector(".container")?.classList.add("ready");
+  }
+
+  /**
+   * Preview navigation reloads through the authenticated renderer. It must not
+   * call the public JSON APIs: until cutover those intentionally still read
+   * legacy content, which would make one frame show two different generations.
+   */
+  attachPreviewNavigation() {
+    document.addEventListener(
+      "click",
+      (event) => {
+        if (
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) {
+          return;
+        }
+
+        const link = event.target.closest("a[href]");
+        if (!link) return;
+
+        const target = new URL(link.href, window.location.origin);
+        if (target.origin !== window.location.origin) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const publicRoute = `${target.pathname}${target.search}`;
+        window.location.assign(
+          `/admin/preview?route=${encodeURIComponent(publicRoute)}${target.hash}`
+        );
+      },
+      { capture: true }
+    );
   }
 
   getInitialRoute(pathname, search = "") {

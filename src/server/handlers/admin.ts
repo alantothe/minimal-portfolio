@@ -1,12 +1,14 @@
 /**
  * The Owner workspace's routes.
  *
- * In this slice the workspace itself is empty — the point of the slice is the
- * boundary around it, not what sits inside. What these handlers do establish is
- * the shape everything later plugs into: the workspace is server-rendered, it
- * carries its CSRF token in the HTML rather than in a cookie, and it loads no
- * scripts or styles from `/public`, whose static path is served unconditionally
- * to everyone.
+ * Sign-in, sign-out, and the unauthenticated landing page. The workspace itself
+ * lives in `workbench.ts`; what stayed here is the part that runs *before* there
+ * is a session to render for.
+ *
+ * The conventions these established still hold for everything under `/admin`:
+ * the workspace is server-rendered, it carries its CSRF token in the HTML rather
+ * than in a cookie, and it loads no scripts or styles from `/public`, whose
+ * static path is served unconditionally to everyone.
  */
 
 import type { RouteContext } from "../core/router";
@@ -131,46 +133,6 @@ export async function adminLoginHandler({
         `<h1>Owner workspace</h1>
 <p>This area is restricted to the site owner.</p>
 <a class="button" href="/admin/auth/github/start">Continue with GitHub</a>`
-      )
-    )
-  );
-}
-
-export async function adminHomeHandler({
-  request,
-}: RouteContext): Promise<Response> {
-  const resolution = resolveOwnerSession(request);
-  if (resolution.status !== "active") {
-    // The boundary already refused anything unauthenticated; reaching here
-    // means state changed mid-request, so fail closed rather than render.
-    return applyPrivateHeaders(
-      new Response(null, { status: 303, headers: { Location: "/admin/login" } })
-    );
-  }
-
-  return applyPrivateHeaders(
-    html(
-      page(
-        "Owner workspace",
-        `<h1>Owner workspace</h1>
-<p>Signed in. There is nothing here yet.</p>
-<form method="post" action="/admin/logout" id="signout">
-  <button type="submit">Sign out</button>
-</form>
-<script>
-  // The CSRF token lives in the authenticated document and stays in memory.
-  // It is never a cookie, so it cannot ride along with a cross-site request.
-  const csrf = ${JSON.stringify(resolution.session.csrfToken)};
-  document.getElementById("signout").addEventListener("submit", async event => {
-    event.preventDefault();
-    const response = await fetch("/admin/logout", {
-      method: "POST",
-      headers: { "X-CSRF-Token": csrf },
-      credentials: "same-origin",
-    });
-    window.location.href = response.redirected ? response.url : "/admin/login";
-  });
-</script>`
       )
     )
   );

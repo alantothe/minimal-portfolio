@@ -96,9 +96,9 @@ describe("the content library", () => {
     )!;
 
     for (const entry of posts.entries) {
-      expect(entry.detail).not.toContain("null");
-      if (entry.detail !== "")
-        expect(entry.detail).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(entry.supportingText).not.toContain("null");
+      if (entry.supportingText !== "")
+        expect(entry.supportingText).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
   });
 });

@@ -37,6 +37,15 @@ describe("SPA navigation", () => {
     expect(router).toContain("a.nav-link, a[data-spa-link]");
   });
 
+  test("keeps authenticated preview navigation on one published generation", () => {
+    expect(router).toContain("__PORTFOLIO_PREVIEW_ROUTE__");
+    expect(router).toContain("attachPreviewNavigation");
+    expect(router).toContain("/admin/preview?route=");
+    expect(router).toMatch(
+      /!this\.previewRoute\s*&&\s*initialRoute\.page === "blog-post"/
+    );
+  });
+
   test("accounts for the desktop top inset in the sticky sidebar height", () => {
     expect(globalStyles).not.toMatch(
       /\.sidebar\s*\{[^}]*height:\s*100vh;[^}]*\}/

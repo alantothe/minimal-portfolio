@@ -17,8 +17,18 @@ const sections: LibrarySection[] = [
     id: "pages",
     label: "Pages",
     entries: [
-      { id: "singleton:home", label: "Home", route: "/", detail: "" },
-      { id: "singleton:about", label: "About", route: "/about", detail: "" },
+      {
+        id: "singleton:home",
+        label: "Home",
+        route: "/",
+        supportingText: "",
+      },
+      {
+        id: "singleton:about",
+        label: "About",
+        route: "/about",
+        supportingText: "",
+      },
     ],
   },
   {
@@ -29,7 +39,7 @@ const sections: LibrarySection[] = [
         id: "project:questurian",
         label: "Questurian",
         route: "/projects/questurian",
-        detail: "shipped",
+        supportingText: "shipped",
       },
     ],
   },
@@ -39,8 +49,10 @@ const sections: LibrarySection[] = [
 function view(overrides: Partial<WorkbenchView> = {}): WorkbenchView {
   return {
     generation: "abcdef1234567890",
-    status: "ready",
+    publishedSiteStatus: "ready",
+    draftStatus: "not-opened",
     sections,
+    selectedContentId: "singleton:home",
     previewRoute: "/",
     csrfToken: "token-value",
     ...overrides,
@@ -103,7 +115,7 @@ describe("the preview boundary", () => {
 
   test("no iframe is rendered when there is nothing to preview", () => {
     const html = renderWorkbench(
-      view({ status: "unavailable", generation: null })
+      view({ publishedSiteStatus: "unavailable", generation: null })
     );
 
     // An empty frame would look like a broken page. The sentence says why.
@@ -112,7 +124,7 @@ describe("the preview boundary", () => {
   });
 
   test("degraded says the site is stale rather than only naming a status", () => {
-    const html = renderWorkbench(view({ status: "degraded" }));
+    const html = renderWorkbench(view({ publishedSiteStatus: "degraded" }));
 
     expect(html).toContain("Showing the last good version");
     expect(html).toContain("<iframe");
@@ -121,15 +133,54 @@ describe("the preview boundary", () => {
 
 describe("the library", () => {
   test("the previewed entry is marked with aria-current", () => {
-    const html = renderWorkbench(view({ previewRoute: "/about" }));
+    const html = renderWorkbench(
+      view({
+        selectedContentId: "singleton:about",
+        previewRoute: "/about",
+      })
+    );
 
     expect(html).toContain(
-      '<a href="/admin?route=%2Fabout" aria-current="true">About'
+      '<a href="/admin?content=singleton%3Aabout" aria-current="true">About'
     );
     // And only that one. Scoped past the stylesheet, which selects on the same
     // attribute to style it.
     const markup = html.split("</style>")[1]!;
     expect(markup.match(/aria-current="true"/g)).toHaveLength(1);
+  });
+
+  test("two Content items sharing a Public route remain distinct", () => {
+    const html = renderWorkbench(
+      view({
+        sections: [
+          {
+            id: "pages",
+            label: "Pages",
+            entries: [
+              {
+                id: "singleton:home",
+                label: "Home",
+                route: "/",
+                supportingText: "",
+              },
+              {
+                id: "singleton:branding",
+                label: "Branding",
+                route: "/",
+                supportingText: "",
+              },
+            ],
+          },
+        ],
+        selectedContentId: "singleton:branding",
+      })
+    );
+    const markup = html.split("</style>")[1]!;
+
+    expect(markup.match(/aria-current="true"/g)).toHaveLength(1);
+    expect(markup).toContain(
+      '<a href="/admin?content=singleton%3Abranding" aria-current="true">Branding'
+    );
   });
 
   test("an empty section says so instead of rendering an empty list", () => {
@@ -197,7 +248,7 @@ describe("escaping", () => {
                 id: "x",
                 label: '<img src=x onerror="alert(1)">',
                 route: "/projects/x",
-                detail: '"><script>alert(2)</script>',
+                supportingText: '"><script>alert(2)</script>',
               },
             ],
           },
@@ -218,5 +269,17 @@ describe("escaping", () => {
     expect(html).not.toContain("</script><script>x");
     expect(html).toContain("\\u003c/script>\\u003cscript>x");
     expect(escapeHtml("<&>")).toBe("&lt;&amp;&gt;");
+  });
+});
+
+describe("status rail", () => {
+  test("shows Content draft and Published revision state together", () => {
+    const html = renderWorkbench(view());
+
+    expect(html).toContain("<dt>Content draft</dt><dd>Not opened</dd>");
+    expect(html).toContain("<dt>Published revision</dt><dd>None yet</dd>");
+    expect(html).toContain(
+      "<dt>Preview generation</dt><dd>ready · abcdef12</dd>"
+    );
   });
 });

@@ -27,7 +27,7 @@ export interface LibraryEntry {
    */
   route: string;
   /** Shown under the label. Empty when the entry has nothing to add. */
-  detail: string;
+  supportingText: string;
 }
 
 export interface LibrarySection {
@@ -51,13 +51,23 @@ export function contentLibrary(snapshot: SiteSnapshot): LibrarySection[] {
       id: "pages",
       label: "Pages",
       entries: [
-        { id: "singleton:home", label: "Home", route: "/", detail: "" },
-        { id: "singleton:about", label: "About", route: "/about", detail: "" },
+        {
+          id: "singleton:home",
+          label: "Home",
+          route: "/",
+          supportingText: "",
+        },
+        {
+          id: "singleton:about",
+          label: "About",
+          route: "/about",
+          supportingText: "",
+        },
         {
           id: "singleton:branding",
           label: "Branding",
           route: BRANDING_PREVIEW_ROUTE,
-          detail: "Logo and default sharing image",
+          supportingText: "Logo and default sharing image",
         },
       ],
     },
@@ -68,7 +78,7 @@ export function contentLibrary(snapshot: SiteSnapshot): LibrarySection[] {
         id: project.id,
         label: project.title,
         route: project.route,
-        detail: project.status,
+        supportingText: project.status,
       })),
     },
     {
@@ -79,8 +89,8 @@ export function contentLibrary(snapshot: SiteSnapshot): LibrarySection[] {
         label: post.title,
         route: post.route,
         // The date the visitor sees, not the storage timestamp. An unpublished
-        // post has none, and an empty detail is better than the word "null".
-        detail: post.publishedAt ? post.publishedAt.slice(0, 10) : "",
+        // post has none, and empty supporting text is better than "null".
+        supportingText: post.publishedAt ? post.publishedAt.slice(0, 10) : "",
       })),
     },
   ];
@@ -105,4 +115,24 @@ export function isPreviewableRoute(
 /** The route the workbench opens on. */
 export function defaultPreviewRoute(): string {
   return "/";
+}
+
+/** The Content item selected when the workspace first opens. */
+export function defaultContentId(): string {
+  return "singleton:home";
+}
+
+/** Finds one Content item without making its Public route its identity. */
+export function findLibraryEntry(
+  sections: LibrarySection[],
+  contentId: string
+): LibraryEntry | null {
+  for (const section of sections) {
+    const entry = section.entries.find(
+      (candidate) => candidate.id === contentId
+    );
+    if (entry) return entry;
+  }
+
+  return null;
 }

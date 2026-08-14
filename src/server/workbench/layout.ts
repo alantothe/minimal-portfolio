@@ -20,26 +20,22 @@
  */
 
 import type { LibrarySection } from "./library";
+import type { SiteStatus } from "../published/site";
+import { jsonForScript } from "./scriptValue";
+
+export { jsonForScript } from "./scriptValue";
+
+export type DraftStatus = "not-opened" | "saved" | "saving" | "invalid";
 
 export interface WorkbenchView {
   /** The generation the preview is showing, or null when none exists. */
   generation: string | null;
-  status: "ready" | "degraded" | "unavailable";
+  publishedSiteStatus: SiteStatus;
+  draftStatus: DraftStatus;
   sections: LibrarySection[];
+  selectedContentId: string;
   previewRoute: string;
   csrfToken: string;
-}
-
-/**
- * A value embedded in an inline `<script>`.
- *
- * `JSON.stringify` alone is not enough and the reason is easy to miss: JSON does
- * not escape `<`, so a value containing `</script>` closes the element and
- * everything after it is parsed as markup. Escaping `<` as `\\u003c` keeps the
- * string identical to JavaScript while making that impossible.
- */
-export function jsonForScript(value: unknown): string {
-  return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
 export function escapeHtml(value: string): string {
@@ -58,7 +54,7 @@ export function escapeHtml(value: string): string {
  * nothing about whether their next edit is safe; the sentence does.
  */
 function statusMessage(view: WorkbenchView): string {
-  switch (view.status) {
+  switch (view.publishedSiteStatus) {
     case "ready":
       return "Showing the current published site.";
     case "degraded":
@@ -66,6 +62,24 @@ function statusMessage(view: WorkbenchView): string {
     case "unavailable":
       return "No published version exists yet, so there is nothing to preview.";
   }
+}
+
+function draftStatusMessage(status: DraftStatus): string {
+  switch (status) {
+    case "not-opened":
+      return "Not opened";
+    case "saved":
+      return "Saved";
+    case "saving":
+      return "Saving";
+    case "invalid":
+      return "Needs attention";
+  }
+}
+
+function previewGenerationMessage(view: WorkbenchView): string {
+  const generation = view.generation ? view.generation.slice(0, 8) : "none";
+  return `${view.publishedSiteStatus} · ${generation}`;
 }
 
 /**
@@ -308,7 +322,10 @@ const SCRIPT = `
 })();
 `;
 
-function librarySection(section: LibrarySection, current: string): string {
+function librarySection(
+  section: LibrarySection,
+  selectedContentId: string
+): string {
   const heading = `<h3 id="lib-${escapeHtml(section.id)}">${escapeHtml(section.label)}</h3>`;
 
   if (section.entries.length === 0) {
@@ -317,17 +334,17 @@ function librarySection(section: LibrarySection, current: string): string {
 
   const items = section.entries
     .map((entry) => {
-      // `aria-current` marks the entry the preview is showing. It is the
+      // `aria-current` marks the Content item the editor is focused on. It is the
       // property that tells a screen reader which of a set of links is the one
       // you are on, which a visual highlight alone does not.
-      const isCurrent = entry.route === current;
-      const detail = entry.detail
-        ? `<span class="detail">${escapeHtml(entry.detail)}</span>`
+      const isCurrent = entry.id === selectedContentId;
+      const supportingText = entry.supportingText
+        ? `<span class="detail">${escapeHtml(entry.supportingText)}</span>`
         : "";
 
-      return `<li><a href="/admin?route=${encodeURIComponent(entry.route)}"${
+      return `<li><a href="/admin?content=${encodeURIComponent(entry.id)}"${
         isCurrent ? ' aria-current="true"' : ""
-      }>${escapeHtml(entry.label)}${detail}</a></li>`;
+      }>${escapeHtml(entry.label)}${supportingText}</a></li>`;
     })
     .join("\n");
 
@@ -336,10 +353,10 @@ function librarySection(section: LibrarySection, current: string): string {
 
 export function renderWorkbench(view: WorkbenchView): string {
   const message = statusMessage(view);
-  const previewable = view.status !== "unavailable";
+  const previewable = view.publishedSiteStatus !== "unavailable";
 
   const sections = view.sections
-    .map((section) => librarySection(section, view.previewRoute))
+    .map((section) => librarySection(section, view.selectedContentId))
     .join("\n");
 
   const preview = previewable
@@ -370,7 +387,9 @@ export function renderWorkbench(view: WorkbenchView): string {
   </div>
   <div>
     <dl>
-      <div><dt>Generation</dt><dd>${escapeHtml(view.generation ? view.generation.slice(0, 8) : "none")}</dd></div>
+      <div><dt>Content draft</dt><dd>${escapeHtml(draftStatusMessage(view.draftStatus))}</dd></div>
+      <div><dt>Published revision</dt><dd>None yet</dd></div>
+      <div><dt>Preview generation</dt><dd>${escapeHtml(previewGenerationMessage(view))}</dd></div>
     </dl>
     <form method="post" action="/admin/logout" id="signout">
       <button type="submit">Sign out</button>

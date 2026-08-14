@@ -22,9 +22,12 @@ import { renderPublishedDocument } from "../published/render";
 import { collectEnrichment } from "../published/enrichment";
 import {
   contentLibrary,
+  defaultContentId,
   defaultPreviewRoute,
+  findLibraryEntry,
   isPreviewableRoute,
 } from "../workbench/library";
+import { configurePreviewDocument } from "../workbench/preview";
 import { renderWorkbench } from "../workbench/layout";
 
 function html(body: string, status = 200): Response {
@@ -56,21 +59,30 @@ export async function workbenchHandler({
   const site = getPublishedSite();
   const state = site?.state() ?? null;
   const snapshot = site?.snapshot() ?? null;
+  const sections = snapshot ? contentLibrary(snapshot) : [];
 
   // A workspace with no generation still renders. The owner needs to be told
   // why the preview is empty, and a 503 here would tell them nothing and take
   // the sign-out button away with it.
-  const requested = url.searchParams.get("route");
-  const previewRoute =
-    snapshot && requested && isPreviewableRoute(snapshot, requested)
-      ? requested
-      : defaultPreviewRoute();
+  const requestedContentId = url.searchParams.get("content");
+  const legacyRequestedRoute = url.searchParams.get("route");
+  const selectedEntry =
+    (requestedContentId && findLibraryEntry(sections, requestedContentId)) ||
+    (legacyRequestedRoute
+      ? (sections
+          .flatMap((section) => section.entries)
+          .find((entry) => entry.route === legacyRequestedRoute) ?? null)
+      : null) ||
+    findLibraryEntry(sections, defaultContentId());
+  const previewRoute = selectedEntry?.route ?? defaultPreviewRoute();
 
   return html(
     renderWorkbench({
       generation: state?.generation ?? null,
-      status: state?.status ?? "unavailable",
-      sections: snapshot ? contentLibrary(snapshot) : [],
+      publishedSiteStatus: state?.status ?? "unavailable",
+      draftStatus: "not-opened",
+      sections,
+      selectedContentId: selectedEntry?.id ?? defaultContentId(),
       previewRoute,
       csrfToken: resolution.session.csrfToken,
     })
@@ -115,12 +127,12 @@ export async function workbenchPreviewHandler({
     return html("<!doctype html><p>That route is not published.</p>", 404);
   }
 
-  return html(
-    await renderPublishedDocument(
-      resolved,
-      snapshot,
-      publicUrl,
-      await collectEnrichment(snapshot)
-    )
+  const document = await renderPublishedDocument(
+    resolved,
+    snapshot,
+    publicUrl,
+    await collectEnrichment(snapshot)
   );
+
+  return html(configurePreviewDocument(document, route));
 }

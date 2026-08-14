@@ -76,10 +76,10 @@ export function resolveLegacyCloudName(): string {
  * Transformations setting exists to prevent.
  *
  * The names must match named transformations defined in the Cloudinary product
- * environment. Format and quality selection (`f_auto`, `q_auto`) belong *inside*
- * those definitions rather than being appended here: under Strict
- * Transformations only the named transformation is permitted, and a URL that
- * combined `t_portfolio_card` with extra parameters would be refused.
+ * environment. Quality selection (`q_auto`) belongs *inside* those definitions
+ * rather than being appended here. Cloudinary does not apply `f_auto` from a
+ * named transformation, and adding it to the delivery URL would create a
+ * second Strict Transformations combination that this renderer does not allow.
  *
  * `fill` crops to an exact box, so the rendered size is known from the variant
  * alone. `limit` never upscales, so the rendered size depends on the asset and

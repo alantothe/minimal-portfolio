@@ -110,6 +110,21 @@ bun scripts/new-project.ts   # create a project
 
 both are interactive - just answer the prompts.
 
+## configure production media
+
+Run the interactive bootstrap from a private terminal:
+
+```bash
+bun run cloudinary:configure
+```
+
+The command hides both Cloudinary credentials, verifies them directly with
+Cloudinary, creates only missing portfolio upload/transform resources, and
+stages the four production Railway variables through stdin. It refuses piped
+input and refuses to overwrite conflicting provider resources. No `.env` file
+is created, and no deployment is triggered. Railway sealing is dashboard-only,
+so seal `CLOUDINARY_API_SECRET` from its three-dot menu before deploying.
+
 ## setup
 
 see [src/config/README.md](./src/config/README.md) for:

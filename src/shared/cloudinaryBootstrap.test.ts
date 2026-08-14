@@ -122,7 +122,7 @@ describe("Cloudinary bootstrap planning", () => {
     );
   });
 
-  test("refuses to overwrite a different transformation definition", async () => {
+  test("plans exact updates for different project transformations", async () => {
     const client = new CloudinaryAdminClient(CREDENTIALS, async (input) => {
       const path = new URL(String(input)).pathname;
       if (path.endsWith("/ping")) return json({ status: "ok" });
@@ -137,12 +137,16 @@ describe("Cloudinary bootstrap planning", () => {
       });
     });
 
-    expect(planCloudinaryBootstrap(client)).rejects.toThrow(
-      "usage could not be proven empty"
-    );
+    expect(
+      (await planCloudinaryBootstrap(client)).map((operation) => operation.kind)
+    ).toEqual([
+      "update-transformation",
+      "update-transformation",
+      "update-transformation",
+    ]);
   });
 
-  test("repairs a different transformation only when Cloudinary proves it unused", async () => {
+  test("applies an exact project transformation update", async () => {
     const writes: Array<{ path: string; body: string }> = [];
     const client = new CloudinaryAdminClient(
       CREDENTIALS,
@@ -163,7 +167,6 @@ describe("Cloudinary bootstrap planning", () => {
             named: true,
             allowed_for_strict: false,
             info: [{ crop: "thumb", height: 100, width: 100 }],
-            derived: [],
           });
         }
         return json(existingTransformation(name));
@@ -184,7 +187,7 @@ describe("Cloudinary bootstrap planning", () => {
     ]);
   });
 
-  test("never repairs a transformation with a derived asset", async () => {
+  test("refuses a conflicting resource that is not a named transformation", async () => {
     const client = new CloudinaryAdminClient(CREDENTIALS, async (input) => {
       const path = new URL(String(input)).pathname;
       if (path.endsWith("/ping")) return json({ status: "ok" });
@@ -193,15 +196,14 @@ describe("Cloudinary bootstrap planning", () => {
       }
       return json({
         name: `t_${path.split("/t_").at(-1)}`,
-        named: true,
+        named: false,
         allowed_for_strict: true,
         info: [{ crop: "thumb", height: 100, width: 100 }],
-        derived: [{ public_id: "already-used" }],
       });
     });
 
     expect(planCloudinaryBootstrap(client)).rejects.toThrow(
-      "Refusing to overwrite"
+      "not the expected named resource"
     );
   });
 

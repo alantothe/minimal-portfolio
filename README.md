@@ -120,12 +120,12 @@ bun run cloudinary:configure
 
 The command hides both Cloudinary credentials, verifies them directly with
 Cloudinary, creates missing portfolio resources, safely repairs a conflicting
-named transformation only when Cloudinary proves it has no derived assets, and
+project-owned named transformation to the exact application definition, and
 stages the four production Railway variables through stdin. It refuses piped
-input and refuses to overwrite used or unverifiably unused provider resources.
-No `.env` file is created, and no deployment is triggered. Railway sealing is
-dashboard-only, so seal `CLOUDINARY_API_SECRET` from its three-dot menu before
-deploying.
+input and refuses to overwrite a conflicting resource that is not one of the
+expected named transformations. No `.env` file is created, and no deployment
+is triggered. Railway sealing is dashboard-only, so seal
+`CLOUDINARY_API_SECRET` from its three-dot menu before deploying.
 
 ## setup
 

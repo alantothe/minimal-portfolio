@@ -34,8 +34,6 @@ interface TransformationDetails {
   named?: unknown;
   allowed_for_strict?: unknown;
   info?: unknown;
-  derived?: unknown;
-  next_cursor?: unknown;
 }
 
 type Lookup<T> = { status: "found"; value: T } | { status: "missing" };
@@ -216,7 +214,7 @@ export class CloudinaryAdminClient {
   ): Promise<Lookup<TransformationDetails>> {
     const response = await this.call(
       "GET",
-      `transformations/${encodeURIComponent(`t_${name}`)}?max_results=1`
+      `transformations/${encodeURIComponent(`t_${name}`)}`
     );
     if (response.status === 404) return { status: "missing" };
     return {
@@ -260,16 +258,8 @@ export class CloudinaryAdminClient {
         allowed_for_strict: "true",
       })
     );
-    await this.json(response, "unused transformation update");
+    await this.json(response, "portfolio transformation update");
   }
-}
-
-function isProvenUnusedTransformation(details: TransformationDetails): boolean {
-  return (
-    Array.isArray(details.derived) &&
-    details.derived.length === 0 &&
-    details.next_cursor === undefined
-  );
 }
 
 export async function planCloudinaryBootstrap(
@@ -306,16 +296,16 @@ export async function planCloudinaryBootstrap(
 
     if (
       existing.value.name !== `t_${transformation.name}` ||
-      existing.value.named !== true ||
-      !expectedTransformationInfo(existing.value, transformation)
+      existing.value.named !== true
     ) {
-      if (isProvenUnusedTransformation(existing.value)) {
-        operations.push({ kind: "update-transformation", transformation });
-        continue;
-      }
       throw new Error(
-        `Existing transformation "${transformation.name}" has a different definition and is used or its usage could not be proven empty. Refusing to overwrite it.`
+        `Existing transformation "${transformation.name}" is not the expected named resource. Refusing to overwrite it.`
       );
+    }
+
+    if (!expectedTransformationInfo(existing.value, transformation)) {
+      operations.push({ kind: "update-transformation", transformation });
+      continue;
     }
 
     if (existing.value.allowed_for_strict !== true) {

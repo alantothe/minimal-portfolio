@@ -76,7 +76,7 @@ function operationLabel(operation: CloudinaryBootstrapOperation): string {
     case "create-transformation":
       return `create ${operation.transformation.name} (${operation.transformation.definition})`;
     case "update-transformation":
-      return `repair unused ${operation.transformation.name} (${operation.transformation.definition})`;
+      return `set ${operation.transformation.name} to ${operation.transformation.definition}`;
     case "allow-transformation":
       return `allow ${operation.transformation.name} for Strict Transformations`;
   }

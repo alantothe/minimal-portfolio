@@ -33,10 +33,7 @@ import {
 } from "../workbench/library";
 import { configurePreviewDocument } from "../workbench/preview";
 import { renderWorkbench } from "../workbench/layout";
-import {
-  readSingletonDraft,
-  singletonTypeForId,
-} from "../workbench/contentDraft";
+import { readContentDraft } from "../workbench/contentDraft";
 import type { EditorPanel } from "../workbench/editor";
 
 function html(body: string, status = 200): Response {
@@ -84,16 +81,18 @@ export async function workbenchHandler({
           .find((entry) => entry.route === legacyRequestedRoute) ?? null)
       : null) ||
     findLibraryEntry(sections, defaultContentId());
-  const previewRoute = selectedEntry?.route ?? defaultPreviewRoute();
+  const requestedPreviewRoute = url.searchParams.get("preview");
+  const previewRoute =
+    (requestedPreviewRoute &&
+      snapshot &&
+      isPreviewableRoute(snapshot, requestedPreviewRoute) &&
+      requestedPreviewRoute) ||
+    selectedEntry?.route ||
+    defaultPreviewRoute();
   const selectedContentId = selectedEntry?.id ?? defaultContentId();
 
   let editor: EditorPanel;
-  if (!singletonTypeForId(selectedContentId)) {
-    editor = {
-      status: "deferred",
-      label: selectedEntry?.label ?? "Collection item",
-    };
-  } else if (!database) {
+  if (!database) {
     editor = {
       status: "missing",
       message:
@@ -102,7 +101,7 @@ export async function workbenchHandler({
   } else {
     const content = new ContentRepository(database);
     const media = new MediaRepository(database);
-    const result = readSingletonDraft(selectedContentId, content);
+    const result = readContentDraft(selectedContentId, { content, media });
     editor =
       result.status === "found"
         ? { status: "ready", draft: result.draft, media: media.listReady() }

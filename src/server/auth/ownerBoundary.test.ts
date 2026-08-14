@@ -20,7 +20,7 @@ import { OwnerAuthRepository } from "../database/authRepository";
 import { SESSION_COOKIE } from "./policy";
 import { createToken, digestToken } from "./tokens";
 import { seedSite } from "../published/fixtures";
-import { SINGLETON_IDS } from "../content/identity";
+import { SINGLETON_IDS, importedContentId } from "../content/identity";
 import { ContentRepository } from "../database/contentRepository";
 
 const ORIGIN = "https://example.test";
@@ -219,6 +219,41 @@ describe("the signed-in owner", () => {
     expect(body).toContain("Autosaves after you pause");
   });
 
+  test("opens the requested Project in the collection editor", async () => {
+    seedSite(getDatabase());
+    const projectId = importedContentId("project", "questurian");
+    const { cookie } = establishSession();
+
+    const response = await send(
+      `/admin?content=${encodeURIComponent(projectId)}`,
+      { cookie }
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain(`data-content-id="${projectId}"`);
+    expect(body).toContain('data-content-type="project"');
+    expect(body).toContain('data-field="technologies[0]"');
+    expect(body).toContain('name="slug"');
+    expect(body).toContain('name="displayOrder"');
+  });
+
+  test("keeps a collection item selected while previewing its ordering page", async () => {
+    seedSite(getDatabase());
+    const projectId = importedContentId("project", "questurian");
+    const { cookie } = establishSession();
+
+    const response = await send(
+      `/admin?content=${encodeURIComponent(projectId)}&preview=%2Fprojects`,
+      { cookie }
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain(`data-content-id="${projectId}"`);
+    expect(body).toContain('src="/admin/preview?route=%2Fprojects"');
+  });
+
   test("previews a safe draft even while publication-required fields are empty", async () => {
     seedSite(getDatabase());
     const repository = new ContentRepository(getDatabase());
@@ -326,7 +361,7 @@ describe("mutations", () => {
   });
 });
 
-describe("singleton Content draft API", () => {
+describe("Content draft API", () => {
   test("reads a draft only for the signed-in Owner", async () => {
     seedSite(getDatabase());
 
@@ -434,6 +469,114 @@ describe("singleton Content draft API", () => {
         },
       ],
     });
+  });
+
+  test("autosaves Project content, Public route slug, and display order", async () => {
+    seedSite(getDatabase());
+    const projectId = importedContentId("project", "questurian");
+    const { cookie, csrfToken } = establishSession();
+    const path = `/admin/api/content/${encodeURIComponent(projectId)}`;
+    const read = await send(path, { cookie });
+    const current = (await read.json()) as {
+      draft: {
+        updatedAt: string;
+        data: Record<string, unknown>;
+      };
+    };
+
+    const response = await send(path, {
+      method: "PUT",
+      cookie,
+      headers: {
+        Origin: ORIGIN,
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        expectedUpdatedAt: current.draft.updatedAt,
+        data: { ...current.draft.data, title: "Updated project" },
+        attributes: { slug: "updated-project", displayOrder: 9 },
+      }),
+    });
+    const body = (await response.json()) as {
+      draft: { slug: string; displayOrder: number };
+    };
+    const stored = new ContentRepository(getDatabase()).findById(projectId)!;
+
+    expect(response.status).toBe(200);
+    expect(body.draft.slug).toBe("updated-project");
+    expect(body.draft.displayOrder).toBe(9);
+    expect((stored.data as { title: string }).title).toBe("Updated project");
+    expect(stored.slug).toBe("updated-project");
+    expect(stored.displayOrder).toBe(9);
+
+    const preview = await send(
+      "/admin/preview?route=%2Fprojects%2Fupdated-project",
+      { cookie }
+    );
+    expect(preview.status).toBe(200);
+    expect(await preview.text()).toContain("Updated project");
+  });
+
+  test("rejects unknown collection metadata before changing a draft", async () => {
+    seedSite(getDatabase());
+    const projectId = importedContentId("project", "questurian");
+    const { cookie, csrfToken } = establishSession();
+    const path = `/admin/api/content/${encodeURIComponent(projectId)}`;
+    const repository = new ContentRepository(getDatabase());
+    const before = repository.findById(projectId)!;
+
+    const response = await send(path, {
+      method: "PUT",
+      cookie,
+      headers: {
+        Origin: ORIGIN,
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        expectedUpdatedAt: before.updatedAt,
+        data: before.data,
+        attributes: {
+          slug: "changed-project",
+          displayOrder: 5,
+          arbitraryAddress: "/surprise",
+        },
+      }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "invalid_request" });
+    expect(repository.findById(projectId)).toEqual(before);
+  });
+
+  test("rejects collection metadata with the wrong JSON shape", async () => {
+    seedSite(getDatabase());
+    const projectId = importedContentId("project", "questurian");
+    const { cookie, csrfToken } = establishSession();
+    const path = `/admin/api/content/${encodeURIComponent(projectId)}`;
+    const before = new ContentRepository(getDatabase()).findById(projectId)!;
+
+    const response = await send(path, {
+      method: "PUT",
+      cookie,
+      headers: {
+        Origin: ORIGIN,
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        expectedUpdatedAt: before.updatedAt,
+        data: before.data,
+        attributes: { slug: ["not", "a", "slug"], displayOrder: 1 },
+      }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "invalid_request" });
+    expect(new ContentRepository(getDatabase()).findById(projectId)).toEqual(
+      before
+    );
   });
 });
 

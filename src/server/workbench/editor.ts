@@ -1,4 +1,4 @@
-/** Server-rendered singleton editor forms for the Workbench's centre pane. */
+/** Server-rendered Content editor forms for the Workbench's centre pane. */
 
 import type { MediaAsset } from "../database/mediaRepository";
 import type {
@@ -6,14 +6,16 @@ import type {
   BrandingContent,
   HomeContent,
   MediaReference,
+  ProjectContent,
+  BlogPostContent,
   SeoOverrides,
 } from "../content/schema";
 import type { DraftRecord } from "./contentDraft";
 import { escapeHtml } from "./html";
+import { isSingletonType } from "../content/identity";
 
 export type EditorPanel =
   | { status: "ready"; draft: DraftRecord; media: MediaAsset[] }
-  | { status: "deferred"; label: string }
   | { status: "missing"; message: string };
 
 function findingId(field: string): string {
@@ -53,13 +55,14 @@ function textarea(
   name: string,
   label: string,
   value: string,
-  hint: string
+  hint: string,
+  rows = 6
 ): string {
   const id = `field-${name.replaceAll(".", "-")}`;
   return `<div class="field">
   <label class="field-label" for="${id}">${escapeHtml(label)}</label>
   <span class="field-hint" id="${id}-hint">${escapeHtml(hint)}</span>
-  <textarea id="${id}" name="${escapeHtml(name)}" rows="6" data-field="${escapeHtml(name)}" aria-describedby="${id}-hint ${findingId(name)}">${escapeHtml(value)}</textarea>
+  <textarea id="${id}" name="${escapeHtml(name)}" rows="${rows}" data-field="${escapeHtml(name)}" aria-describedby="${id}-hint ${findingId(name)}">${escapeHtml(value)}</textarea>
   ${finding(name)}
 </div>`;
 }
@@ -203,20 +206,119 @@ function brandingFields(data: BrandingContent, assets: MediaAsset[]): string {
 </fieldset>`;
 }
 
+function technologyRow(value: string, index?: number): string {
+  const field = index === undefined ? "" : `technologies[${index}]`;
+  const finding = index === undefined ? "" : `finding-technology-${index}`;
+  return `<div class="technology-row" data-list-row>
+  <label>
+    <span class="field-label">Technology</span>
+    <input value="${escapeHtml(value)}" data-technology${field ? ` data-field="${field}" aria-describedby="${finding}"` : ""}>
+  </label>
+  <div class="list-actions">
+    <button type="button" data-list-action="up">Move up</button>
+    <button type="button" data-list-action="down">Move down</button>
+    <button type="button" data-list-action="remove">Remove</button>
+  </div>
+  <p class="field-finding" data-technology-finding${field ? ` id="${finding}" data-finding-for="${field}"` : ""} hidden></p>
+</div>`;
+}
+
+function projectFields(
+  draft: DraftRecord,
+  data: ProjectContent,
+  assets: MediaAsset[]
+): string {
+  const technologies = data.technologies
+    .map((technology, index) => technologyRow(technology, index))
+    .join("");
+  return `<fieldset>
+  <legend>Content</legend>
+  ${input("title", "Title", data.title)}
+  ${textarea("summary", "Card summary", data.summary, "Plain text. Warning after 320 characters.", 4)}
+  ${input("kicker", "Kicker", data.kicker)}
+  ${input("role", "Your role", data.role)}
+  ${input("status", "Project status", data.status)}
+  ${input("period", "Display period", data.period)}
+  ${input("liveUrl", "Live site", data.liveUrl ?? "", { type: "url", hint: "Optional absolute HTTPS address." })}
+  ${input("repositoryUrl", "Repository", data.repositoryUrl ?? "", { type: "url", hint: "Optional absolute HTTPS address." })}
+  ${input("accentColor", "Accent colour", data.accentColor, { hint: "Six-digit colour, for example #0b4fd4." })}
+  <div class="field">
+    <span class="field-label">Technologies</span>
+    <span class="field-hint">Up to twenty, displayed in this order.</span>
+    <div id="technologies">${technologies}</div>
+    <button type="button" class="quiet" id="add-technology">Add technology</button>
+    ${finding("technologies")}
+  </div>
+  <template id="technology-template">${technologyRow("")}</template>
+  ${textarea("bodyMarkdown", "Project body", data.bodyMarkdown, "Controlled Markdown: H2–H4, lists, tables, code, links, and Media tokens. Raw HTML is not allowed.", 16)}
+</fieldset>
+<fieldset>
+  <legend>Media</legend>
+  ${mediaField("card", "Project card", data.card, assets)}
+</fieldset>
+<fieldset>
+  <legend>Metadata</legend>
+  ${input("slug", "Public route slug", draft.slug ?? "", { hint: "Controls the Project's Public route. Title edits never change it automatically." })}
+  ${input("displayOrder", "Display order", String(draft.displayOrder ?? ""), { type: "number", hint: "Lower numbers appear first." })}
+  ${seoFields(data.seo, assets)}
+</fieldset>`;
+}
+
+function blogPostFields(
+  draft: DraftRecord,
+  data: BlogPostContent,
+  assets: MediaAsset[]
+): string {
+  return `<fieldset>
+  <legend>Content</legend>
+  ${input("title", "Title", data.title)}
+  ${textarea("excerpt", "Excerpt", data.excerpt, "Plain text. Warning after 320 characters.", 4)}
+  ${textarea("bodyMarkdown", "Blog post body", data.bodyMarkdown, "Controlled Markdown: H2–H4, lists, tables, code, links, and Media tokens. Raw HTML is not allowed.", 18)}
+</fieldset>
+<fieldset>
+  <legend>Media</legend>
+  ${mediaField("sharingImage", "Sharing image", data.sharingImage, assets)}
+</fieldset>
+<fieldset>
+  <legend>Metadata</legend>
+  ${input("slug", "Public route slug", draft.slug ?? "", { hint: "Controls the Blog post's Public route. Title edits never change it automatically." })}
+  ${input("publishedAt", "Publication date", draft.publishedAt ?? "", { type: "date", hint: "YYYY-MM-DD. Future dates are not scheduled." })}
+  ${seoFields(data.seo, assets)}
+</fieldset>`;
+}
+
 function readyPanel(panel: Extract<EditorPanel, { status: "ready" }>): string {
   const { draft, media } = panel;
-  const fields =
-    draft.type === "home"
-      ? homeFields(draft.data as HomeContent, media)
-      : draft.type === "about"
-        ? aboutFields(draft.data as AboutContent, media)
-        : brandingFields(draft.data as BrandingContent, media);
+  let fields: string;
+  switch (draft.type) {
+    case "home":
+      fields = homeFields(draft.data as HomeContent, media);
+      break;
+    case "about":
+      fields = aboutFields(draft.data as AboutContent, media);
+      break;
+    case "branding":
+      fields = brandingFields(draft.data as BrandingContent, media);
+      break;
+    case "project":
+      fields = projectFields(draft, draft.data as ProjectContent, media);
+      break;
+    case "blog_post":
+      fields = blogPostFields(draft, draft.data as BlogPostContent, media);
+      break;
+  }
 
-  return `<form id="content-editor" data-content-id="${escapeHtml(draft.id)}" data-content-type="${escapeHtml(draft.type)}" data-updated-at="${escapeHtml(draft.updatedAt)}" data-publish-findings="${escapeHtml(JSON.stringify(draft.publishFindings))}">
+  const label = isSingletonType(draft.type)
+    ? { home: "Home", about: "About", branding: "Branding" }[draft.type]
+    : (draft.data as ProjectContent | BlogPostContent).title ||
+      (draft.type === "project" ? "Untitled Project" : "Untitled Blog post");
+  const kind = isSingletonType(draft.type) ? "Singleton" : "Collection item";
+
+  return `<form id="content-editor" data-content-id="${escapeHtml(draft.id)}" data-content-type="${escapeHtml(draft.type)}" data-updated-at="${escapeHtml(draft.updatedAt)}" data-slug="${escapeHtml(draft.slug ?? "")}" data-display-order="${escapeHtml(String(draft.displayOrder ?? ""))}" data-published-at="${escapeHtml(draft.publishedAt ?? "")}" data-publish-findings="${escapeHtml(JSON.stringify(draft.publishFindings))}">
   <div class="editor-intro">
     <div>
-      <p class="eyebrow">Singleton</p>
-      <h3>${escapeHtml(draft.type === "home" ? "Home" : draft.type === "about" ? "About" : "Branding")}</h3>
+      <p class="eyebrow">${kind}</p>
+      <h3>${escapeHtml(label)}</h3>
     </div>
     <p>Autosaves after you pause. Publication requirements can remain unfinished in a draft.</p>
   </div>
@@ -234,8 +336,6 @@ export function renderEditorPanel(panel: EditorPanel): string {
   switch (panel.status) {
     case "ready":
       return readyPanel(panel);
-    case "deferred":
-      return `<div class="empty-editor"><p class="eyebrow">Collection</p><h3>${escapeHtml(panel.label)}</h3><p>Collection editing arrives in the next Workbench slice.</p></div>`;
     case "missing":
       return `<div class="empty-editor"><p class="eyebrow">Unavailable</p><h3>Editor could not open</h3><p>${escapeHtml(panel.message)}</p></div>`;
   }

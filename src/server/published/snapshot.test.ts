@@ -13,7 +13,11 @@ import type { Database } from "bun:sqlite";
 import { rmSync } from "node:fs";
 import { ContentRepository } from "../database/contentRepository";
 import { SINGLETON_IDS, importedContentId } from "../content/identity";
-import { buildSiteSnapshot, type SiteSnapshot } from "./snapshot";
+import {
+  buildDraftPreviewSnapshot,
+  buildSiteSnapshot,
+  type SiteSnapshot,
+} from "./snapshot";
 import { FIXTURE_CLOUD_NAME, migratedDatabase, seedSite } from "./fixtures";
 
 const directories: string[] = [];
@@ -108,6 +112,33 @@ describe("building a generation", () => {
     seedSite(db);
 
     expect(built(db).about.featuredBodyParagraphs).toHaveLength(3);
+  });
+});
+
+describe("building an owner draft preview", () => {
+  test("renders editorially incomplete content that publication refuses", () => {
+    const db = database();
+    seedSite(db);
+    const repository = new ContentRepository(db);
+    repository.update(
+      SINGLETON_IDS.home,
+      {
+        data: {
+          ...(repository.findById(SINGLETON_IDS.home)!.data as object),
+          displayName: "",
+          professionalTitle: "Work in progress",
+        },
+      },
+      "owner"
+    );
+
+    expect(buildSiteSnapshot(db).status).toBe("invalid");
+    const preview = buildDraftPreviewSnapshot(db);
+    expect(preview.status).toBe("built");
+    if (preview.status === "built") {
+      expect(preview.snapshot.home.displayName).toBe("");
+      expect(preview.snapshot.home.professionalTitle).toBe("Work in progress");
+    }
   });
 });
 

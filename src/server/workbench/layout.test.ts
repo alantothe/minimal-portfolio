@@ -49,12 +49,13 @@ const sections: LibrarySection[] = [
 function view(overrides: Partial<WorkbenchView> = {}): WorkbenchView {
   return {
     generation: "abcdef1234567890",
-    publishedSiteStatus: "ready",
+    previewStatus: "ready",
     draftStatus: "not-opened",
     sections,
     selectedContentId: "singleton:home",
     previewRoute: "/",
     csrfToken: "token-value",
+    editor: { status: "missing", message: "Not available in this fixture." },
     ...overrides,
   };
 }
@@ -115,18 +116,18 @@ describe("the preview boundary", () => {
 
   test("no iframe is rendered when there is nothing to preview", () => {
     const html = renderWorkbench(
-      view({ publishedSiteStatus: "unavailable", generation: null })
+      view({ previewStatus: "unavailable", generation: null })
     );
 
     // An empty frame would look like a broken page. The sentence says why.
     expect(html).not.toContain("<iframe");
-    expect(html).toContain("No published version exists yet");
+    expect(html).toContain("No complete Content draft exists yet");
   });
 
-  test("degraded says the site is stale rather than only naming a status", () => {
-    const html = renderWorkbench(view({ publishedSiteStatus: "degraded" }));
+  test("degraded says the draft preview is stale rather than only naming a status", () => {
+    const html = renderWorkbench(view({ previewStatus: "degraded" }));
 
-    expect(html).toContain("Showing the last good version");
+    expect(html).toContain("Showing the last good draft preview");
     expect(html).toContain("<iframe");
   });
 });
@@ -276,10 +277,12 @@ describe("status rail", () => {
   test("shows Content draft and Published revision state together", () => {
     const html = renderWorkbench(view());
 
-    expect(html).toContain("<dt>Content draft</dt><dd>Not opened</dd>");
+    expect(html).toContain(
+      '<dt>Content draft</dt><dd id="draft-status">Not opened</dd>'
+    );
     expect(html).toContain("<dt>Published revision</dt><dd>None yet</dd>");
     expect(html).toContain(
-      "<dt>Preview generation</dt><dd>ready · abcdef12</dd>"
+      '<dt>Preview generation</dt><dd id="preview-generation">ready · abcdef12</dd>'
     );
   });
 });

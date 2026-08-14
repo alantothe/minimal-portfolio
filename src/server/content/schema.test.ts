@@ -211,6 +211,27 @@ describe("draft versus publish", () => {
     expect(hasBlockingError(findings)).toBe(false);
   });
 
+  test("a draft may hold either half of a social link", () => {
+    for (const socialLink of [
+      { label: "GitHub", url: "" },
+      { label: "", url: "https://github.com/example" },
+    ]) {
+      const findings = parseContentData(
+        "about",
+        { ...ABOUT, socialLinks: [socialLink] },
+        "draft"
+      ).findings;
+      expect(hasBlockingError(findings)).toBe(false);
+    }
+
+    const publishFindings = parseContentData(
+      "about",
+      { ...ABOUT, socialLinks: [{ label: "GitHub", url: "" }] },
+      "publish"
+    ).findings;
+    expect(codes(publishFindings)).toContain("required");
+  });
+
   test("unsafe values block even in a draft", () => {
     // Size and safety are storage properties, not editorial ones.
     expect(

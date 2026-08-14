@@ -22,29 +22,25 @@
 import type { LibrarySection } from "./library";
 import type { SiteStatus } from "../published/site";
 import { jsonForScript } from "./scriptValue";
+import { escapeHtml } from "./html";
+import { renderEditorPanel, type EditorPanel } from "./editor";
+import { EDITOR_SCRIPT } from "./editorClient";
 
 export { jsonForScript } from "./scriptValue";
+export { escapeHtml } from "./html";
 
 export type DraftStatus = "not-opened" | "saved" | "saving" | "invalid";
 
 export interface WorkbenchView {
   /** The generation the preview is showing, or null when none exists. */
   generation: string | null;
-  publishedSiteStatus: SiteStatus;
+  previewStatus: SiteStatus;
   draftStatus: DraftStatus;
   sections: LibrarySection[];
   selectedContentId: string;
   previewRoute: string;
   csrfToken: string;
-}
-
-export function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  editor: EditorPanel;
 }
 
 /**
@@ -54,13 +50,13 @@ export function escapeHtml(value: string): string {
  * nothing about whether their next edit is safe; the sentence does.
  */
 function statusMessage(view: WorkbenchView): string {
-  switch (view.publishedSiteStatus) {
+  switch (view.previewStatus) {
     case "ready":
-      return "Showing the current published site.";
+      return "Previewing the current Content draft as the public site.";
     case "degraded":
-      return "Showing the last good version. A newer one could not be built.";
+      return "Showing the last good draft preview. A newer one could not be built.";
     case "unavailable":
-      return "No published version exists yet, so there is nothing to preview.";
+      return "No complete Content draft exists yet, so there is nothing to preview.";
   }
 }
 
@@ -79,7 +75,7 @@ function draftStatusMessage(status: DraftStatus): string {
 
 function previewGenerationMessage(view: WorkbenchView): string {
   const generation = view.generation ? view.generation.slice(0, 8) : "none";
-  return `${view.publishedSiteStatus} · ${generation}`;
+  return `${view.previewStatus} · ${generation}`;
 }
 
 /**
@@ -180,6 +176,12 @@ button, .button {
   color: var(--text);
   cursor: pointer;
 }
+button:disabled { cursor: not-allowed; opacity: 0.55; }
+.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
 .workbench {
   display: grid;
   grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr) minmax(0, 1.1fr);
@@ -213,6 +215,97 @@ button, .button {
 }
 .library .detail { display: block; color: var(--muted); font-size: 0.8rem; }
 .library p.empty { color: var(--muted); margin: 0; }
+.editor-intro {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.editor-intro h3, .empty-editor h3 { margin: 0; font-size: 1.2rem; }
+.editor-intro p:last-child { max-width: 27rem; margin: 0; color: var(--muted); }
+.eyebrow {
+  margin: 0 0 0.15rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+fieldset {
+  min-width: 0;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  border: 0;
+}
+legend {
+  width: 100%;
+  padding: 0 0 0.35rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.field { display: grid; gap: 0.25rem; margin-top: 0.85rem; }
+.field-label { display: block; font-weight: 650; }
+.field-hint, .fieldset-note { color: var(--muted); font-size: 0.8rem; }
+.fieldset-note { margin: 0.75rem 0 0; }
+input, textarea, select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+}
+textarea { min-height: 7rem; resize: vertical; }
+[aria-invalid="true"] { border-color: #b42318; }
+.field-finding { margin: 0; color: #b42318; font-size: 0.8rem; }
+@media (prefers-color-scheme: dark) {
+  .field-finding { color: #ff9b8f; }
+}
+.media-field {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface-sunken);
+}
+.media-field label + .field-finding + label { display: block; margin-top: 0.7rem; }
+.social-link-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.7fr) minmax(10rem, 1.3fr) auto;
+  align-items: end;
+  gap: 0.5rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.social-link-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.social-link-actions button { padding-inline: 0.55rem; }
+.quiet { margin-top: 0.65rem; }
+.editor-actions {
+  position: sticky;
+  bottom: -1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 1.5rem -1rem -1rem;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.editor-actions span { color: var(--muted); font-size: 0.78rem; }
+.validation-summary {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-left: 3px solid #b42318;
+  background: var(--surface-sunken);
+}
+.validation-summary ul { margin: 0.35rem 0 0; padding-left: 1.2rem; }
+.empty-editor { max-width: 30rem; padding: 1rem 0; }
+.empty-editor p:last-child { color: var(--muted); }
 .preview-frame {
   width: 100%;
   height: 100%;
@@ -247,6 +340,12 @@ button, .button {
     background: var(--surface);
     font-weight: 600;
   }
+}
+@media (max-width: 35rem) {
+  .rail dl, .editor-intro { display: block; }
+  .rail dl > div { margin-top: 0.2rem; }
+  .social-link-row { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .editor-actions { flex-wrap: wrap; }
 }
 `;
 
@@ -353,7 +452,7 @@ function librarySection(
 
 export function renderWorkbench(view: WorkbenchView): string {
   const message = statusMessage(view);
-  const previewable = view.publishedSiteStatus !== "unavailable";
+  const previewable = view.previewStatus !== "unavailable";
 
   const sections = view.sections
     .map((section) => librarySection(section, view.selectedContentId))
@@ -367,6 +466,7 @@ export function renderWorkbench(view: WorkbenchView): string {
     src="/admin/preview?route=${encodeURIComponent(view.previewRoute)}"
     loading="lazy"></iframe>`
     : `<p class="note">${escapeHtml(message)}</p>`;
+  const editor = renderEditorPanel(view.editor);
 
   return `<!doctype html>
 <html lang="en">
@@ -387,9 +487,9 @@ export function renderWorkbench(view: WorkbenchView): string {
   </div>
   <div>
     <dl>
-      <div><dt>Content draft</dt><dd>${escapeHtml(draftStatusMessage(view.draftStatus))}</dd></div>
+      <div><dt>Content draft</dt><dd id="draft-status">${escapeHtml(draftStatusMessage(view.draftStatus))}</dd></div>
       <div><dt>Published revision</dt><dd>None yet</dd></div>
-      <div><dt>Preview generation</dt><dd>${escapeHtml(previewGenerationMessage(view))}</dd></div>
+      <div><dt>Preview generation</dt><dd id="preview-generation">${escapeHtml(previewGenerationMessage(view))}</dd></div>
     </dl>
     <form method="post" action="/admin/logout" id="signout">
       <button type="submit">Sign out</button>
@@ -418,10 +518,7 @@ export function renderWorkbench(view: WorkbenchView): string {
 
   <main class="pane" id="editor" aria-labelledby="editor-heading">
     <h2 id="editor-heading">Editor</h2>
-    <p class="note">
-      Editing arrives in the next change. This pane is the schema form's place in
-      the layout, grouped as Content, Media and Metadata.
-    </p>
+    ${editor}
   </main>
 
   <section class="pane" id="preview" aria-labelledby="preview-heading">
@@ -431,6 +528,7 @@ export function renderWorkbench(view: WorkbenchView): string {
 </div>
 
 <script>${SCRIPT.replace("__CSRF__", jsonForScript(view.csrfToken))}</script>
+${view.editor.status === "ready" ? `<script>${EDITOR_SCRIPT.replace("__CSRF__", jsonForScript(view.csrfToken))}</script>` : ""}
 </body>
 </html>
 `;

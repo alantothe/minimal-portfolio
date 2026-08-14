@@ -38,7 +38,11 @@ import type {
   SeoOverrides,
 } from "../content/schema";
 import { renderMarkdown, type MarkdownContext } from "../content/markdown";
-import { hasBlockingError, type Finding } from "../content/validation";
+import {
+  hasBlockingError,
+  type Finding,
+  type ValidationMode,
+} from "../content/validation";
 import { renderMedia } from "../media/delivery";
 import { resolveMediaConfig, type MediaVariant } from "../media/config";
 import { BLOG_PAGE_SIZE, PROJECT_PAGE_SIZE } from "../services/collectionPages";
@@ -275,6 +279,7 @@ interface BuildContext {
   cloudName: string;
   findings: Finding[];
   markdown: MarkdownContext;
+  validationMode: ValidationMode;
 }
 
 function parsed<T>(
@@ -282,7 +287,7 @@ function parsed<T>(
   type: Parameters<typeof parseContentData>[0],
   context: BuildContext
 ): T {
-  const result = parseContentData(type, item.data, "publish");
+  const result = parseContentData(type, item.data, context.validationMode);
 
   context.findings.push(
     ...result.findings.map((finding) => ({
@@ -562,9 +567,10 @@ export interface BuildOptions {
  * consistent point in time. A publish committing halfway through must not
  * produce a generation with the new Home and the old Projects.
  */
-export function buildSiteSnapshot(
+function buildSnapshot(
   database: Database,
-  options: BuildOptions = {}
+  options: BuildOptions,
+  validationMode: ValidationMode
 ): SnapshotBuild {
   const content = new ContentRepository(database);
   const media = new MediaRepository(database);
@@ -637,6 +643,7 @@ export function buildSiteSnapshot(
     assets,
     cloudName,
     findings,
+    validationMode,
     markdown: {
       resolveMedia: (mediaAssetId) => {
         const asset = assets.get(mediaAssetId);
@@ -690,4 +697,24 @@ export function buildSiteSnapshot(
   });
 
   return { status: "built", snapshot };
+}
+
+/** Builds the only kind of generation a Visitor may receive. */
+export function buildSiteSnapshot(
+  database: Database,
+  options: BuildOptions = {}
+): SnapshotBuild {
+  return buildSnapshot(database, options, "publish");
+}
+
+/**
+ * Builds an owner-only preview from a safe, possibly editorially incomplete
+ * draft. Structural, size, URL, and Markdown errors still fail the build; only
+ * publication-required emptiness is relaxed.
+ */
+export function buildDraftPreviewSnapshot(
+  database: Database,
+  options: BuildOptions = {}
+): SnapshotBuild {
+  return buildSnapshot(database, options, "draft");
 }

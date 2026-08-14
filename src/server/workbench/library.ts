@@ -45,7 +45,9 @@ export interface LibrarySection {
  */
 const BRANDING_PREVIEW_ROUTE = "/";
 
-export function contentLibrary(snapshot: SiteSnapshot): LibrarySection[] {
+export function contentLibrary(
+  snapshot: SiteSnapshot | null
+): LibrarySection[] {
   return [
     {
       id: "pages",
@@ -74,7 +76,7 @@ export function contentLibrary(snapshot: SiteSnapshot): LibrarySection[] {
     {
       id: "projects",
       label: "Projects",
-      entries: snapshot.projects.map((project) => ({
+      entries: (snapshot?.projects ?? []).map((project) => ({
         id: project.id,
         label: project.title,
         route: project.route,
@@ -84,7 +86,7 @@ export function contentLibrary(snapshot: SiteSnapshot): LibrarySection[] {
     {
       id: "blog-posts",
       label: "Blog posts",
-      entries: snapshot.blogPosts.map((post) => ({
+      entries: (snapshot?.blogPosts ?? []).map((post) => ({
         id: post.id,
         label: post.title,
         route: post.route,

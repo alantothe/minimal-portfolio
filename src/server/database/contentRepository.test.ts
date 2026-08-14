@@ -44,15 +44,23 @@ afterEach(() => {
 
 const QUESTURIAN_ID = importedContentId("project", "questurian");
 
-function project(repo: ContentRepository, slug: string, order: number) {
-  return repo.create({
-    id: importedContentId("project", slug),
-    type: "project",
-    slug,
-    data: { title: slug },
-    displayOrder: order,
-    origin: "import",
-  });
+function project(
+  repo: ContentRepository,
+  slug: string,
+  order: number,
+  now?: Date
+) {
+  return repo.create(
+    {
+      id: importedContentId("project", slug),
+      type: "project",
+      slug,
+      data: { title: slug },
+      displayOrder: order,
+      origin: "import",
+    },
+    now
+  );
 }
 
 describe("writing content", () => {
@@ -261,6 +269,98 @@ describe("provenance", () => {
   test("updating a row that does not exist reports it rather than creating one", () => {
     const { repo } = repository();
     expect(repo.update("missing", { data: {} }, "owner")).toBeNull();
+  });
+});
+
+describe("conditional autosave", () => {
+  test("updates the version the Owner read", () => {
+    const { repo } = repository();
+    const created = project(
+      repo,
+      "questurian",
+      1,
+      new Date("2026-08-14T19:59:00.000Z")
+    );
+
+    const outcome = repo.updateIfCurrent(
+      created.id,
+      { data: { title: "Fresh edit" } },
+      "owner",
+      created.updatedAt,
+      new Date("2026-08-14T20:00:00.000Z")
+    );
+
+    expect(outcome.status).toBe("updated");
+    if (outcome.status === "updated") {
+      expect(outcome.item.data).toEqual({ title: "Fresh edit" });
+      expect(outcome.item.updatedAt).toBe("2026-08-14T20:00:00.000Z");
+    }
+  });
+
+  test("refuses a stale autosave instead of overwriting newer content", () => {
+    const { repo } = repository();
+    const created = project(
+      repo,
+      "questurian",
+      1,
+      new Date("2026-08-14T19:59:00.000Z")
+    );
+    repo.update(
+      created.id,
+      { data: { title: "Newer tab" } },
+      "owner",
+      new Date("2026-08-14T20:00:00.000Z")
+    );
+
+    const outcome = repo.updateIfCurrent(
+      created.id,
+      { data: { title: "Stale tab" } },
+      "owner",
+      created.updatedAt,
+      new Date("2026-08-14T20:01:00.000Z")
+    );
+
+    expect(outcome).toEqual({
+      status: "conflict",
+      currentUpdatedAt: "2026-08-14T20:00:00.000Z",
+    });
+    expect(repo.findById(created.id)?.data).toEqual({ title: "Newer tab" });
+  });
+
+  test("reports a missing Content item without creating it", () => {
+    const { repo } = repository();
+
+    expect(
+      repo.updateIfCurrent("missing", { data: {} }, "owner", "old")
+    ).toEqual({ status: "not-found" });
+  });
+
+  test("advances the version when two writes share a clock millisecond", () => {
+    const { repo } = repository();
+    const now = new Date("2026-08-14T20:00:00.000Z");
+    const created = repo.create(
+      {
+        id: SINGLETON_IDS.home,
+        type: "home",
+        data: {},
+        origin: "import",
+      },
+      now
+    );
+
+    const outcome = repo.updateIfCurrent(
+      created.id,
+      { data: { displayName: "Ada" } },
+      "owner",
+      created.updatedAt,
+      now
+    );
+
+    expect(outcome.status).toBe("updated");
+    if (outcome.status === "updated") {
+      expect(outcome.item.updatedAt).toBe("2026-08-14T20:00:00.001Z");
+      expect(outcome.item.updatedAt).not.toBe(created.updatedAt);
+    }
   });
 });
 

@@ -23,6 +23,7 @@ import {
 } from "../handlers/workbench";
 import { mediaListHandler, mediaUploadHandler } from "../handlers/media";
 import { contentDraftHandler } from "../handlers/contentDraft";
+import { collectionCreateHandler } from "../handlers/collectionLifecycle";
 
 export function setupRoutes(router: Router): void {
   router.addRoute(
@@ -83,6 +84,9 @@ export function setupRoutes(router: Router): void {
   });
   router.addRoute("/admin/api/media/list", mediaListHandler);
   router.addRoute("/admin/api/content/:id", contentDraftHandler, {
-    methods: ["GET", "PUT"],
+    methods: ["GET", "PUT", "DELETE"],
+  });
+  router.addRoute("/admin/api/content", collectionCreateHandler, {
+    methods: ["POST"],
   });
 }

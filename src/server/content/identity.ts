@@ -32,6 +32,8 @@ export const IMPORT_NAMESPACE_V1 = "6b1d1f8a-9c2e-4f77-8b34-2f0a5c9e1d43";
 export type ContentType =
   "home" | "about" | "branding" | "project" | "blog_post";
 
+export type CollectionType = "project" | "blog_post";
+
 /**
  * The singletons, which have well-known identities rather than derived ones.
  *
@@ -49,6 +51,14 @@ export type SingletonType = keyof typeof SINGLETON_IDS;
 
 export function isSingletonType(type: ContentType): type is SingletonType {
   return type === "home" || type === "about" || type === "branding";
+}
+
+export function isCollectionType(type: string): type is CollectionType {
+  return type === "project" || type === "blog_post";
+}
+
+export function collectionRoute(type: CollectionType): "/projects" | "/blog" {
+  return type === "project" ? "/projects" : "/blog";
 }
 
 function uuidToBytes(uuid: string): Uint8Array {

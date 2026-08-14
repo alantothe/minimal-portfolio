@@ -34,6 +34,7 @@ const sections: LibrarySection[] = [
   {
     id: "projects",
     label: "Projects",
+    collectionType: "project",
     entries: [
       {
         id: "project:questurian",
@@ -43,7 +44,12 @@ const sections: LibrarySection[] = [
       },
     ],
   },
-  { id: "blog-posts", label: "Blog posts", entries: [] },
+  {
+    id: "blog-posts",
+    label: "Blog posts",
+    collectionType: "blog_post",
+    entries: [],
+  },
 ];
 
 function view(overrides: Partial<WorkbenchView> = {}): WorkbenchView {
@@ -188,6 +194,16 @@ describe("the library", () => {
     const html = renderWorkbench(view());
 
     expect(html).toContain("Nothing here yet.");
+    expect(html).toContain('href="/admin?new=blog_post">Add Blog post</a>');
+  });
+
+  test("collection sections expose creation without duplicating singletons", () => {
+    const html = renderWorkbench(view());
+
+    expect(html).toContain('href="/admin?new=project">Add Project</a>');
+    expect(html).toContain('href="/admin?new=blog_post">Add Blog post</a>');
+    expect(html).not.toContain("Add Home");
+    expect(html).not.toContain("Add About");
   });
 
   test("each list is named by its section heading", () => {

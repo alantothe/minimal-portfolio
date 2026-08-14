@@ -178,6 +178,22 @@ describe("identity rules", () => {
     ).not.toThrow();
   });
 
+  test("storage refuses to tombstone a singleton", () => {
+    const { repo, database } = repository();
+    repo.create({
+      id: SINGLETON_IDS.home,
+      type: "home",
+      data: {},
+      origin: "import",
+    });
+
+    expect(() =>
+      database
+        .query("UPDATE content_items SET deleted_at = ? WHERE id = ?")
+        .run("2026-08-14T20:00:00.000Z", SINGLETON_IDS.home)
+    ).toThrow();
+  });
+
   test("an ID cannot be changed", () => {
     const { repo, database } = repository();
     project(repo, "questurian", 1);

@@ -35,6 +35,7 @@ export interface ContentItem {
   publishedAt: string | null;
   origin: ContentOrigin;
   ownerEditedAt: string | null;
+  deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,6 +50,7 @@ interface ContentRow {
   published_at: string | null;
   origin: ContentOrigin;
   owner_edited_at: string | null;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -83,6 +85,7 @@ function toItem(row: ContentRow): ContentItem {
     publishedAt: row.published_at,
     origin: row.origin,
     ownerEditedAt: row.owner_edited_at,
+    deletedAt: row.deleted_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -172,7 +175,7 @@ export class ContentRepository extends Repository {
         .query("SELECT * FROM content_items WHERE id = ?")
         .get(id) as ContentRow | null;
 
-      if (!existing) return null;
+      if (!existing || existing.deleted_at !== null) return null;
 
       const at = timestamp(now);
       const ownerEditedAt = editor === "owner" ? at : existing.owner_edited_at;
@@ -236,7 +239,9 @@ export class ContentRepository extends Repository {
         .query("SELECT * FROM content_items WHERE id = ?")
         .get(id) as ContentRow | null;
 
-      if (!existing) return { status: "not-found" };
+      if (!existing || existing.deleted_at !== null) {
+        return { status: "not-found" };
+      }
       if (existing.updated_at !== expectedUpdatedAt) {
         return {
           status: "conflict",
@@ -311,7 +316,9 @@ export class ContentRepository extends Repository {
 
   findSingleton(type: SingletonType): ContentItem | null {
     const row = this.database
-      .query("SELECT * FROM content_items WHERE type = ?")
+      .query(
+        "SELECT * FROM content_items WHERE type = ? AND deleted_at IS NULL"
+      )
       .get(type) as ContentRow | null;
 
     return row ? toItem(row) : null;
@@ -330,7 +337,11 @@ export class ContentRepository extends Repository {
         : "published_at DESC, created_at DESC";
 
     const rows = this.database
-      .query(`SELECT * FROM content_items WHERE type = ? ORDER BY ${order}`)
+      .query(
+        `SELECT * FROM content_items
+          WHERE type = ? AND deleted_at IS NULL
+          ORDER BY ${order}`
+      )
       .all(type) as ContentRow[];
 
     return rows.map(toItem);
@@ -345,6 +356,60 @@ export class ContentRepository extends Repository {
       .all(type) as { slug: string }[];
 
     return new Set(rows.map((row) => row.slug));
+  }
+
+  /**
+   * Removes a collection item from the current draft without erasing identity.
+   *
+   * Former slugs remain in this table and therefore remain reserved. The same
+   * row can also continue satisfying revision and import-ledger references.
+   */
+  archiveIfCurrent(
+    id: string,
+    expectedUpdatedAt: string,
+    now: Date = new Date()
+  ): ConditionalContentUpdate {
+    return this.transaction(() => {
+      const existing = this.database
+        .query("SELECT * FROM content_items WHERE id = ?")
+        .get(id) as ContentRow | null;
+
+      if (!existing || existing.deleted_at !== null) {
+        return { status: "not-found" };
+      }
+      if (isSingletonType(existing.type)) {
+        return { status: "not-found" };
+      }
+      if (existing.updated_at !== expectedUpdatedAt) {
+        return {
+          status: "conflict",
+          currentUpdatedAt: existing.updated_at,
+        };
+      }
+
+      const at = nextTimestamp(existing.updated_at, now);
+      const row = this.database
+        .query(
+          `UPDATE content_items
+              SET deleted_at = ?, owner_edited_at = ?, updated_at = ?
+            WHERE id = ? AND updated_at = ? AND deleted_at IS NULL
+          RETURNING *`
+        )
+        .get(at, at, at, id, expectedUpdatedAt) as ContentRow | null;
+
+      if (!row) {
+        const current = this.database
+          .query(
+            "SELECT updated_at, deleted_at FROM content_items WHERE id = ?"
+          )
+          .get(id) as Pick<ContentRow, "updated_at" | "deleted_at"> | null;
+        return current && current.deleted_at === null
+          ? { status: "conflict", currentUpdatedAt: current.updated_at }
+          : { status: "not-found" };
+      }
+
+      return { status: "updated", item: toItem(row) };
+    });
   }
 
   /**

@@ -211,6 +211,14 @@ describe("slugs", () => {
     ).toBe("questurian-3");
   });
 
+  test("keeps a collision suggestion inside the slug limit", () => {
+    const occupied = "a".repeat(80);
+    const suggestion = suggestAvailableSlug(occupied, new Set([occupied]));
+
+    expect(suggestion).toBe(`${"a".repeat(78)}-2`);
+    expect(validateSlug("slug", suggestion)).toEqual([]);
+  });
+
   test("suggestion also steps around reserved words", () => {
     expect(suggestAvailableSlug("api", new Set())).toBe("api-2");
   });

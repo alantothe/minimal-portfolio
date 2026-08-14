@@ -258,7 +258,11 @@ export function suggestAvailableSlug(
   }
 
   for (let suffix = 2; suffix < 1000; suffix += 1) {
-    const next = `${candidate}-${suffix}`;
+    const ending = `-${suffix}`;
+    const base = candidate
+      .slice(0, LIMITS.slug.max - ending.length)
+      .replace(/-+$/g, "");
+    const next = `${base}${ending}`;
     if (!taken.has(next) && !RESERVED_SLUGS.has(next)) {
       return next;
     }

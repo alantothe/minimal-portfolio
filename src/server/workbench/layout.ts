@@ -25,6 +25,7 @@ import { jsonForScript } from "./scriptValue";
 import { escapeHtml } from "./html";
 import { renderEditorPanel, type EditorPanel } from "./editor";
 import { EDITOR_SCRIPT } from "./editorClient";
+import { COLLECTION_LIFECYCLE_SCRIPT } from "./collectionLifecycleClient";
 
 export { jsonForScript } from "./scriptValue";
 export { escapeHtml } from "./html";
@@ -215,6 +216,16 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 .library .detail { display: block; color: var(--muted); font-size: 0.8rem; }
 .library p.empty { color: var(--muted); margin: 0; }
+.library-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.library-section-heading:first-of-type { margin-top: 0; }
+.library-section-heading h3 { margin: 0; }
+.library-section-heading .button { padding: 0.2rem 0.5rem; font-size: 0.78rem; text-decoration: none; }
 .editor-intro {
   display: flex;
   align-items: start;
@@ -300,6 +311,19 @@ textarea { min-height: 7rem; resize: vertical; }
   background: var(--surface);
 }
 .editor-actions span { color: var(--muted); font-size: 0.78rem; }
+.danger { border-color: #b42318; color: #b42318; }
+dialog {
+  width: min(30rem, calc(100% - 2rem));
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+  padding: 1.25rem;
+}
+dialog::backdrop { background: rgb(0 0 0 / 0.55); }
+dialog h3 { margin: 0; font-size: 1.1rem; }
+dialog p { color: var(--muted); }
+.dialog-actions { display: flex; justify-content: end; gap: 0.5rem; }
 .validation-summary {
   margin-top: 1rem;
   padding: 0.75rem;
@@ -428,7 +452,12 @@ function librarySection(
   section: LibrarySection,
   selectedContentId: string
 ): string {
-  const heading = `<h3 id="lib-${escapeHtml(section.id)}">${escapeHtml(section.label)}</h3>`;
+  const addLabel =
+    section.collectionType === "project" ? "Add Project" : "Add Blog post";
+  const addControl = section.collectionType
+    ? `<a class="button" href="/admin?new=${encodeURIComponent(section.collectionType)}">${addLabel}</a>`
+    : "";
+  const heading = `<div class="library-section-heading"><h3 id="lib-${escapeHtml(section.id)}">${escapeHtml(section.label)}</h3>${addControl}</div>`;
 
   if (section.entries.length === 0) {
     return `${heading}\n<p class="empty">Nothing here yet.</p>`;
@@ -532,6 +561,7 @@ export function renderWorkbench(view: WorkbenchView): string {
 
 <script>${SCRIPT.replace("__CSRF__", jsonForScript(view.csrfToken))}</script>
 ${view.editor.status === "ready" ? `<script>${EDITOR_SCRIPT.replace("__CSRF__", jsonForScript(view.csrfToken))}</script>` : ""}
+${view.editor.status === "ready" || view.editor.status === "create" ? `<script>${COLLECTION_LIFECYCLE_SCRIPT.replace("__CSRF__", jsonForScript(view.csrfToken))}</script>` : ""}
 </body>
 </html>
 `;

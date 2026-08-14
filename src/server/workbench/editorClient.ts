@@ -287,6 +287,7 @@ export const EDITOR_SCRIPT = `
       }
 
       expectedUpdatedAt = body.draft.updatedAt;
+      form.dataset.updatedAt = body.draft.updatedAt;
       dirty = false;
       showFindings(body.draft.publishFindings);
       const slugChanged =
@@ -407,6 +408,12 @@ export const EDITOR_SCRIPT = `
     if (!dirty && !saving) return;
     event.preventDefault();
     event.returnValue = "";
+  });
+  document.addEventListener("content-deleted", () => {
+    window.clearTimeout(timer);
+    dirty = false;
+    saving = false;
+    queued = false;
   });
 })();
 `;

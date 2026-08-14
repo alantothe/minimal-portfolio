@@ -138,7 +138,7 @@ describe("denying the unauthenticated", () => {
   });
 
   test("answers owner APIs with 401 JSON rather than a redirect", async () => {
-    const response = await send("/admin/api/content");
+    const response = await send("/admin/api/content/missing");
 
     expect(response.status).toBe(401);
     expect(response.headers.get("Content-Type")).toContain("application/json");
@@ -162,7 +162,7 @@ describe("denying the unauthenticated", () => {
 });
 
 describe("private response headers", () => {
-  test.each(["/admin", "/admin/login", "/admin/api/content"])(
+  test.each(["/admin", "/admin/login", "/admin/api/content/missing"])(
     "%p is never cached or indexed",
     async (path) => {
       const response = await send(path);
@@ -252,6 +252,24 @@ describe("the signed-in owner", () => {
     expect(response.status).toBe(200);
     expect(body).toContain(`data-content-id="${projectId}"`);
     expect(body).toContain('src="/admin/preview?route=%2Fprojects"');
+  });
+
+  test("opens Project and Blog post creation with collection previews", async () => {
+    seedSite(getDatabase());
+    const { cookie } = establishSession();
+
+    const project = await send("/admin?new=project", { cookie });
+    const projectBody = await project.text();
+    expect(projectBody).toContain('id="collection-create"');
+    expect(projectBody).toContain('data-content-type="project"');
+    expect(projectBody).toContain("Create Project");
+    expect(projectBody).toContain('src="/admin/preview?route=%2Fprojects"');
+
+    const blog = await send("/admin?new=blog_post", { cookie });
+    const blogBody = await blog.text();
+    expect(blogBody).toContain('data-content-type="blog_post"');
+    expect(blogBody).toContain("Create Blog post");
+    expect(blogBody).toContain('src="/admin/preview?route=%2Fblog"');
   });
 
   test("previews a safe draft even while publication-required fields are empty", async () => {
@@ -577,6 +595,226 @@ describe("Content draft API", () => {
     expect(new ContentRepository(getDatabase()).findById(projectId)).toEqual(
       before
     );
+  });
+});
+
+describe("collection lifecycle API", () => {
+  test("requires the same Owner, Origin, and CSRF boundary", async () => {
+    expect(
+      (
+        await send("/admin/api/content", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "project", title: "New", slug: "new" }),
+        })
+      ).status
+    ).toBe(401);
+
+    const { cookie, csrfToken } = establishSession();
+    const noOrigin = await send("/admin/api/content", {
+      method: "POST",
+      cookie,
+      headers: {
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ type: "project", title: "New", slug: "new" }),
+    });
+    expect(noOrigin.status).toBe(403);
+  });
+
+  test("suggests and confirms a collision-safe slug before creating", async () => {
+    seedSite(getDatabase());
+    const repository = new ContentRepository(getDatabase());
+    const before = repository.list("project").length;
+    const { cookie, csrfToken } = establishSession();
+    const headers = {
+      Origin: ORIGIN,
+      "X-CSRF-Token": csrfToken,
+      "Content-Type": "application/json",
+    };
+
+    const suggestion = await send("/admin/api/content", {
+      method: "POST",
+      cookie,
+      headers,
+      body: JSON.stringify({
+        type: "project",
+        title: "Fresh Project",
+        slug: "",
+      }),
+    });
+    expect(suggestion.status).toBe(200);
+    expect(await suggestion.json()).toEqual({
+      status: "confirmation_required",
+      suggestedSlug: "fresh-project",
+      reason: "generated",
+    });
+    expect(repository.list("project")).toHaveLength(before);
+
+    const created = await send("/admin/api/content", {
+      method: "POST",
+      cookie,
+      headers,
+      body: JSON.stringify({
+        type: "project",
+        title: "Fresh Project",
+        slug: "fresh-project",
+      }),
+    });
+    const body = (await created.json()) as {
+      status: string;
+      content: { id: string; type: string; route: string };
+    };
+    expect(created.status).toBe(201);
+    expect(body.status).toBe("created");
+    expect(body.content.type).toBe("project");
+    expect(body.content.route).toBe("/projects/fresh-project");
+    expect(repository.findById(body.content.id)?.origin).toBe("owner");
+
+    const workspace = await send(
+      `/admin?content=${encodeURIComponent(body.content.id)}`,
+      { cookie }
+    );
+    const workspaceBody = await workspace.text();
+    expect(workspaceBody).toContain(`data-content-id="${body.content.id}"`);
+    expect(workspaceBody).toContain(
+      'src="/admin/preview?route=%2Fprojects%2Ffresh-project"'
+    );
+  });
+
+  test("returns a numbered suggestion for a reserved collection slug", async () => {
+    seedSite(getDatabase());
+    const { cookie, csrfToken } = establishSession();
+
+    const response = await send("/admin/api/content", {
+      method: "POST",
+      cookie,
+      headers: {
+        Origin: ORIGIN,
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: "project",
+        title: "Questurian copy",
+        slug: "questurian",
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      status: "confirmation_required",
+      suggestedSlug: "questurian-2",
+      reason: "collision",
+    });
+  });
+
+  test("strictly rejects unknown creation fields and types", async () => {
+    const { cookie, csrfToken } = establishSession();
+    const headers = {
+      Origin: ORIGIN,
+      "X-CSRF-Token": csrfToken,
+      "Content-Type": "application/json",
+    };
+
+    const unknownField = await send("/admin/api/content", {
+      method: "POST",
+      cookie,
+      headers,
+      body: JSON.stringify({
+        type: "project",
+        title: "Project",
+        slug: "project",
+        arbitrary: true,
+      }),
+    });
+    expect(unknownField.status).toBe(400);
+
+    const singleton = await send("/admin/api/content", {
+      method: "POST",
+      cookie,
+      headers,
+      body: JSON.stringify({ type: "home", title: "Another Home" }),
+    });
+    expect(singleton.status).toBe(400);
+    expect(new ContentRepository(getDatabase()).countByType()).toEqual({});
+  });
+
+  test("deletes a current collection draft but keeps its identity and route reserved", async () => {
+    seedSite(getDatabase());
+    const repository = new ContentRepository(getDatabase());
+    const project = repository.findById(
+      importedContentId("project", "questurian")
+    )!;
+    const { cookie, csrfToken } = establishSession();
+    const path = `/admin/api/content/${encodeURIComponent(project.id)}`;
+
+    const response = await send(path, {
+      method: "DELETE",
+      cookie,
+      headers: {
+        Origin: ORIGIN,
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expectedUpdatedAt: project.updatedAt }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      status: "deleted",
+      route: "/projects",
+    });
+    expect(repository.findById(project.id)?.deletedAt).not.toBeNull();
+    expect(repository.list("project").map((item) => item.id)).not.toContain(
+      project.id
+    );
+    expect(repository.takenSlugs("project")).toContain("questurian");
+    expect((await send(path, { cookie })).status).toBe(404);
+    expect(
+      (await send("/admin/preview?route=%2Fprojects%2Fquesturian", { cookie }))
+        .status
+    ).toBe(404);
+  });
+
+  test("refuses singleton and stale collection deletion", async () => {
+    seedSite(getDatabase());
+    const repository = new ContentRepository(getDatabase());
+    const home = repository.findById(SINGLETON_IDS.home)!;
+    const project = repository.findById(
+      importedContentId("project", "questurian")
+    )!;
+    repository.update(project.id, { data: project.data }, "owner");
+    const { cookie, csrfToken } = establishSession();
+    const headers = {
+      Origin: ORIGIN,
+      "X-CSRF-Token": csrfToken,
+      "Content-Type": "application/json",
+    };
+
+    const singleton = await send(
+      `/admin/api/content/${encodeURIComponent(home.id)}`,
+      {
+        method: "DELETE",
+        cookie,
+        headers,
+        body: JSON.stringify({ expectedUpdatedAt: home.updatedAt }),
+      }
+    );
+    expect(singleton.status).toBe(422);
+
+    const stale = await send(
+      `/admin/api/content/${encodeURIComponent(project.id)}`,
+      {
+        method: "DELETE",
+        cookie,
+        headers,
+        body: JSON.stringify({ expectedUpdatedAt: project.updatedAt }),
+      }
+    );
+    expect(stale.status).toBe(409);
+    expect(repository.findById(project.id)?.deletedAt).toBeNull();
   });
 });
 

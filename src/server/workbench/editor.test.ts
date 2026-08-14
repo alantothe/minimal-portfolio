@@ -162,6 +162,9 @@ describe("Content editor", () => {
     expect(html).toContain('value="4"');
     expect(html).toContain('data-display-order="4"');
     expect(html).toContain("<h3>Questurian</h3>");
+    expect(html).toContain('id="delete-content-dialog"');
+    expect(html).toContain('aria-labelledby="delete-content-heading"');
+    expect(html).toContain("Delete Project");
   });
 
   test("renders every Blog post field and escapes collection values", () => {
@@ -221,5 +224,17 @@ describe("Content editor", () => {
     expect(html).toContain('id="content-editor"');
     expect(html).toContain("Save now");
     expect(html).toContain("Publishing arrives in slice 8");
+  });
+
+  test("renders an explicit slug-confirmation form for new collection items", () => {
+    const html = renderEditorPanel({ status: "create", type: "blog_post" });
+
+    expect(html).toContain('id="collection-create"');
+    expect(html).toContain('data-content-type="blog_post"');
+    expect(html).toContain('name="title"');
+    expect(html).toContain('name="slug"');
+    expect(html).toContain("Leave empty to generate a suggestion");
+    expect(html).toContain("Create Blog post");
+    expect(html).not.toContain("delete-content-dialog");
   });
 });

@@ -14,6 +14,7 @@
  */
 
 import type { SiteSnapshot } from "../published/snapshot";
+import type { CollectionType } from "../content/identity";
 
 export interface LibraryEntry {
   /** Stable across renders, so focus and selection survive a refresh. */
@@ -33,6 +34,7 @@ export interface LibraryEntry {
 export interface LibrarySection {
   id: string;
   label: string;
+  collectionType?: CollectionType;
   entries: LibraryEntry[];
 }
 
@@ -76,6 +78,7 @@ export function contentLibrary(
     {
       id: "projects",
       label: "Projects",
+      collectionType: "project",
       entries: (snapshot?.projects ?? []).map((project) => ({
         id: project.id,
         label: project.title,
@@ -86,6 +89,7 @@ export function contentLibrary(
     {
       id: "blog-posts",
       label: "Blog posts",
+      collectionType: "blog_post",
       entries: (snapshot?.blogPosts ?? []).map((post) => ({
         id: post.id,
         label: post.title,

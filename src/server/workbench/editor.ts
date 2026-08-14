@@ -12,10 +12,11 @@ import type {
 } from "../content/schema";
 import type { DraftRecord } from "./contentDraft";
 import { escapeHtml } from "./html";
-import { isSingletonType } from "../content/identity";
+import { isSingletonType, type CollectionType } from "../content/identity";
 
 export type EditorPanel =
   | { status: "ready"; draft: DraftRecord; media: MediaAsset[] }
+  | { status: "create"; type: CollectionType }
   | { status: "missing"; message: string };
 
 function findingId(field: string): string {
@@ -313,6 +314,22 @@ function readyPanel(panel: Extract<EditorPanel, { status: "ready" }>): string {
     : (draft.data as ProjectContent | BlogPostContent).title ||
       (draft.type === "project" ? "Untitled Project" : "Untitled Blog post");
   const kind = isSingletonType(draft.type) ? "Singleton" : "Collection item";
+  const collection = isSingletonType(draft.type) ? null : draft.type;
+  const deleteLabel =
+    collection === "project" ? "Delete Project" : "Delete Blog post";
+  const deleteControl = collection
+    ? `<button type="button" id="delete-content">${deleteLabel}</button>`
+    : "";
+  const deleteDialog = collection
+    ? `<dialog id="delete-content-dialog" aria-labelledby="delete-content-heading" aria-describedby="delete-content-description">
+  <h3 id="delete-content-heading">${deleteLabel}?</h3>
+  <p id="delete-content-description">This removes ${escapeHtml(label)} from the Content draft. Its identity and former Public route remain reserved.</p>
+  <div class="dialog-actions">
+    <form method="dialog"><button value="cancel">Cancel</button></form>
+    <button type="button" class="danger" id="confirm-delete">${deleteLabel}</button>
+  </div>
+</dialog>`
+    : "";
 
   return `<form id="content-editor" data-content-id="${escapeHtml(draft.id)}" data-content-type="${escapeHtml(draft.type)}" data-updated-at="${escapeHtml(draft.updatedAt)}" data-slug="${escapeHtml(draft.slug ?? "")}" data-display-order="${escapeHtml(String(draft.displayOrder ?? ""))}" data-published-at="${escapeHtml(draft.publishedAt ?? "")}" data-publish-findings="${escapeHtml(JSON.stringify(draft.publishFindings))}">
   <div class="editor-intro">
@@ -327,7 +344,39 @@ function readyPanel(panel: Extract<EditorPanel, { status: "ready" }>): string {
   <div class="editor-actions">
     <button type="submit" class="primary">Save now</button>
     <button type="button" disabled title="Publishing arrives in slice 8">Publish</button>
+    ${deleteControl}
     <span>Publishing arrives in slice 8.</span>
+  </div>
+</form>
+${deleteDialog}`;
+}
+
+function createPanel(type: CollectionType): string {
+  const label = type === "project" ? "Project" : "Blog post";
+  return `<form id="collection-create" data-content-type="${type}">
+  <div class="editor-intro">
+    <div>
+      <p class="eyebrow">New collection item</p>
+      <h3>Create ${label}</h3>
+    </div>
+    <p>Name the draft and confirm its Public route. Remaining editorial fields can stay unfinished.</p>
+  </div>
+  <div id="creation-summary" class="validation-summary" hidden></div>
+  <div class="field">
+    <label class="field-label" for="create-title">Title</label>
+    <input id="create-title" name="title" data-create-field="title" aria-describedby="create-title-finding" autofocus>
+    <p class="field-finding" id="create-title-finding" data-create-finding="title" hidden></p>
+  </div>
+  <div class="field">
+    <label class="field-label" for="create-slug">Public route slug</label>
+    <span class="field-hint" id="create-slug-hint">Leave empty to generate a suggestion from the title. Review and confirm it before creation.</span>
+    <input id="create-slug" name="slug" data-create-field="slug" aria-describedby="create-slug-hint create-slug-finding">
+    <p class="field-finding" id="create-slug-finding" data-create-finding="slug" hidden></p>
+  </div>
+  <p id="creation-guidance" class="fieldset-note">Creation starts an unpublished Content draft.</p>
+  <div class="editor-actions">
+    <button type="submit" class="primary">Create ${label}</button>
+    <a class="button" href="/admin">Cancel</a>
   </div>
 </form>`;
 }
@@ -336,6 +385,8 @@ export function renderEditorPanel(panel: EditorPanel): string {
   switch (panel.status) {
     case "ready":
       return readyPanel(panel);
+    case "create":
+      return createPanel(panel.type);
     case "missing":
       return `<div class="empty-editor"><p class="eyebrow">Unavailable</p><h3>Editor could not open</h3><p>${escapeHtml(panel.message)}</p></div>`;
   }

@@ -287,4 +287,25 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX media_assets_digest ON media_assets (digest, status)`,
     ],
   },
+  {
+    id: 7,
+    name: "tombstone_collection_content",
+    statements: [
+      // Collection deletion removes an item from the current draft without
+      // erasing its identity. Published revisions, import history, view counts,
+      // and former Public routes can therefore keep referring to the same row.
+      `ALTER TABLE content_items ADD COLUMN deleted_at TEXT`,
+      `CREATE INDEX content_items_active_type
+         ON content_items (type, deleted_at)`,
+      // Singletons are permanent whether a caller tries a physical DELETE or
+      // the application-level tombstone used for collection items.
+      `CREATE TRIGGER content_singletons_cannot_be_tombstoned
+         BEFORE UPDATE OF deleted_at ON content_items
+         WHEN OLD.type IN ('home', 'about', 'branding')
+           AND NEW.deleted_at IS NOT NULL
+         BEGIN
+           SELECT RAISE(ABORT, 'singleton content cannot be deleted');
+         END`,
+    ],
+  },
 ];

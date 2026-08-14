@@ -10,6 +10,8 @@ import {
   saveContentDraft,
   type DraftDependencies,
 } from "../workbench/contentDraft";
+import { archiveCollectionDraft } from "../workbench/collectionLifecycle";
+import { readBoundedJsonObject } from "./jsonBody";
 
 const MAX_DRAFT_REQUEST_BYTES = 256 * 1024;
 
@@ -44,28 +46,12 @@ async function requestBody(request: Request): Promise<
     }
   | { ready: false; response: Response }
 > {
-  const declared = Number(request.headers.get("Content-Length") ?? "0");
-  if (Number.isFinite(declared) && declared > MAX_DRAFT_REQUEST_BYTES) {
-    return { ready: false, response: json(413, { error: "draft_too_large" }) };
-  }
-
-  const text = await request.text();
-  if (Buffer.byteLength(text) > MAX_DRAFT_REQUEST_BYTES) {
-    return { ready: false, response: json(413, { error: "draft_too_large" }) };
-  }
-
-  let body: unknown;
-  try {
-    body = JSON.parse(text);
-  } catch {
-    return { ready: false, response: json(400, { error: "invalid_json" }) };
-  }
-
-  if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return { ready: false, response: json(400, { error: "invalid_request" }) };
-  }
-
-  const record = body as Record<string, unknown>;
+  const parsed = await readBoundedJsonObject(request, {
+    maxBytes: MAX_DRAFT_REQUEST_BYTES,
+    tooLargeError: "draft_too_large",
+  });
+  if (!parsed.ready) return parsed;
+  const { record } = parsed;
   if (
     Object.keys(record).some(
       (key) =>
@@ -117,6 +103,29 @@ async function requestBody(request: Request): Promise<
   };
 }
 
+async function deleteBody(
+  request: Request
+): Promise<
+  | { ready: true; expectedUpdatedAt: string }
+  | { ready: false; response: Response }
+> {
+  const parsed = await readBoundedJsonObject(request, {
+    maxBytes: MAX_DRAFT_REQUEST_BYTES,
+    tooLargeError: "draft_too_large",
+  });
+  if (!parsed.ready) return parsed;
+  const { record } = parsed;
+  if (
+    Object.keys(record).some((key) => key !== "expectedUpdatedAt") ||
+    typeof record.expectedUpdatedAt !== "string" ||
+    record.expectedUpdatedAt === ""
+  ) {
+    return { ready: false, response: json(400, { error: "invalid_request" }) };
+  }
+
+  return { ready: true, expectedUpdatedAt: record.expectedUpdatedAt };
+}
+
 export async function contentDraftHandler({
   request,
   params,
@@ -132,6 +141,33 @@ export async function contentDraftHandler({
     return outcome.status === "found"
       ? json(200, { draft: outcome.draft })
       : json(404, { error: "content_not_found" });
+  }
+
+  if (request.method === "DELETE") {
+    const body = await deleteBody(request);
+    if (!body.ready) return body.response;
+    const outcome = archiveCollectionDraft(
+      { id, expectedUpdatedAt: body.expectedUpdatedAt },
+      resolved
+    );
+
+    switch (outcome.status) {
+      case "archived":
+        return json(200, {
+          status: "deleted",
+          route: outcome.route,
+          preview: outcome.preview,
+        });
+      case "not-deletable":
+        return json(422, { error: "content_not_deletable" });
+      case "conflict":
+        return json(409, {
+          error: "content_conflict",
+          currentUpdatedAt: outcome.currentUpdatedAt,
+        });
+      case "not-found":
+        return json(404, { error: "content_not_found" });
+    }
   }
 
   const body = await requestBody(request);

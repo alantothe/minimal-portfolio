@@ -35,6 +35,11 @@ import { configurePreviewDocument } from "../workbench/preview";
 import { renderWorkbench } from "../workbench/layout";
 import { readContentDraft } from "../workbench/contentDraft";
 import type { EditorPanel } from "../workbench/editor";
+import {
+  collectionRoute,
+  isCollectionType,
+  type CollectionType,
+} from "../content/identity";
 
 function html(body: string, status = 200): Response {
   return applyPrivateHeaders(
@@ -67,6 +72,9 @@ export async function workbenchHandler({
   const snapshot =
     previewBuild?.status === "built" ? previewBuild.snapshot : null;
   const sections = contentLibrary(snapshot);
+  const requestedNew = url.searchParams.get("new");
+  const newType: CollectionType | null =
+    requestedNew && isCollectionType(requestedNew) ? requestedNew : null;
 
   // A workspace with no generation still renders. The owner needs to be told
   // why the preview is empty, and a 503 here would tell them nothing and take
@@ -87,9 +95,12 @@ export async function workbenchHandler({
       snapshot &&
       isPreviewableRoute(snapshot, requestedPreviewRoute) &&
       requestedPreviewRoute) ||
+    (newType && collectionRoute(newType)) ||
     selectedEntry?.route ||
     defaultPreviewRoute();
-  const selectedContentId = selectedEntry?.id ?? defaultContentId();
+  const selectedContentId = newType
+    ? ""
+    : (selectedEntry?.id ?? defaultContentId());
 
   let editor: EditorPanel;
   if (!database) {
@@ -101,15 +112,19 @@ export async function workbenchHandler({
   } else {
     const content = new ContentRepository(database);
     const media = new MediaRepository(database);
-    const result = readContentDraft(selectedContentId, { content, media });
-    editor =
-      result.status === "found"
-        ? { status: "ready", draft: result.draft, media: media.listReady() }
-        : {
-            status: "missing",
-            message:
-              "This Content item has not been imported yet. Run the migration before editing.",
-          };
+    if (newType) {
+      editor = { status: "create", type: newType };
+    } else {
+      const result = readContentDraft(selectedContentId, { content, media });
+      editor =
+        result.status === "found"
+          ? { status: "ready", draft: result.draft, media: media.listReady() }
+          : {
+              status: "missing",
+              message:
+                "This Content item has not been imported yet. Run the migration before editing.",
+            };
+    }
   }
 
   return html(

@@ -204,6 +204,9 @@ describe("the library", () => {
     expect(html).toContain('href="/admin?new=blog_post">Add Blog post</a>');
     expect(html).not.toContain("Add Home");
     expect(html).not.toContain("Add About");
+    expect(html).toContain(
+      ".danger { border-color: #ff9b8f; color: #ff9b8f; }"
+    );
   });
 
   test("each list is named by its section heading", () => {

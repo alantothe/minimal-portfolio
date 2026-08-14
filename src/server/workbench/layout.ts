@@ -312,6 +312,9 @@ textarea { min-height: 7rem; resize: vertical; }
 }
 .editor-actions span { color: var(--muted); font-size: 0.78rem; }
 .danger { border-color: #b42318; color: #b42318; }
+@media (prefers-color-scheme: dark) {
+  .danger { border-color: #ff9b8f; color: #ff9b8f; }
+}
 dialog {
   width: min(30rem, calc(100% - 2rem));
   border: 1px solid var(--border);

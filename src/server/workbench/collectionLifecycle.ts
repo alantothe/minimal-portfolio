@@ -187,7 +187,7 @@ export function archiveCollectionDraft(
   dependencies: CollectionLifecycleDependencies
 ): ArchiveCollectionOutcome {
   const current = dependencies.content.findById(input.id);
-  if (!current || current.deletedAt !== null) return { status: "not-found" };
+  if (!current) return { status: "not-found" };
   if (isSingletonType(current.type)) return { status: "not-deletable" };
 
   const archived = dependencies.content.archiveIfCurrent(

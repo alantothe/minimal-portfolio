@@ -165,7 +165,7 @@ export function runImport(
     [];
 
   for (const entity of plan.entities) {
-    const existing = repository.findById(entity.id);
+    const existing = repository.findIncludingArchivedById(entity.id);
 
     if (!existing) {
       decisions.push({ entity, outcome: "created" });

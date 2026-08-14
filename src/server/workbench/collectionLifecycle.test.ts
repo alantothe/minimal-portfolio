@@ -206,7 +206,10 @@ describe("deleting a collection draft", () => {
     expect(outcome.status).toBe("archived");
     expect(outcome).toMatchObject({ route: "/projects" });
     expect(content.list("project")).toEqual([]);
-    expect(content.findById(project.id)?.deletedAt).not.toBeNull();
+    expect(content.findById(project.id)).toBeNull();
+    expect(
+      content.findIncludingArchivedById(project.id)?.deletedAt
+    ).not.toBeNull();
     expect(content.takenSlugs("project")).toContain("retired-project");
     expect(content.isReplaceableByImport(project.id)).toBe(false);
     expect(refreshes()).toBe(1);

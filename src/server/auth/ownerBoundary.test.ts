@@ -766,7 +766,10 @@ describe("collection lifecycle API", () => {
       status: "deleted",
       route: "/projects",
     });
-    expect(repository.findById(project.id)?.deletedAt).not.toBeNull();
+    expect(repository.findById(project.id)).toBeNull();
+    expect(
+      repository.findIncludingArchivedById(project.id)?.deletedAt
+    ).not.toBeNull();
     expect(repository.list("project").map((item) => item.id)).not.toContain(
       project.id
     );

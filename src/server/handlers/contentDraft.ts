@@ -11,6 +11,7 @@ import {
   type DraftDependencies,
 } from "../workbench/contentDraft";
 import { archiveCollectionDraft } from "../workbench/collectionLifecycle";
+import { readBoundedJsonObject } from "./jsonBody";
 
 const MAX_DRAFT_REQUEST_BYTES = 256 * 1024;
 
@@ -45,28 +46,12 @@ async function requestBody(request: Request): Promise<
     }
   | { ready: false; response: Response }
 > {
-  const declared = Number(request.headers.get("Content-Length") ?? "0");
-  if (Number.isFinite(declared) && declared > MAX_DRAFT_REQUEST_BYTES) {
-    return { ready: false, response: json(413, { error: "draft_too_large" }) };
-  }
-
-  const text = await request.text();
-  if (Buffer.byteLength(text) > MAX_DRAFT_REQUEST_BYTES) {
-    return { ready: false, response: json(413, { error: "draft_too_large" }) };
-  }
-
-  let body: unknown;
-  try {
-    body = JSON.parse(text);
-  } catch {
-    return { ready: false, response: json(400, { error: "invalid_json" }) };
-  }
-
-  if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return { ready: false, response: json(400, { error: "invalid_request" }) };
-  }
-
-  const record = body as Record<string, unknown>;
+  const parsed = await readBoundedJsonObject(request, {
+    maxBytes: MAX_DRAFT_REQUEST_BYTES,
+    tooLargeError: "draft_too_large",
+  });
+  if (!parsed.ready) return parsed;
+  const { record } = parsed;
   if (
     Object.keys(record).some(
       (key) =>
@@ -124,27 +109,12 @@ async function deleteBody(
   | { ready: true; expectedUpdatedAt: string }
   | { ready: false; response: Response }
 > {
-  const declared = Number(request.headers.get("Content-Length") ?? "0");
-  if (Number.isFinite(declared) && declared > MAX_DRAFT_REQUEST_BYTES) {
-    return { ready: false, response: json(413, { error: "draft_too_large" }) };
-  }
-
-  const text = await request.text();
-  if (Buffer.byteLength(text) > MAX_DRAFT_REQUEST_BYTES) {
-    return { ready: false, response: json(413, { error: "draft_too_large" }) };
-  }
-
-  let body: unknown;
-  try {
-    body = JSON.parse(text);
-  } catch {
-    return { ready: false, response: json(400, { error: "invalid_json" }) };
-  }
-  if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return { ready: false, response: json(400, { error: "invalid_request" }) };
-  }
-
-  const record = body as Record<string, unknown>;
+  const parsed = await readBoundedJsonObject(request, {
+    maxBytes: MAX_DRAFT_REQUEST_BYTES,
+    tooLargeError: "draft_too_large",
+  });
+  if (!parsed.ready) return parsed;
+  const { record } = parsed;
   if (
     Object.keys(record).some((key) => key !== "expectedUpdatedAt") ||
     typeof record.expectedUpdatedAt !== "string" ||

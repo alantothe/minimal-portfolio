@@ -174,7 +174,7 @@ export function readContentDraft(
   dependencies: DraftReadDependencies
 ): ReadDraftOutcome {
   const item = dependencies.content.findById(id);
-  return item && item.deletedAt === null
+  return item
     ? { status: "found", draft: toDraft(item, dependencies) }
     : { status: "not-found" };
 }
@@ -193,7 +193,7 @@ export function saveContentDraft(
   dependencies: DraftDependencies
 ): SaveDraftOutcome {
   const current = dependencies.content.findById(input.id);
-  if (!current || current.deletedAt !== null) return { status: "not-found" };
+  if (!current) return { status: "not-found" };
   const type = current.type;
   const attributes = input.attributes ?? {};
   const allowedAttributes = isSingletonType(type)

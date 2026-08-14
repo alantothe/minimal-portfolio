@@ -9,6 +9,7 @@ import {
   createCollectionDraft,
   type CollectionLifecycleDependencies,
 } from "../workbench/collectionLifecycle";
+import { readBoundedJsonObject } from "./jsonBody";
 
 const MAX_CREATE_REQUEST_BYTES = 8 * 1024;
 
@@ -39,33 +40,12 @@ async function createBody(
   | { ready: true; type: "project" | "blog_post"; title: string; slug?: string }
   | { ready: false; response: Response }
 > {
-  const declared = Number(request.headers.get("Content-Length") ?? "0");
-  if (Number.isFinite(declared) && declared > MAX_CREATE_REQUEST_BYTES) {
-    return {
-      ready: false,
-      response: json(413, { error: "request_too_large" }),
-    };
-  }
-
-  const text = await request.text();
-  if (Buffer.byteLength(text) > MAX_CREATE_REQUEST_BYTES) {
-    return {
-      ready: false,
-      response: json(413, { error: "request_too_large" }),
-    };
-  }
-
-  let body: unknown;
-  try {
-    body = JSON.parse(text);
-  } catch {
-    return { ready: false, response: json(400, { error: "invalid_json" }) };
-  }
-  if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return { ready: false, response: json(400, { error: "invalid_request" }) };
-  }
-
-  const record = body as Record<string, unknown>;
+  const parsed = await readBoundedJsonObject(request, {
+    maxBytes: MAX_CREATE_REQUEST_BYTES,
+    tooLargeError: "request_too_large",
+  });
+  if (!parsed.ready) return parsed;
+  const { record } = parsed;
   if (
     Object.keys(record).some(
       (key) => key !== "type" && key !== "title" && key !== "slug"

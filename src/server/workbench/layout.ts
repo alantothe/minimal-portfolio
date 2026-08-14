@@ -96,6 +96,7 @@ const STYLE = `
   --accent: #0b4fd4;
   --accent-contrast: #ffffff;
   --focus: #0b4fd4;
+  --danger: #b42318;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -107,6 +108,7 @@ const STYLE = `
     --accent: #8fb4ff;
     --accent-contrast: #0d0f13;
     --focus: #8fb4ff;
+    --danger: #ff9b8f;
   }
 }
 * { box-sizing: border-box; }
@@ -274,10 +276,7 @@ input, textarea, select {
 }
 textarea { min-height: 7rem; resize: vertical; }
 [aria-invalid="true"] { border-color: #b42318; }
-.field-finding { margin: 0; color: #b42318; font-size: 0.8rem; }
-@media (prefers-color-scheme: dark) {
-  .field-finding { color: #ff9b8f; }
-}
+.field-finding { margin: 0; color: var(--danger); font-size: 0.8rem; }
 .media-field {
   padding: 0.75rem;
   border: 1px solid var(--border);
@@ -311,10 +310,7 @@ textarea { min-height: 7rem; resize: vertical; }
   background: var(--surface);
 }
 .editor-actions span { color: var(--muted); font-size: 0.78rem; }
-.danger { border-color: #b42318; color: #b42318; }
-@media (prefers-color-scheme: dark) {
-  .danger { border-color: #ff9b8f; color: #ff9b8f; }
-}
+.danger { border-color: var(--danger); color: var(--danger); }
 dialog {
   width: min(30rem, calc(100% - 2rem));
   border: 1px solid var(--border);

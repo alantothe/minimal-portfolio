@@ -300,6 +300,15 @@ export class ContentRepository extends Repository {
 
   findById(id: string): ContentItem | null {
     const row = this.database
+      .query("SELECT * FROM content_items WHERE id = ? AND deleted_at IS NULL")
+      .get(id) as ContentRow | null;
+
+    return row ? toItem(row) : null;
+  }
+
+  /** Identity/history lookup that deliberately includes tombstoned content. */
+  findIncludingArchivedById(id: string): ContentItem | null {
+    const row = this.database
       .query("SELECT * FROM content_items WHERE id = ?")
       .get(id) as ContentRow | null;
 

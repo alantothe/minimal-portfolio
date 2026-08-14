@@ -19,7 +19,7 @@ export const COLLECTION_LIFECYCLE_SCRIPT = `
     too_short: "Too short.",
     control_characters: "Contains unsupported control characters.",
     malformed_slug: "Use lowercase letters, numbers, and single hyphens.",
-    reserved_slug: "This address is reserved.",
+    reserved_slug: "This Public route is reserved.",
   };
 
   const createForm = document.getElementById("collection-create");

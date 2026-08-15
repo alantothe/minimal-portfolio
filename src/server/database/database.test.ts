@@ -13,6 +13,11 @@ import { checkDatabaseHealth } from "./health";
 import { MIGRATIONS, type Migration } from "./migrations";
 import { checksumOf, listAppliedMigrations, runMigrations } from "./migrator";
 import { SystemStateRepository } from "./repository";
+import { seedSite } from "../published/fixtures";
+import {
+  PublicationRepository,
+  revisionChecksum,
+} from "./publicationRepository";
 
 const temporaryDirectories: string[] = [];
 
@@ -110,6 +115,52 @@ describe("connection durability", () => {
 });
 
 describe("migrations", () => {
+  test("seeds existing imported content as immutable revision one", () => {
+    const database = openDatabase(temporaryDatabaseFile());
+    runMigrations(database, MIGRATIONS.slice(0, 7));
+    seedSite(database);
+
+    runMigrations(database);
+    new PublicationRepository(database).reconcileUneditedImportedBaselines(
+      new Date("2026-08-14T12:00:00.000Z")
+    );
+
+    const publication = new PublicationRepository(database);
+    const published = publication.listPublishedContent();
+    expect(published).toHaveLength(6);
+    expect(
+      published.every((item) => item.currentPublishedRevisionId !== null)
+    ).toBe(true);
+    expect(
+      database.query("SELECT COUNT(*) AS total FROM published_revisions").get()
+    ).toEqual({ total: 6 });
+    const homeRevision = publication.listRevisions("singleton:home")[0]!;
+    expect(homeRevision.checksum).toBe(revisionChecksum(homeRevision.snapshot));
+    database.close();
+  });
+
+  test("restart reconciliation never publishes an Owner-created draft", () => {
+    const { database } = migratedDatabase();
+    const at = "2026-08-14T12:00:00.000Z";
+    const draft = database
+      .query(
+        `INSERT INTO content_items (
+           id, type, slug, schema_version, data, display_order, published_at,
+           origin, created_at, updated_at
+         ) VALUES (?, 'project', 'private-draft', 1, '{}', 0, NULL, 'owner', ?, ?)
+         RETURNING id`
+      )
+      .get("dddddddd-1111-4111-8111-dddddddddddd", at, at) as { id: string };
+
+    expect(
+      new PublicationRepository(database).reconcileUneditedImportedBaselines()
+    ).toBe(0);
+    expect(
+      new PublicationRepository(database).currentRevision(draft.id)
+    ).toBeNull();
+    database.close();
+  });
+
   test("apply on first run and record themselves", () => {
     const { database } = migratedDatabase();
 

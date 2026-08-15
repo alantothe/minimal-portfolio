@@ -46,6 +46,12 @@ describe("SPA navigation", () => {
     );
   });
 
+  test("revalidates SPA pages only after the database-backed cutover", () => {
+    expect(router).toContain("dataset.publicationGeneration");
+    expect(router).toContain("publishedSite ||");
+    expect(shell).not.toContain("data-publication-generation");
+  });
+
   test("accounts for the desktop top inset in the sticky sidebar height", () => {
     expect(globalStyles).not.toMatch(
       /\.sidebar\s*\{[^}]*height:\s*100vh;[^}]*\}/

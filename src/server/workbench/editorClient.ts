@@ -10,12 +10,16 @@ export const EDITOR_SCRIPT = `
   const live = document.getElementById("workbench-status");
   const summary = document.getElementById("validation-summary");
   const preview = document.getElementById("preview-frame");
-  let expectedUpdatedAt = form.dataset.updatedAt;
+  const conflictDialog = document.getElementById("draft-conflict-dialog");
+  const unsavedContent = document.getElementById("unsaved-content");
+  let expectedDraftVersion = Number(form.dataset.draftVersion);
   let timer = null;
   let saving = false;
   let queued = false;
   let dirty = false;
   let conflicted = false;
+  let uploading = false;
+  let publishKey = null;
 
   const value = (name) => form.elements.namedItem(name)?.value ?? "";
   const optional = (name) => value(name).trim() || null;
@@ -145,6 +149,21 @@ export const EDITOR_SCRIPT = `
     });
   }
 
+  function showConflict(message) {
+    conflicted = true;
+    unsavedContent.value = JSON.stringify(
+      {
+        contentType: form.dataset.contentType,
+        data: formData(),
+        attributes: attributes(),
+      },
+      null,
+      2
+    );
+    setStatus("Conflict — reload required", message);
+    if (!conflictDialog.open) conflictDialog.showModal();
+  }
+
   const messages = {
     required: "Required before publication.",
     too_long: "Too long.",
@@ -158,6 +177,7 @@ export const EDITOR_SCRIPT = `
     malformed_slug: "Use lowercase letters, numbers, and single hyphens.",
     reserved_slug: "This address is reserved.",
     duplicate_slug: "This address is already in use.",
+    historical_route_reserved: "This former address belongs to another Content item.",
     invalid_display_order: "Enter a whole number of zero or greater.",
     invalid_date: "Enter a real date in YYYY-MM-DD form.",
     future_publication_date: "Future publication dates are not scheduled.",
@@ -259,19 +279,15 @@ export const EDITOR_SCRIPT = `
           body: JSON.stringify({
             data: formData(),
             attributes: attributes(),
-            expectedUpdatedAt,
+            expectedDraftVersion,
           }),
         }
       );
       const body = await response.json();
 
       if (response.status === 409) {
-        conflicted = true;
         showFindings([]);
-        setStatus(
-          "Conflict — reload required",
-          "Content changed elsewhere. Reload before saving again."
-        );
+        showConflict("Content draft changed elsewhere. Reload before saving again.");
         return;
       }
       if (response.status === 422) {
@@ -286,8 +302,9 @@ export const EDITOR_SCRIPT = `
         return;
       }
 
-      expectedUpdatedAt = body.draft.updatedAt;
+      expectedDraftVersion = body.draft.draftVersion;
       form.dataset.updatedAt = body.draft.updatedAt;
+      form.dataset.draftVersion = String(body.draft.draftVersion);
       dirty = false;
       showFindings(body.draft.publishFindings);
       const slugChanged =
@@ -350,6 +367,229 @@ export const EDITOR_SCRIPT = `
     save();
   });
 
+  const changeUrlDialog = document.getElementById("change-url-dialog");
+  const changeUrlValue = document.getElementById("change-url-value");
+  form.querySelector("[data-change-url]")?.addEventListener("click", () => {
+    changeUrlValue.value = value("slug");
+    changeUrlDialog.showModal();
+    changeUrlValue.focus();
+    changeUrlValue.select();
+  });
+  document.getElementById("confirm-change-url")?.addEventListener("click", () => {
+    const slug = form.elements.namedItem("slug");
+    slug.readOnly = false;
+    slug.value = changeUrlValue.value;
+    changeUrlDialog.close();
+    setStatus(
+      "URL change pending",
+      "New route added to the Content draft; it remains private until publication"
+    );
+    slug.dispatchEvent(new Event("input", { bubbles: true }));
+    slug.focus();
+  });
+
+  document.getElementById("copy-unsaved-content")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(unsavedContent.value);
+      setStatus("Unsaved text copied", "Unsaved Content draft values copied");
+    } catch {
+      unsavedContent.focus();
+      unsavedContent.select();
+      setStatus("Select and copy the text", "Clipboard access was unavailable");
+    }
+  });
+  document.getElementById("reload-latest-draft")?.addEventListener("click", () => {
+    dirty = false;
+    window.location.reload();
+  });
+
+  form.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-media-upload-button]");
+    if (!button || uploading) return;
+    const upload = button.closest("[data-media-upload]");
+    const fileInput = upload.querySelector("[data-media-file]");
+    const uploadStatus = upload.querySelector("[data-media-upload-status]");
+    const file = fileInput.files?.[0];
+    if (!file) {
+      uploadStatus.textContent = "Choose an image first.";
+      fileInput.focus();
+      return;
+    }
+
+    uploading = true;
+    button.disabled = true;
+    uploadStatus.textContent = "Uploading…";
+    setStatus("Uploading image", "Uploading image");
+    const body = new FormData();
+    body.append("file", file);
+
+    try {
+      const response = await fetch("/admin/api/media", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "X-CSRF-Token": csrf },
+        body,
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        uploadStatus.textContent =
+          result.error === "file_too_large"
+            ? "That image is too large."
+            : result.error === "unsupported_image_format" ||
+                result.error === "content_type_mismatch"
+              ? "Choose a valid JPEG, PNG, or WebP image."
+              : "Upload failed. Try again.";
+        setStatus("Upload failed", uploadStatus.textContent);
+        return;
+      }
+
+      const assetLabel = result.originalFilename || "New image";
+      form.querySelectorAll('select[name$=".mediaAssetId"]').forEach((select) => {
+        if (!Array.from(select.options).some((option) => option.value === result.id)) {
+          select.add(new Option(assetLabel, result.id));
+        }
+      });
+      const target = form.elements.namedItem(button.dataset.mediaTarget);
+      target.value = result.id;
+      target.dispatchEvent(new Event("change", { bubbles: true }));
+      fileInput.value = "";
+      uploadStatus.textContent = "Uploaded and selected. Saving draft…";
+      setStatus("Image uploaded · saving", "Image uploaded and selected; saving draft");
+    } catch {
+      uploadStatus.textContent = "Upload failed. Check the connection and try again.";
+      setStatus("Upload failed", uploadStatus.textContent);
+    } finally {
+      uploading = false;
+      button.disabled = false;
+    }
+  });
+
+  document.getElementById("publish-content")?.addEventListener("click", async (event) => {
+    if (dirty || saving || uploading) {
+      setStatus("Save before publishing", "Save the current draft before publishing");
+      if (dirty && !saving) save();
+      return;
+    }
+    const button = event.currentTarget;
+    button.disabled = true;
+    publishKey ||= crypto.randomUUID();
+    setStatus("Publishing", "Publishing draft");
+    try {
+      const response = await fetch(
+        "/admin/api/content/" + encodeURIComponent(form.dataset.contentId) + "/publish",
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
+          body: JSON.stringify({
+            expectedDraftVersion,
+            idempotencyKey: publishKey,
+          }),
+        }
+      );
+      const result = await response.json();
+      if (response.ok) {
+        publishKey = null;
+        dirty = false;
+        setStatus("Published", "Published revision created");
+        window.location.reload();
+        return;
+      }
+      if (response.status < 500) publishKey = null;
+      if (response.status === 422) {
+        showFindings(result.findings);
+        setStatus("Cannot publish yet", "Fix the publication requirements first");
+      } else if (result.error === "no_changes_to_publish") {
+        setStatus("Already published", "There are no new changes to publish");
+      } else if (result.error === "publication_disabled_until_sealed") {
+        setStatus("Publishing locked", "Publishing unlocks after database cutover");
+      } else if (response.status === 409) {
+        showConflict("Content draft changed elsewhere. Reload before publishing.");
+      } else {
+        setStatus("Publish failed — retry available", "Publication failed; retry with the same request");
+      }
+    } catch {
+      setStatus("Publish interrupted — retry available", "Publication response was interrupted; retry is safe");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  const historyDialog = document.getElementById("publication-history");
+  const historyList = document.getElementById("publication-history-list");
+  document.getElementById("view-history")?.addEventListener("click", async () => {
+    historyList.replaceChildren();
+    const loading = document.createElement("p");
+    loading.textContent = "Loading history…";
+    historyList.append(loading);
+    historyDialog.showModal();
+    try {
+      const response = await fetch(
+        "/admin/api/content/" + encodeURIComponent(form.dataset.contentId) + "/history",
+        { credentials: "same-origin" }
+      );
+      const result = await response.json();
+      historyList.replaceChildren();
+      if (!response.ok || !result.revisions?.length) {
+        const empty = document.createElement("p");
+        empty.textContent = response.ok ? "No published revisions yet." : "History could not be loaded.";
+        historyList.append(empty);
+        return;
+      }
+      const list = document.createElement("ol");
+      result.revisions.forEach((revision) => {
+        const item = document.createElement("li");
+        const details = document.createElement("span");
+        details.textContent =
+          "Revision " + revision.revisionNumber + " · " +
+          new Date(revision.publishedAt).toLocaleString() +
+          (revision.note ? " · " + revision.note : "");
+        const restore = document.createElement("button");
+        restore.type = "button";
+        restore.textContent = "Restore to draft";
+        restore.dataset.restoreRevision = revision.id;
+        item.append(details, restore);
+        list.append(item);
+      });
+      historyList.append(list);
+    } catch {
+      historyList.textContent = "History could not be loaded.";
+    }
+  });
+  historyList?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-restore-revision]");
+    if (!button) return;
+    button.disabled = true;
+    try {
+      const response = await fetch(
+        "/admin/api/content/" + encodeURIComponent(form.dataset.contentId) + "/restore",
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
+          body: JSON.stringify({
+            revisionId: button.dataset.restoreRevision,
+            expectedDraftVersion,
+          }),
+        }
+      );
+      if (response.ok) {
+        dirty = false;
+        window.location.reload();
+        return;
+      }
+      if (response.status === 409) {
+        showConflict("Content draft changed elsewhere. Reload before restoring.");
+      } else {
+        setStatus("Restore refused — reload required", "Revision restore was refused");
+      }
+    } catch {
+      setStatus("Restore failed", "Revision restore failed");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
   const links = document.getElementById("social-links");
   document.getElementById("add-social-link")?.addEventListener("click", () => {
     const template = document.getElementById("social-link-template");
@@ -405,7 +645,7 @@ export const EDITOR_SCRIPT = `
   }
 
   window.addEventListener("beforeunload", (event) => {
-    if (!dirty && !saving) return;
+    if (!dirty && !saving && !uploading) return;
     event.preventDefault();
     event.returnValue = "";
   });

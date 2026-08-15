@@ -20,6 +20,7 @@ import { openDatabase } from "../database/connection";
 import { runMigrations } from "../database/migrator";
 import { ContentRepository } from "../database/contentRepository";
 import { MediaRepository } from "../database/mediaRepository";
+import { PublicationRepository } from "../database/publicationRepository";
 import { SINGLETON_IDS, importedContentId } from "../content/identity";
 
 export const FIXTURE_CLOUD_NAME = "fixture-cloud";
@@ -205,4 +206,34 @@ export function seedSite(
   }
 
   return { portraitId, logoId, sharingId, cardId };
+}
+
+/** Publishes every fixture Content item as an immutable migration baseline. */
+export function seedPublishedRevisions(
+  database: Database,
+  now = new Date("2026-08-01T12:00:00.000Z")
+): void {
+  const content = new ContentRepository(database);
+  const publication = new PublicationRepository(database);
+  for (const type of [
+    "home",
+    "about",
+    "branding",
+    "project",
+    "blog_post",
+  ] as const) {
+    for (const item of content.list(type)) {
+      publication.seedMigrationRevision(item, now);
+    }
+  }
+}
+
+/** A complete fixture whose Visitor state comes only from Published revisions. */
+export function seedPublishedSite(
+  database: Database,
+  options: SeedOptions = {}
+): ReturnType<typeof seedSite> {
+  const media = seedSite(database, options);
+  seedPublishedRevisions(database);
+  return media;
 }

@@ -42,7 +42,7 @@ async function requestBody(request: Request): Promise<
       ready: true;
       data: unknown;
       attributes: Record<string, unknown> | undefined;
-      expectedUpdatedAt: string;
+      expectedDraftVersion: number;
     }
   | { ready: false; response: Response }
 > {
@@ -55,10 +55,10 @@ async function requestBody(request: Request): Promise<
   if (
     Object.keys(record).some(
       (key) =>
-        key !== "data" && key !== "attributes" && key !== "expectedUpdatedAt"
+        key !== "data" && key !== "attributes" && key !== "expectedDraftVersion"
     ) ||
-    typeof record.expectedUpdatedAt !== "string" ||
-    record.expectedUpdatedAt === "" ||
+    !Number.isInteger(record.expectedDraftVersion) ||
+    Number(record.expectedDraftVersion) < 1 ||
     !("data" in record)
   ) {
     return { ready: false, response: json(400, { error: "invalid_request" }) };
@@ -99,7 +99,7 @@ async function requestBody(request: Request): Promise<
     ready: true,
     data: record.data,
     attributes,
-    expectedUpdatedAt: record.expectedUpdatedAt,
+    expectedDraftVersion: Number(record.expectedDraftVersion),
   };
 }
 
@@ -178,7 +178,7 @@ export async function contentDraftHandler({
       id,
       data: body.data,
       attributes: body.attributes,
-      expectedUpdatedAt: body.expectedUpdatedAt,
+      expectedDraftVersion: body.expectedDraftVersion,
     },
     resolved
   );
@@ -197,7 +197,7 @@ export async function contentDraftHandler({
     case "conflict":
       return json(409, {
         error: "content_conflict",
-        currentUpdatedAt: outcome.currentUpdatedAt,
+        currentDraftVersion: outcome.currentDraftVersion,
       });
     case "not-found":
       return json(404, { error: "content_not_found" });

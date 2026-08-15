@@ -24,6 +24,11 @@ import {
 import { mediaListHandler, mediaUploadHandler } from "../handlers/media";
 import { contentDraftHandler } from "../handlers/contentDraft";
 import { collectionCreateHandler } from "../handlers/collectionLifecycle";
+import {
+  historyHandler,
+  publishHandler,
+  restoreHandler,
+} from "../handlers/publication";
 
 export function setupRoutes(router: Router): void {
   router.addRoute(
@@ -87,6 +92,13 @@ export function setupRoutes(router: Router): void {
     methods: ["GET", "PUT", "DELETE"],
   });
   router.addRoute("/admin/api/content", collectionCreateHandler, {
+    methods: ["POST"],
+  });
+  router.addRoute("/admin/api/content/:id/publish", publishHandler, {
+    methods: ["POST"],
+  });
+  router.addRoute("/admin/api/content/:id/history", historyHandler);
+  router.addRoute("/admin/api/content/:id/restore", restoreHandler, {
     methods: ["POST"],
   });
 }

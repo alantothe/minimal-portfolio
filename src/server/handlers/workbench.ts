@@ -20,6 +20,8 @@ import { applyPrivateHeaders } from "../auth/ownerBoundary";
 import { getDatabase, isDatabaseAvailable } from "../database";
 import { ContentRepository } from "../database/contentRepository";
 import { MediaRepository } from "../database/mediaRepository";
+import { PublicationRepository } from "../database/publicationRepository";
+import { SystemStateRepository } from "../database/repository";
 import { renderPublishedDocument } from "../published/render";
 import { collectEnrichment } from "../published/enrichment";
 import { buildDraftPreviewSnapshot } from "../published/snapshot";
@@ -112,6 +114,7 @@ export async function workbenchHandler({
   } else {
     const content = new ContentRepository(database);
     const media = new MediaRepository(database);
+    const publication = new PublicationRepository(database);
     if (newType) {
       editor = { status: "create", type: newType };
     } else {
@@ -124,6 +127,12 @@ export async function workbenchHandler({
               message:
                 "This Content item has not been imported yet. Run the migration before editing.",
             };
+      if (editor.status === "ready") {
+        editor.publicationEnabled =
+          new SystemStateRepository(database).getCutoverPhase() === "sealed";
+        editor.publishedRevisionNumber =
+          publication.currentRevision(editor.draft.id)?.revisionNumber ?? null;
+      }
     }
   }
 
@@ -137,6 +146,10 @@ export async function workbenchHandler({
       previewRoute,
       csrfToken: resolution.session.csrfToken,
       editor,
+      publishedRevision:
+        editor.status === "ready"
+          ? (editor.publishedRevisionNumber ?? null)
+          : null,
     })
   );
 }

@@ -42,6 +42,7 @@ export interface WorkbenchView {
   previewRoute: string;
   csrfToken: string;
   editor: EditorPanel;
+  publishedRevision?: number | null;
 }
 
 /**
@@ -283,6 +284,15 @@ textarea { min-height: 7rem; resize: vertical; }
   border-radius: 0.35rem;
   background: var(--surface-sunken);
 }
+.media-upload {
+  margin: 0.85rem 0;
+  padding: 0.85rem;
+  border: 1px dashed var(--line);
+  border-radius: 0.55rem;
+}
+.media-upload input[type="file"] { display: block; margin-top: 0.45rem; max-width: 100%; }
+.media-upload button { margin-top: 0.65rem; }
+.media-upload-status { display: inline-block; margin-left: 0.55rem; color: var(--muted); font-size: 0.78rem; }
 .media-field label + .field-finding + label { display: block; margin-top: 0.7rem; }
 .social-link-row, .technology-row {
   display: grid;
@@ -519,7 +529,7 @@ export function renderWorkbench(view: WorkbenchView): string {
   <div>
     <dl>
       <div><dt>Content draft</dt><dd id="draft-status">${escapeHtml(draftStatusMessage(view.draftStatus))}</dd></div>
-      <div><dt>Published revision</dt><dd>None yet</dd></div>
+      <div><dt>Published revision</dt><dd>${view.publishedRevision ? `Revision ${view.publishedRevision}` : "None yet"}</dd></div>
       <div><dt>Preview generation</dt><dd id="preview-generation">${escapeHtml(previewGenerationMessage(view))}</dd></div>
     </dl>
     <form method="post" action="/admin/logout" id="signout">

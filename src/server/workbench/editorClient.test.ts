@@ -11,9 +11,19 @@ describe("Content editor browser script", () => {
   test("sends authenticated optimistic autosaves", () => {
     expect(EDITOR_SCRIPT).toContain('method: "PUT"');
     expect(EDITOR_SCRIPT).toContain('"X-CSRF-Token": csrf');
-    expect(EDITOR_SCRIPT).toContain("expectedUpdatedAt");
+    expect(EDITOR_SCRIPT).toContain("expectedDraftVersion");
     expect(EDITOR_SCRIPT).toContain("response.status === 409");
     expect(EDITOR_SCRIPT).toContain("form.dataset.publishFindings");
+    expect(EDITOR_SCRIPT).toContain('getElementById("draft-conflict-dialog")');
+    expect(EDITOR_SCRIPT).toContain("navigator.clipboard.writeText");
+    expect(EDITOR_SCRIPT).toContain('getElementById("reload-latest-draft")');
+  });
+
+  test("requires confirmation before editing a published Public route", () => {
+    expect(EDITOR_SCRIPT).toContain('getElementById("change-url-dialog")');
+    expect(EDITOR_SCRIPT).toContain('getElementById("confirm-change-url")');
+    expect(EDITOR_SCRIPT).toContain("changeUrlDialog.showModal()");
+    expect(EDITOR_SCRIPT).toContain("URL change pending");
   });
 
   test("serializes collection metadata and keyboard ordering controls", () => {

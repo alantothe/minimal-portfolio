@@ -17,6 +17,7 @@ import { resolveDatabaseFile } from "./config";
 import { openDatabase } from "./connection";
 import { checkDatabaseHealth, type DatabaseHealth } from "./health";
 import { runMigrations } from "./migrator";
+import { PublicationRepository } from "./publicationRepository";
 
 interface DatabaseState {
   database: Database | null;
@@ -40,12 +41,18 @@ export function initializeDatabase(): DatabaseHealth {
   try {
     const database = openDatabase(file);
     const outcome = runMigrations(database);
+    const baselines = new PublicationRepository(
+      database
+    ).reconcileUneditedImportedBaselines();
     state = { database, file, error: null };
 
     if (outcome.applied.length > 0) {
       console.log(
         `[database] applied migration(s): ${outcome.applied.join(", ")}`
       );
+    }
+    if (baselines > 0) {
+      console.log(`[database] seeded ${baselines} publication baseline(s)`);
     }
   } catch (error) {
     state = { database: null, file, error: message(error) };

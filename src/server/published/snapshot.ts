@@ -27,6 +27,7 @@ import {
   type ContentItem,
 } from "../database/contentRepository";
 import { MediaRepository, type MediaAsset } from "../database/mediaRepository";
+import { PublicationRepository } from "../database/publicationRepository";
 import { parseContentData } from "../content/schema";
 import type {
   AboutContent,
@@ -48,6 +49,7 @@ import { renderMedia } from "../media/delivery";
 import { resolveMediaConfig, type MediaVariant } from "../media/config";
 import { BLOG_PAGE_SIZE, PROJECT_PAGE_SIZE } from "../services/collectionPages";
 import { toInlineHtml } from "./inlineCopy";
+import { stableStringify } from "../content/stableJson";
 
 /**
  * Which variant each role renders at.
@@ -175,6 +177,8 @@ export interface SiteSnapshot {
   readonly projectPageSize: number;
   /** Every canonical route this generation answers, in sitemap order. */
   readonly routes: readonly string[];
+  /** Former collection routes mapped directly to their current canonical URL. */
+  readonly redirects: Readonly<Record<string, string>>;
 }
 
 export type SnapshotBuild =
@@ -525,22 +529,6 @@ function computeGeneration(items: ContentItem[], assets: MediaAsset[]): string {
   return hash.digest("hex").slice(0, 32);
 }
 
-/** Key order belongs to whoever built the object, not to the content. */
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== "object") {
-    return JSON.stringify(value) ?? "null";
-  }
-
-  if (Array.isArray(value)) {
-    return `[${value.map(stableStringify).join(",")}]`;
-  }
-
-  return `{${Object.entries(value as Record<string, unknown>)
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([key, entry]) => `${JSON.stringify(key)}:${stableStringify(entry)}`)
-    .join(",")}}`;
-}
-
 function collectionRoutes(
   basePath: "/blog" | "/projects",
   itemCount: number,
@@ -577,20 +565,25 @@ function buildSnapshot(
 ): SnapshotBuild {
   const content = new ContentRepository(database);
   const media = new MediaRepository(database);
+  const publication = new PublicationRepository(database);
   const findings: Finding[] = [];
 
   let items: ContentItem[];
   let assetList: MediaAsset[];
+  let redirects: Record<string, string>;
 
   try {
-    ({ items, assetList } = database.transaction(() => {
-      const loaded = [
-        ...content.list("home"),
-        ...content.list("about"),
-        ...content.list("branding"),
-        ...content.list("project"),
-        ...content.list("blog_post"),
-      ];
+    ({ items, assetList, redirects } = database.transaction(() => {
+      const loaded =
+        validationMode === "publish"
+          ? publication.listPublishedContent()
+          : [
+              ...content.list("home"),
+              ...content.list("about"),
+              ...content.list("branding"),
+              ...content.list("project"),
+              ...content.list("blog_post"),
+            ];
 
       const assets: MediaAsset[] = [];
       for (const id of collectMediaIds(loaded)) {
@@ -598,7 +591,12 @@ function buildSnapshot(
         if (asset) assets.push(asset);
       }
 
-      return { items: loaded, assetList: assets };
+      return {
+        items: loaded,
+        assetList: assets,
+        redirects:
+          validationMode === "publish" ? publication.routeRedirects() : {},
+      };
     })());
   } catch (cause) {
     // An unsupported schema version is the expected shape of this failure and
@@ -671,10 +669,20 @@ function buildSnapshot(
   const publishedHome = buildHome(home, context);
   const publishedAbout = buildAbout(about, context);
   const publishedBranding = buildBranding(branding, context);
-  const projects = byType("project").map((item) => buildProject(item, context));
-  const blogPosts = byType("blog_post").map((item) =>
-    buildBlogPost(item, context)
-  );
+  const projects = byType("project")
+    .sort(
+      (a, b) =>
+        (a.displayOrder ?? -1) - (b.displayOrder ?? -1) ||
+        a.createdAt.localeCompare(b.createdAt)
+    )
+    .map((item) => buildProject(item, context));
+  const blogPosts = byType("blog_post")
+    .sort(
+      (a, b) =>
+        (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "") ||
+        b.createdAt.localeCompare(a.createdAt)
+    )
+    .map((item) => buildBlogPost(item, context));
 
   // A duplicate route would make `resolve` non-deterministic, which the unique
   // index should already prevent. Checked because the cost of being wrong is a
@@ -717,6 +725,7 @@ function buildSnapshot(
         ])
       )
     ),
+    redirects: Object.freeze(redirects),
   });
 
   return { status: "built", snapshot };

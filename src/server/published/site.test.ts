@@ -13,7 +13,13 @@ import { rmSync } from "node:fs";
 import { buildSiteSnapshot, type SnapshotBuild } from "./snapshot";
 import { PublishedSite } from "./site";
 import { parseTarget, parsePageParameter, canonicalRouteFor } from "./target";
-import { FIXTURE_CLOUD_NAME, migratedDatabase, seedSite } from "./fixtures";
+import {
+  FIXTURE_CLOUD_NAME,
+  migratedDatabase,
+  seedPublishedSite,
+} from "./fixtures";
+import { ContentRepository } from "../database/contentRepository";
+import { PublicationRepository } from "../database/publicationRepository";
 
 const directories: string[] = [];
 
@@ -65,10 +71,30 @@ function url(path: string): URL {
   return new URL(path, "https://example.test");
 }
 
+function publishChangedAboutFixture(db: Database): void {
+  const content = new ContentRepository(db);
+  const about = content.findSingleton("about")!;
+  const changed = content.update(
+    about.id,
+    {
+      data: {
+        ...(about.data as Record<string, unknown>),
+        introMarkdown: "Changed published introduction.",
+      },
+    },
+    "owner",
+    new Date("2026-08-14T12:00:00.000Z")
+  )!;
+  new PublicationRepository(db).seedMigrationRevision(
+    changed,
+    new Date("2026-08-14T12:01:00.000Z")
+  );
+}
+
 describe("resolving a target", () => {
   test("returns the page for each public route", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
 
     for (const path of [
@@ -86,7 +112,7 @@ describe("resolving a target", () => {
 
   test("carries the generation and an etag seed with the page", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
 
     const resolution = site.resolveUrl(url("/about"));
@@ -100,7 +126,7 @@ describe("resolving a target", () => {
 
   test("every representation of a page describes one generation", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
 
     const generations = new Set(
@@ -115,7 +141,7 @@ describe("resolving a target", () => {
 
   test("a missing slug is a not-found, and says which generation proved it", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
 
     const resolution = site.resolveUrl(url("/blog/does-not-exist"));
@@ -127,7 +153,7 @@ describe("resolving a target", () => {
 
   test("a collection page past the end is a not-found", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
 
     expect(site.resolveUrl(url("/blog?page=99"))?.outcome).toBe("not-found");
@@ -135,7 +161,7 @@ describe("resolving a target", () => {
 
   test("page one of an empty collection still exists", () => {
     const db = database();
-    seedSite(db, { blogPosts: [] });
+    seedPublishedSite(db, { blogPosts: [] });
     const site = readySite(db);
 
     // It is in the sitemap and the nav. 404ing it would break a promised link.
@@ -144,7 +170,7 @@ describe("resolving a target", () => {
 
   test("routes this module does not own are not its to answer", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
 
     // A 404 here would let a routing mistake read as missing content.
@@ -156,7 +182,7 @@ describe("resolving a target", () => {
 describe("redirects", () => {
   test("a moved route answers with its current address before any lookup", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
 
     const resolution = site.resolveUrl(url("/home"));
@@ -181,7 +207,7 @@ describe("redirects", () => {
 describe("degradation", () => {
   test("a cold start with no generation is unavailable, never a 404", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const { site, fail } = controllableSite(db);
 
     fail();
@@ -195,7 +221,7 @@ describe("degradation", () => {
 
   test("a warm process keeps serving after storage goes away", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const { site, fail } = controllableSite(db);
 
     site.refresh();
@@ -213,14 +239,15 @@ describe("degradation", () => {
 
   test("an invalid candidate cannot poison the active generation", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
     const generation = site.state().generation;
 
-    // Break the stored content the way a bad publish would.
-    db.query("UPDATE content_items SET schema_version = 99 WHERE id = ?").run(
-      "singleton:home"
-    );
+    // Losing a current immutable pointer must reject the candidate rather than
+    // falling back to the private draft row.
+    db.query(
+      "UPDATE content_items SET current_published_revision_id = NULL WHERE id = ?"
+    ).run("singleton:home");
 
     const outcome = site.refresh();
 
@@ -231,7 +258,7 @@ describe("degradation", () => {
 
   test("recovering re-activates and clears the degraded status", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const { site, fail, recover } = controllableSite(db);
 
     site.refresh();
@@ -247,7 +274,7 @@ describe("degradation", () => {
 
   test("a failure is reported without being able to serve it", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const { site, fail } = controllableSite(db);
 
     fail("volume not mounted");
@@ -267,7 +294,7 @@ describe("degradation", () => {
   // serves.
   test("the underlying error text never reaches a finding code", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const { site, fail } = controllableSite(db);
 
     fail(
@@ -286,7 +313,7 @@ describe("degradation", () => {
 describe("activation", () => {
   test("an unchanged generation is not re-activated", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
 
     const outcome = site.refresh();
@@ -298,13 +325,11 @@ describe("activation", () => {
 
   test("changed content activates a new generation", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
     const before = site.state().generation;
 
-    db.query(
-      "UPDATE content_items SET updated_at = '2099-01-01T00:00:00.000Z' WHERE id = ?"
-    ).run("singleton:about");
+    publishChangedAboutFixture(db);
 
     expect(site.refresh().status).toBe("activated");
     expect(site.state().generation).not.toBe(before);
@@ -312,12 +337,11 @@ describe("activation", () => {
 
   test("the whole site moves to the new generation at once", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
+    const before = site.state().generation;
 
-    db.query(
-      "UPDATE content_items SET updated_at = '2099-01-01T00:00:00.000Z' WHERE id = ?"
-    ).run("singleton:about");
+    publishChangedAboutFixture(db);
     site.refresh();
 
     const generations = ["/", "/about", "/blog", "/projects"].map((path) => {
@@ -326,13 +350,14 @@ describe("activation", () => {
     });
 
     expect(new Set(generations).size).toBe(1);
+    expect(generations[0]).not.toBe(before);
   });
 });
 
 describe("discovery", () => {
   test("returns the canonical routes of the active generation", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const site = readySite(db);
 
     const manifest = site.discovery();
@@ -354,7 +379,7 @@ describe("discovery", () => {
 
   test("every discovered route resolves", () => {
     const db = database();
-    seedSite(db, {
+    seedPublishedSite(db, {
       blogPosts: Array.from({ length: 5 }, (_, index) => ({
         slug: `post-${index}`,
         date: `2026-01-0${index + 1}`,

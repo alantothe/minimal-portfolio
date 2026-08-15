@@ -301,9 +301,7 @@ class SPARouter {
     await this.switchPage(page, 1);
   }
 
-  /**
-   * Fetch a page fragment on first navigation, then switch cached containers.
-   */
+  /** Revalidate database-backed pages; retain legacy navigation until cutover. */
   async switchPage(pageName, pageNumber = 1) {
     this.isNavigating = true;
     try {
@@ -314,12 +312,16 @@ class SPARouter {
 
       const cacheKey = pageCacheKey(pageName, pageNumber);
       const cachedPage = this.pagesData[cacheKey];
+      const publishedSite = Boolean(
+        document.documentElement.dataset.publicationGeneration
+      );
       const pageData =
-        pageContainer.dataset.loaded === "true" &&
-        Number(pageContainer.dataset.pageNumber || 1) === pageNumber &&
-        cachedPage?.seo
-          ? cachedPage
-          : await this.loadPage(pageName, pageContainer, pageNumber);
+        publishedSite ||
+        pageContainer.dataset.loaded !== "true" ||
+        Number(pageContainer.dataset.pageNumber || 1) !== pageNumber ||
+        !cachedPage?.seo
+          ? await this.loadPage(pageName, pageContainer, pageNumber)
+          : cachedPage;
 
       await this.updatePageCSS(pageData.pageCSS);
 

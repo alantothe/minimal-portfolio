@@ -5,10 +5,11 @@ import { serverConfig, getServerUrl } from "./core/config";
 import { syncViewsWithBlogPosts } from "./services/views";
 import { validateProductionSiteUrl } from "./services/seo";
 import { logDevelopmentWorkflowBanner } from "./core/developmentWorkflow";
-import { initializeDatabase } from "./database";
+import { getDatabase, initializeDatabase } from "./database";
 import { initializePublishedSite } from "./published/lifecycle";
 import { validateAuthConfigAtStartup } from "./auth/config";
 import { validateMediaConfigAtStartup } from "./media/config";
+import { reconcileStartupImportBaselines } from "./content/import/startupBaselines";
 
 const router = new Router();
 setupRoutes(router);
@@ -49,6 +50,7 @@ console.log(
 // above, a failure is reported rather than fatal: during `legacy` the public
 // site is served entirely from repository content.
 if (database.status === "ok") {
+  await reconcileStartupImportBaselines(getDatabase());
   initializePublishedSite();
 }
 

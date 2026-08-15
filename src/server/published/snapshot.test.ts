@@ -18,7 +18,13 @@ import {
   buildSiteSnapshot,
   type SiteSnapshot,
 } from "./snapshot";
-import { FIXTURE_CLOUD_NAME, migratedDatabase, seedSite } from "./fixtures";
+import {
+  FIXTURE_CLOUD_NAME,
+  migratedDatabase,
+  seedPublishedRevisions,
+  seedPublishedSite,
+  seedSite,
+} from "./fixtures";
 
 const directories: string[] = [];
 
@@ -54,7 +60,7 @@ function codes(db: Database): string[] {
 describe("building a generation", () => {
   test("loads every content type into one snapshot", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
 
     const snapshot = built(db);
 
@@ -66,14 +72,14 @@ describe("building a generation", () => {
 
   test("derives the first name rather than storing it", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
 
     expect(built(db).home.firstName).toBe("Ada");
   });
 
   test("orders projects by the owner's display order", () => {
     const db = database();
-    seedSite(db, {
+    seedPublishedSite(db, {
       projects: [
         { slug: "second", order: 2 },
         { slug: "first", order: 1 },
@@ -85,7 +91,7 @@ describe("building a generation", () => {
 
   test("orders blog posts newest first", () => {
     const db = database();
-    seedSite(db, {
+    seedPublishedSite(db, {
       blogPosts: [
         { slug: "older", date: "2025-01-01" },
         { slug: "newer", date: "2026-06-01" },
@@ -97,7 +103,7 @@ describe("building a generation", () => {
 
   test("renders markdown once, at build time", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
 
     const project = built(db).projects[0]!;
 
@@ -109,7 +115,7 @@ describe("building a generation", () => {
 
   test("splits the about featured body into its paragraphs", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
 
     expect(built(db).about.featuredBodyParagraphs).toHaveLength(3);
   });
@@ -118,7 +124,7 @@ describe("building a generation", () => {
 describe("building an owner draft preview", () => {
   test("renders editorially incomplete content that publication refuses", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const repository = new ContentRepository(db);
     repository.update(
       SINGLETON_IDS.home,
@@ -132,7 +138,7 @@ describe("building an owner draft preview", () => {
       "owner"
     );
 
-    expect(buildSiteSnapshot(db).status).toBe("invalid");
+    expect(buildSiteSnapshot(db).status).toBe("built");
     const preview = buildDraftPreviewSnapshot(db);
     expect(preview.status).toBe("built");
     if (preview.status === "built") {
@@ -143,7 +149,7 @@ describe("building an owner draft preview", () => {
 
   test("retains missing slug, display order, and Publication date in preview", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const repository = new ContentRepository(db);
     repository.update(
       importedContentId("project", "questurian"),
@@ -157,29 +163,7 @@ describe("building an owner draft preview", () => {
     );
 
     const publication = buildSiteSnapshot(db);
-    expect(publication.status).toBe("invalid");
-    if (publication.status === "invalid") {
-      expect(publication.findings).toContainEqual({
-        field: `${importedContentId("project", "questurian")}.slug`,
-        code: "required",
-        severity: "error",
-      });
-      expect(publication.findings).toContainEqual({
-        field: `${importedContentId("project", "questurian")}.displayOrder`,
-        code: "required",
-        severity: "error",
-      });
-      expect(publication.findings).toContainEqual({
-        field: `${importedContentId("blog_post", "first-post")}.slug`,
-        code: "required",
-        severity: "error",
-      });
-      expect(publication.findings).toContainEqual({
-        field: `${importedContentId("blog_post", "first-post")}.publishedAt`,
-        code: "required",
-        severity: "error",
-      });
-    }
+    expect(publication.status).toBe("built");
     const preview = buildDraftPreviewSnapshot(db);
     expect(preview.status).toBe("built");
     if (preview.status === "built") {
@@ -195,7 +179,7 @@ describe("building an owner draft preview", () => {
 describe("media", () => {
   test("resolves each role at its own variant", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const snapshot = built(db);
 
     // Portrait fills a square; the card fills the 5:3 box; sharing images are a
@@ -213,7 +197,7 @@ describe("media", () => {
 
   test("builds delivery URLs through the closed variant enum", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
 
     const url = built(db).home.portrait!.url;
 
@@ -224,7 +208,7 @@ describe("media", () => {
 
   test("a page still builds when its image cannot be rendered", () => {
     const db = database();
-    const { portraitId } = seedSite(db);
+    const { portraitId } = seedPublishedSite(db);
 
     db.query("UPDATE media_assets SET status = 'tombstoned' WHERE id = ?").run(
       portraitId
@@ -239,7 +223,7 @@ describe("media", () => {
 
   test("unconfigured media disables images without failing the build", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
 
     const build = buildSiteSnapshot(db, { cloudName: "" });
 
@@ -252,23 +236,23 @@ describe("media", () => {
 describe("refusing to build", () => {
   test("a missing singleton produces no generation at all", () => {
     const db = database();
-    seedSite(db, { omit: ["about"] });
+    seedPublishedSite(db, { omit: ["about"] });
 
     expect(codes(db)).toContain("singleton_missing");
   });
 
-  test("content written by a newer release fails closed", () => {
+  test("a private draft written by a newer release cannot poison public content", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
 
     db.query("UPDATE content_items SET schema_version = 99 WHERE id = ?").run(
       SINGLETON_IDS.home
     );
 
-    expect(codes(db)).toContain("unsupported_schema_version");
+    expect(buildSiteSnapshot(db).status).toBe("built");
   });
 
-  test("content that would not publish blocks the generation", () => {
+  test("content that would not publish blocks a Published generation", () => {
     const db = database();
     seedSite(db);
 
@@ -279,6 +263,7 @@ describe("refusing to build", () => {
       { data: { title: "", summary: "", bodyMarkdown: "" } },
       "import"
     );
+    seedPublishedRevisions(db);
 
     expect(codes(db).length).toBeGreaterThan(0);
   });
@@ -292,6 +277,7 @@ describe("refusing to build", () => {
       { slug: "Bad Slug", displayOrder: -1 },
       "owner"
     );
+    seedPublishedRevisions(db);
 
     expect(codes(db)).toContain("malformed_slug");
     expect(codes(db)).toContain("invalid_display_order");
@@ -299,26 +285,41 @@ describe("refusing to build", () => {
 
   test("nothing is returned alongside findings", () => {
     const db = database();
-    seedSite(db, { omit: ["home"] });
+    seedPublishedSite(db, { omit: ["home"] });
 
     const build = buildSiteSnapshot(db, { cloudName: FIXTURE_CLOUD_NAME });
 
     expect(build.status).toBe("invalid");
     expect(build).not.toHaveProperty("snapshot");
   });
+
+  test("private drafts never become a Published generation implicitly", () => {
+    const db = database();
+    seedSite(db);
+
+    const build = buildSiteSnapshot(db, { cloudName: FIXTURE_CLOUD_NAME });
+
+    expect(build.status).toBe("invalid");
+    expect(build).not.toHaveProperty("snapshot");
+    if (build.status === "invalid") {
+      expect(build.findings.map((finding) => finding.code)).toContain(
+        "singleton_missing"
+      );
+    }
+  });
 });
 
 describe("generation identity", () => {
   test("the same content produces the same generation twice", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
 
     expect(built(db).generation).toBe(built(db).generation);
   });
 
-  test("editing content changes the generation", () => {
+  test("editing a private draft does not change the Published generation", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const before = built(db).generation;
 
     new ContentRepository(db).update(
@@ -327,12 +328,12 @@ describe("generation identity", () => {
       "owner"
     );
 
-    expect(built(db).generation).not.toBe(before);
+    expect(built(db).generation).toBe(before);
   });
 
   test("replacing an image changes the generation", () => {
     const db = database();
-    const { portraitId } = seedSite(db);
+    const { portraitId } = seedPublishedSite(db);
     const before = built(db).generation;
 
     db.query(
@@ -348,7 +349,7 @@ describe("generation identity", () => {
 describe("route manifest", () => {
   test("lists every canonical route once, with page one unsuffixed", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
 
     const routes = built(db).routes;
 
@@ -363,7 +364,7 @@ describe("route manifest", () => {
 
   test("adds a page for each additional collection page", () => {
     const db = database();
-    seedSite(db, {
+    seedPublishedSite(db, {
       blogPosts: Array.from({ length: 5 }, (_, index) => ({
         slug: `post-${index}`,
         date: `2026-01-0${index + 1}`,

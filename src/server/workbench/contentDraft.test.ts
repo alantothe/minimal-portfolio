@@ -96,7 +96,7 @@ describe("saving a Content draft", () => {
       {
         id: SINGLETON_IDS.home,
         data,
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );
@@ -124,7 +124,7 @@ describe("saving a Content draft", () => {
       {
         id: SINGLETON_IDS.home,
         data: { ...current.draft.data, displayName: "" },
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );
@@ -151,7 +151,7 @@ describe("saving a Content draft", () => {
           ...current.draft.data,
           socialLinks: [{ label: "New profile", url: "" }],
         },
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );
@@ -178,7 +178,7 @@ describe("saving a Content draft", () => {
       {
         id: SINGLETON_IDS.home,
         data: { ...current.draft.data, bioMarkdown: "<script>x</script>" },
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );
@@ -202,7 +202,7 @@ describe("saving a Content draft", () => {
           ...current.draft.data,
           portrait: { mediaAssetId: "not-an-asset", alt: "Portrait" },
         },
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );
@@ -219,10 +219,11 @@ describe("saving a Content draft", () => {
     const { dependencies } = setup();
     const current = readContentDraft(SINGLETON_IDS.home, dependencies);
     if (current.status !== "found") throw new Error("missing fixture");
-    dependencies.content.update(
+    dependencies.content.updateIfDraftVersion(
       SINGLETON_IDS.home,
       { data: current.draft.data },
       "owner",
+      current.draft.draftVersion,
       new Date("2026-08-14T20:00:00.000Z")
     );
 
@@ -230,14 +231,14 @@ describe("saving a Content draft", () => {
       {
         id: SINGLETON_IDS.home,
         data: current.draft.data,
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );
 
     expect(outcome).toEqual({
       status: "conflict",
-      currentUpdatedAt: "2026-08-14T20:00:00.000Z",
+      currentDraftVersion: 2,
     });
   });
 
@@ -251,7 +252,7 @@ describe("saving a Content draft", () => {
         id: PROJECT_ID,
         data: { ...current.draft.data, title: "Questurian Next" },
         attributes: { slug: "questurian-next", displayOrder: 7 },
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );
@@ -274,7 +275,7 @@ describe("saving a Content draft", () => {
         id: PROJECT_ID,
         data: current.draft.data,
         attributes: { slug: "", displayOrder: null },
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );
@@ -306,7 +307,7 @@ describe("saving a Content draft", () => {
         id: PROJECT_ID,
         data: current.draft.data,
         attributes: { slug: "minimal-portfolio", displayOrder: 1 },
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );
@@ -331,7 +332,7 @@ describe("saving a Content draft", () => {
           displayOrder: 1,
           publishedAt: "2026-01-01",
         },
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );
@@ -358,7 +359,7 @@ describe("saving a Content draft", () => {
         id: BLOG_POST_ID,
         data: current.draft.data,
         attributes: { slug: "first-post", publishedAt: "2999-01-01" },
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );
@@ -388,7 +389,7 @@ describe("saving a Content draft", () => {
           slug: "updated-post",
           publishedAt: "2026-02-01",
         },
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
       },
       dependencies
     );

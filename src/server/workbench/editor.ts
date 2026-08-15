@@ -15,7 +15,13 @@ import { escapeHtml } from "./html";
 import { isSingletonType, type CollectionType } from "../content/identity";
 
 export type EditorPanel =
-  | { status: "ready"; draft: DraftRecord; media: MediaAsset[] }
+  | {
+      status: "ready";
+      draft: DraftRecord;
+      media: MediaAsset[];
+      publicationEnabled?: boolean;
+      publishedRevisionNumber?: number | null;
+    }
   | { status: "create"; type: CollectionType }
   | { status: "missing"; message: string };
 
@@ -31,7 +37,12 @@ function input(
   name: string,
   label: string,
   value: string,
-  options: { type?: string; hint?: string; autocomplete?: string } = {}
+  options: {
+    type?: string;
+    hint?: string;
+    autocomplete?: string;
+    readOnly?: boolean;
+  } = {}
 ): string {
   const id = `field-${name.replaceAll(".", "-")}`;
   const hint = options.hint
@@ -43,11 +54,12 @@ function input(
   const autocomplete = options.autocomplete
     ? ` autocomplete="${escapeHtml(options.autocomplete)}"`
     : "";
+  const readOnly = options.readOnly ? " readonly" : "";
 
   return `<div class="field">
   <label class="field-label" for="${id}">${escapeHtml(label)}</label>
   ${hint}
-  <input id="${id}" name="${escapeHtml(name)}" type="${escapeHtml(options.type ?? "text")}" value="${escapeHtml(value)}" data-field="${escapeHtml(name)}" aria-describedby="${describedBy}"${autocomplete}>
+  <input id="${id}" name="${escapeHtml(name)}" type="${escapeHtml(options.type ?? "text")}" value="${escapeHtml(value)}" data-field="${escapeHtml(name)}" aria-describedby="${describedBy}"${autocomplete}${readOnly}>
   ${finding(name)}
 </div>`;
 }
@@ -92,6 +104,15 @@ function mediaField(
     </select>
   </label>
   ${finding(`${name}.mediaAssetId`)}
+  <div class="media-upload" data-media-upload>
+    <label for="${id}-upload">
+      <span class="field-label">Upload a new image</span>
+      <span class="field-hint">JPEG, PNG, or WebP. The new image is selected here after upload.</span>
+      <input id="${id}-upload" type="file" accept="image/jpeg,image/png,image/webp" data-media-file>
+    </label>
+    <button type="button" class="quiet" data-media-upload-button data-media-target="${escapeHtml(name)}.mediaAssetId">Upload image</button>
+    <span class="media-upload-status" data-media-upload-status></span>
+  </div>
   <label for="${id}-alt">
     <span class="field-label">Alt text</span>
     <span class="field-hint" id="${id}-alt-hint">Describe this use of the image. Required before publication.</span>
@@ -227,7 +248,8 @@ function technologyRow(value: string, index?: number): string {
 function projectFields(
   draft: DraftRecord,
   data: ProjectContent,
-  assets: MediaAsset[]
+  assets: MediaAsset[],
+  published: boolean
 ): string {
   const technologies = data.technologies
     .map((technology, index) => technologyRow(technology, index))
@@ -259,7 +281,8 @@ function projectFields(
 </fieldset>
 <fieldset>
   <legend>Metadata</legend>
-  ${input("slug", "Public route slug", draft.slug ?? "", { hint: "Controls the Project's Public route. Title edits never change it automatically." })}
+  ${input("slug", "Public route slug", draft.slug ?? "", { hint: published ? "A changed route stays private until publication. Former routes redirect permanently." : "Controls the Project's first Public route. Title edits never change it automatically.", readOnly: published })}
+  ${published ? '<button type="button" class="quiet" data-change-url>Change URL</button>' : ""}
   ${input("displayOrder", "Display order", String(draft.displayOrder ?? ""), { type: "number", hint: "Lower numbers appear first." })}
   ${seoFields(data.seo, assets)}
 </fieldset>`;
@@ -268,7 +291,8 @@ function projectFields(
 function blogPostFields(
   draft: DraftRecord,
   data: BlogPostContent,
-  assets: MediaAsset[]
+  assets: MediaAsset[],
+  published: boolean
 ): string {
   return `<fieldset>
   <legend>Content</legend>
@@ -282,7 +306,8 @@ function blogPostFields(
 </fieldset>
 <fieldset>
   <legend>Metadata</legend>
-  ${input("slug", "Public route slug", draft.slug ?? "", { hint: "Controls the Blog post's Public route. Title edits never change it automatically." })}
+  ${input("slug", "Public route slug", draft.slug ?? "", { hint: published ? "A changed route stays private until publication. Former routes redirect permanently." : "Controls the Blog post's first Public route. Title edits never change it automatically.", readOnly: published })}
+  ${published ? '<button type="button" class="quiet" data-change-url>Change URL</button>' : ""}
   ${input("publishedAt", "Publication date", draft.publishedAt ?? "", { type: "date", hint: "YYYY-MM-DD. Future dates are not scheduled." })}
   ${seoFields(data.seo, assets)}
 </fieldset>`;
@@ -302,10 +327,20 @@ function readyPanel(panel: Extract<EditorPanel, { status: "ready" }>): string {
       fields = brandingFields(draft.data as BrandingContent, media);
       break;
     case "project":
-      fields = projectFields(draft, draft.data as ProjectContent, media);
+      fields = projectFields(
+        draft,
+        draft.data as ProjectContent,
+        media,
+        Boolean(panel.publishedRevisionNumber)
+      );
       break;
     case "blog_post":
-      fields = blogPostFields(draft, draft.data as BlogPostContent, media);
+      fields = blogPostFields(
+        draft,
+        draft.data as BlogPostContent,
+        media,
+        Boolean(panel.publishedRevisionNumber)
+      );
       break;
   }
 
@@ -318,7 +353,9 @@ function readyPanel(panel: Extract<EditorPanel, { status: "ready" }>): string {
   const deleteLabel =
     collection === "project" ? "Delete Project" : "Delete Blog post";
   const deleteControl = collection
-    ? `<button type="button" id="delete-content">${deleteLabel}</button>`
+    ? panel.publishedRevisionNumber
+      ? `<button type="button" disabled title="Published Content items cannot be deleted">${deleteLabel}</button>`
+      : `<button type="button" id="delete-content">${deleteLabel}</button>`
     : "";
   const deleteDialog = collection
     ? `<dialog id="delete-content-dialog" aria-labelledby="delete-content-heading" aria-describedby="delete-content-description">
@@ -330,8 +367,30 @@ function readyPanel(panel: Extract<EditorPanel, { status: "ready" }>): string {
   </div>
 </dialog>`
     : "";
+  const publishDisabled = panel.publicationEnabled ? "" : " disabled";
+  const publicationMessage = panel.publicationEnabled
+    ? panel.publishedRevisionNumber
+      ? `Published revision ${panel.publishedRevisionNumber}.`
+      : "Not published yet."
+    : "Publishing unlocks after the database cutover is sealed.";
+  const changeUrlDialog =
+    collection && panel.publishedRevisionNumber
+      ? `<dialog id="change-url-dialog" aria-labelledby="change-url-heading" aria-describedby="change-url-description">
+  <h3 id="change-url-heading">Change Public route?</h3>
+  <p id="change-url-description">Changing this address can affect saved links and search results. The current route stays public until you Publish; afterward it redirects permanently to the new route.</p>
+  <div class="field">
+    <label class="field-label" for="change-url-value">New route slug</label>
+    <span class="field-hint">${collection === "project" ? "/projects/" : "/blog/"}</span>
+    <input id="change-url-value" value="${escapeHtml(draft.slug ?? "")}">
+  </div>
+  <div class="dialog-actions">
+    <form method="dialog"><button value="cancel">Cancel</button></form>
+    <button type="button" class="primary" id="confirm-change-url">Use in Content draft</button>
+  </div>
+</dialog>`
+      : "";
 
-  return `<form id="content-editor" data-content-id="${escapeHtml(draft.id)}" data-content-type="${escapeHtml(draft.type)}" data-updated-at="${escapeHtml(draft.updatedAt)}" data-slug="${escapeHtml(draft.slug ?? "")}" data-display-order="${escapeHtml(String(draft.displayOrder ?? ""))}" data-published-at="${escapeHtml(draft.publishedAt ?? "")}" data-publish-findings="${escapeHtml(JSON.stringify(draft.publishFindings))}">
+  return `<form id="content-editor" data-content-id="${escapeHtml(draft.id)}" data-content-type="${escapeHtml(draft.type)}" data-updated-at="${escapeHtml(draft.updatedAt)}" data-draft-version="${draft.draftVersion}" data-slug="${escapeHtml(draft.slug ?? "")}" data-display-order="${escapeHtml(String(draft.displayOrder ?? ""))}" data-published-at="${escapeHtml(draft.publishedAt ?? "")}" data-publish-findings="${escapeHtml(JSON.stringify(draft.publishFindings))}">
   <div class="editor-intro">
     <div>
       <p class="eyebrow">${kind}</p>
@@ -343,12 +402,29 @@ function readyPanel(panel: Extract<EditorPanel, { status: "ready" }>): string {
   ${fields}
   <div class="editor-actions">
     <button type="submit" class="primary">Save now</button>
-    <button type="button" disabled title="Publishing arrives in slice 8">Publish</button>
+    <button type="button" class="primary" id="publish-content"${publishDisabled}>Publish</button>
+    <button type="button" id="view-history">History</button>
     ${deleteControl}
-    <span>Publishing arrives in slice 8.</span>
+    <span>${publicationMessage}</span>
   </div>
 </form>
-${deleteDialog}`;
+${deleteDialog}
+${changeUrlDialog}
+<dialog id="publication-history" aria-labelledby="publication-history-heading">
+  <h3 id="publication-history-heading">Publication history</h3>
+  <div id="publication-history-list"><p>Loading history…</p></div>
+  <form method="dialog"><button value="close">Close</button></form>
+</dialog>
+<dialog id="draft-conflict-dialog" aria-labelledby="draft-conflict-heading" aria-describedby="draft-conflict-description">
+  <h3 id="draft-conflict-heading">This Content draft changed elsewhere</h3>
+  <p id="draft-conflict-description">Reload the latest draft before editing again. Copy your unsaved values first if you need to keep them.</p>
+  <label class="field-label" for="unsaved-content">Unsaved values</label>
+  <textarea id="unsaved-content" rows="8" readonly></textarea>
+  <div class="dialog-actions">
+    <button type="button" id="copy-unsaved-content">Copy unsaved text</button>
+    <button type="button" class="primary" id="reload-latest-draft">Reload latest draft</button>
+  </div>
+</dialog>`;
 }
 
 function createPanel(type: CollectionType): string {

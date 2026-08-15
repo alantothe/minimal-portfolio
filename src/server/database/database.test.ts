@@ -139,6 +139,28 @@ describe("migrations", () => {
     database.close();
   });
 
+  test("restart reconciliation never publishes an Owner-created draft", () => {
+    const { database } = migratedDatabase();
+    const at = "2026-08-14T12:00:00.000Z";
+    const draft = database
+      .query(
+        `INSERT INTO content_items (
+           id, type, slug, schema_version, data, display_order, published_at,
+           origin, created_at, updated_at
+         ) VALUES (?, 'project', 'private-draft', 1, '{}', 0, NULL, 'owner', ?, ?)
+         RETURNING id`
+      )
+      .get("dddddddd-1111-4111-8111-dddddddddddd", at, at) as { id: string };
+
+    expect(
+      new PublicationRepository(database).reconcileImportedBaselines()
+    ).toBe(0);
+    expect(
+      new PublicationRepository(database).currentRevision(draft.id)
+    ).toBeNull();
+    database.close();
+  });
+
   test("apply on first run and record themselves", () => {
     const { database } = migratedDatabase();
 

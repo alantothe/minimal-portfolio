@@ -4,6 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { Repository } from "./repository";
 import { ContentRepository, type ContentItem } from "./contentRepository";
 import type { ContentType } from "../content/identity";
+import { stableStringify } from "../content/stableJson";
 
 export type PublicationSource = "publish" | "restore-publish" | "migration";
 
@@ -31,6 +32,11 @@ export interface PublishedRevision {
   restoredFromRevisionId: string | null;
 }
 
+export interface PublishedRequest {
+  revision: PublishedRevision;
+  requestFingerprint: string;
+}
+
 interface RevisionRow {
   id: string;
   content_id: string;
@@ -43,17 +49,6 @@ interface RevisionRow {
   note: string | null;
   checksum: string;
   restored_from_revision_id: string | null;
-}
-
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== "object") {
-    return JSON.stringify(value) ?? "null";
-  }
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
-  return `{${Object.entries(value as Record<string, unknown>)
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([key, entry]) => `${JSON.stringify(key)}:${stableStringify(entry)}`)
-    .join(",")}}`;
 }
 
 export function revisionSnapshot(item: ContentItem): RevisionSnapshot {
@@ -70,6 +65,14 @@ export function revisionSnapshot(item: ContentItem): RevisionSnapshot {
 
 export function revisionChecksum(snapshot: RevisionSnapshot): string {
   return createHash("sha256").update(stableStringify(snapshot)).digest("hex");
+}
+
+export function publicationRequestFingerprint(input: {
+  contentId: string;
+  expectedDraftVersion: number;
+  note: string | null;
+}): string {
+  return createHash("sha256").update(stableStringify(input)).digest("hex");
 }
 
 function toRevision(row: RevisionRow): PublishedRevision {
@@ -89,19 +92,21 @@ function toRevision(row: RevisionRow): PublishedRevision {
 }
 
 export class PublicationRepository extends Repository {
-  transactional<T>(work: () => T): T {
-    return this.transaction(work);
-  }
-
-  findRequest(idempotencyKey: string): PublishedRevision | null {
+  findRequest(idempotencyKey: string): PublishedRequest | null {
     const row = this.database
       .query(
-        `SELECT revision.* FROM publication_requests request
+        `SELECT revision.*, request.request_fingerprint FROM publication_requests request
            JOIN published_revisions revision ON revision.id = request.revision_id
           WHERE request.idempotency_key = ?`
       )
-      .get(idempotencyKey) as RevisionRow | null;
-    return row ? toRevision(row) : null;
+      .get(idempotencyKey) as
+      (RevisionRow & { request_fingerprint: string }) | null;
+    return row
+      ? {
+          revision: toRevision(row),
+          requestFingerprint: row.request_fingerprint,
+        }
+      : null;
   }
 
   findRevision(id: string): PublishedRevision | null {
@@ -187,6 +192,7 @@ export class PublicationRepository extends Repository {
     note: string | null;
     idempotencyKey: string;
     expectedDraftVersion: number;
+    requestFingerprint: string;
     now: Date;
   }): PublishedRevision {
     const id = randomUUID();
@@ -223,7 +229,8 @@ export class PublicationRepository extends Repository {
                 base_published_revision_id = ?,
                 restored_from_revision_id = NULL,
                 slug = ?, data = ?, schema_version = ?, display_order = ?,
-                published_at = ?, updated_at = ?
+                published_at = ?, updated_at = ?,
+                draft_version = draft_version + 1
           WHERE id = ? AND draft_version = ?`
       )
       .run(
@@ -242,13 +249,15 @@ export class PublicationRepository extends Repository {
     this.database
       .query(
         `INSERT INTO publication_requests (
-           idempotency_key, content_id, expected_draft_version, revision_id, created_at
-         ) VALUES (?, ?, ?, ?, ?)`
+           idempotency_key, content_id, expected_draft_version,
+           request_fingerprint, revision_id, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?)`
       )
       .run(
         input.idempotencyKey,
         input.item.id,
         input.expectedDraftVersion,
+        input.requestFingerprint,
         id,
         at
       );
@@ -329,11 +338,14 @@ export class PublicationRepository extends Repository {
    * would only look like integrity metadata without protecting anything.
    */
   reconcileImportedBaselines(now: Date = new Date()): number {
-    return this.transactional(() => {
+    return this.transaction(() => {
       const ids = this.database
         .query(
           `SELECT id FROM content_items
-            WHERE deleted_at IS NULL AND current_published_revision_id IS NULL`
+            WHERE deleted_at IS NULL
+              AND current_published_revision_id IS NULL
+              AND origin = 'import'
+              AND owner_edited_at IS NULL`
         )
         .all() as Array<{ id: string }>;
       const content = new ContentRepository(this.database);
@@ -378,6 +390,7 @@ export class PublicationRepository extends Repository {
 
   restoreRevision(input: {
     revision: PublishedRevision;
+    currentPublicSlug: string | null;
     expectedDraftVersion: number;
     actorGithubUserId: number;
     now: Date;
@@ -395,7 +408,7 @@ export class PublicationRepository extends Repository {
         RETURNING draft_version`
       )
       .get(
-        snapshot.slug,
+        input.currentPublicSlug,
         JSON.stringify(snapshot.data),
         snapshot.schemaVersion,
         snapshot.displayOrder,

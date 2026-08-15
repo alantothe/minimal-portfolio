@@ -301,7 +301,7 @@ class SPARouter {
     await this.switchPage(page, 1);
   }
 
-  /** Fetch on every navigation so a newly published generation is observed. */
+  /** Revalidate database-backed pages; retain legacy navigation until cutover. */
   async switchPage(pageName, pageNumber = 1) {
     this.isNavigating = true;
     try {
@@ -310,7 +310,18 @@ class SPARouter {
         throw new Error(`Unknown page: ${pageName}`);
       }
 
-      const pageData = await this.loadPage(pageName, pageContainer, pageNumber);
+      const cacheKey = pageCacheKey(pageName, pageNumber);
+      const cachedPage = this.pagesData[cacheKey];
+      const publishedSite = Boolean(
+        document.documentElement.dataset.publicationGeneration
+      );
+      const pageData =
+        publishedSite ||
+        pageContainer.dataset.loaded !== "true" ||
+        Number(pageContainer.dataset.pageNumber || 1) !== pageNumber ||
+        !cachedPage?.seo
+          ? await this.loadPage(pageName, pageContainer, pageNumber)
+          : cachedPage;
 
       await this.updatePageCSS(pageData.pageCSS);
 

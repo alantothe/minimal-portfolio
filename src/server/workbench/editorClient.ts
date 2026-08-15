@@ -10,6 +10,8 @@ export const EDITOR_SCRIPT = `
   const live = document.getElementById("workbench-status");
   const summary = document.getElementById("validation-summary");
   const preview = document.getElementById("preview-frame");
+  const conflictDialog = document.getElementById("draft-conflict-dialog");
+  const unsavedContent = document.getElementById("unsaved-content");
   let expectedDraftVersion = Number(form.dataset.draftVersion);
   let timer = null;
   let saving = false;
@@ -147,6 +149,21 @@ export const EDITOR_SCRIPT = `
     });
   }
 
+  function showConflict(message) {
+    conflicted = true;
+    unsavedContent.value = JSON.stringify(
+      {
+        contentType: form.dataset.contentType,
+        data: formData(),
+        attributes: attributes(),
+      },
+      null,
+      2
+    );
+    setStatus("Conflict — reload required", message);
+    if (!conflictDialog.open) conflictDialog.showModal();
+  }
+
   const messages = {
     required: "Required before publication.",
     too_long: "Too long.",
@@ -269,12 +286,8 @@ export const EDITOR_SCRIPT = `
       const body = await response.json();
 
       if (response.status === 409) {
-        conflicted = true;
         showFindings([]);
-        setStatus(
-          "Conflict — reload required",
-          "Content changed elsewhere. Reload before saving again."
-        );
+        showConflict("Content changed elsewhere. Reload before saving again.");
         return;
       }
       if (response.status === 422) {
@@ -354,13 +367,40 @@ export const EDITOR_SCRIPT = `
     save();
   });
 
-  form.querySelector("[data-change-url]")?.addEventListener("click", (event) => {
+  const changeUrlDialog = document.getElementById("change-url-dialog");
+  const changeUrlValue = document.getElementById("change-url-value");
+  form.querySelector("[data-change-url]")?.addEventListener("click", () => {
+    changeUrlValue.value = value("slug");
+    changeUrlDialog.showModal();
+    changeUrlValue.focus();
+    changeUrlValue.select();
+  });
+  document.getElementById("confirm-change-url")?.addEventListener("click", () => {
     const slug = form.elements.namedItem("slug");
     slug.readOnly = false;
-    event.currentTarget.disabled = true;
-    setStatus("URL change unlocked", "Edit the route; it remains private until publication");
+    slug.value = changeUrlValue.value;
+    changeUrlDialog.close();
+    setStatus(
+      "URL change pending",
+      "New route added to the Content draft; it remains private until publication"
+    );
+    slug.dispatchEvent(new Event("input", { bubbles: true }));
     slug.focus();
-    slug.select();
+  });
+
+  document.getElementById("copy-unsaved-content")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(unsavedContent.value);
+      setStatus("Unsaved text copied", "Unsaved Content draft values copied");
+    } catch {
+      unsavedContent.focus();
+      unsavedContent.select();
+      setStatus("Select and copy the text", "Clipboard access was unavailable");
+    }
+  });
+  document.getElementById("reload-latest-draft")?.addEventListener("click", () => {
+    dirty = false;
+    window.location.reload();
   });
 
   form.addEventListener("click", async (event) => {
@@ -433,7 +473,7 @@ export const EDITOR_SCRIPT = `
     const button = event.currentTarget;
     button.disabled = true;
     publishKey ||= crypto.randomUUID();
-    setStatus("Publishing", "Publishing Content revision");
+    setStatus("Publishing", "Publishing draft");
     try {
       const response = await fetch(
         "/admin/api/content/" + encodeURIComponent(form.dataset.contentId) + "/publish",
@@ -451,7 +491,7 @@ export const EDITOR_SCRIPT = `
       if (response.ok) {
         publishKey = null;
         dirty = false;
-        setStatus("Published", "Content revision published");
+        setStatus("Published", "Published revision created");
         window.location.reload();
         return;
       }
@@ -464,8 +504,7 @@ export const EDITOR_SCRIPT = `
       } else if (result.error === "publication_disabled_until_sealed") {
         setStatus("Publishing locked", "Publishing unlocks after database cutover");
       } else if (response.status === 409) {
-        conflicted = true;
-        setStatus("Conflict — reload required", "Content changed elsewhere. Reload before publishing.");
+        showConflict("Content changed elsewhere. Reload before publishing.");
       } else {
         setStatus("Publish failed — retry available", "Publication failed; retry with the same request");
       }
@@ -539,7 +578,11 @@ export const EDITOR_SCRIPT = `
         window.location.reload();
         return;
       }
-      setStatus("Restore refused — reload required", "Revision restore was refused");
+      if (response.status === 409) {
+        showConflict("Content changed elsewhere. Reload before restoring.");
+      } else {
+        setStatus("Restore refused — reload required", "Revision restore was refused");
+      }
     } catch {
       setStatus("Restore failed", "Revision restore failed");
     } finally {

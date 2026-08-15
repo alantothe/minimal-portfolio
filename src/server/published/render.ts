@@ -436,6 +436,10 @@ export async function renderPublishedDocument(
   const seo = publishedSeoMetadata(page, snapshot, requestUrl);
 
   let html = await readTextFile("./src/pages/shell.html");
+  html = html.replace(
+    '<html lang="en">',
+    `<html lang="en" data-publication-generation="${snapshot.generation}">`
+  );
   html = injectPageContent(html, rendered.containerId, rendered.content);
   html = applySeoHead(html, renderSeoHead(seo));
 

@@ -49,6 +49,7 @@ import { renderMedia } from "../media/delivery";
 import { resolveMediaConfig, type MediaVariant } from "../media/config";
 import { BLOG_PAGE_SIZE, PROJECT_PAGE_SIZE } from "../services/collectionPages";
 import { toInlineHtml } from "./inlineCopy";
+import { stableStringify } from "../content/stableJson";
 
 /**
  * Which variant each role renders at.
@@ -526,22 +527,6 @@ function computeGeneration(items: ContentItem[], assets: MediaAsset[]): string {
   }
 
   return hash.digest("hex").slice(0, 32);
-}
-
-/** Key order belongs to whoever built the object, not to the content. */
-function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== "object") {
-    return JSON.stringify(value) ?? "null";
-  }
-
-  if (Array.isArray(value)) {
-    return `[${value.map(stableStringify).join(",")}]`;
-  }
-
-  return `{${Object.entries(value as Record<string, unknown>)
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([key, entry]) => `${JSON.stringify(key)}:${stableStringify(entry)}`)
-    .join(",")}}`;
 }
 
 function collectionRoutes(

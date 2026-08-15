@@ -148,9 +148,73 @@ describe("publishing a Content draft", () => {
     const { database, publication } = setup();
     const edited = editHome(database, "Idempotent");
     const key = "55555555-5555-4555-8555-555555555555";
-    expect(publishHome(database, key).status).toBe("published");
-    expect(publishHome(database, key).status).toBe("replayed");
+    const request = (expectedDraftVersion: number, note?: string) =>
+      publishContent(
+        {
+          contentId: edited.id,
+          expectedDraftVersion,
+          idempotencyKey: key,
+          actorGithubUserId: 42,
+          now: new Date("2026-08-14T12:00:00.000Z"),
+          note,
+        },
+        { database, refreshPublished: () => null, refreshPreview: () => null }
+      );
+    expect(request(edited.draftVersion).status).toBe("published");
+    expect(request(edited.draftVersion).status).toBe("replayed");
+    expect(request(edited.draftVersion, "different request").status).toBe(
+      "idempotency-conflict"
+    );
+    expect(request(edited.draftVersion + 1).status).toBe(
+      "idempotency-conflict"
+    );
     expect(publication.listRevisions(edited.id)).toHaveLength(2);
+  });
+
+  test("publication advances the draft version so a previously open tab conflicts", () => {
+    const { database, content } = setup();
+    const edited = editHome(database, "Versioned");
+    expect(
+      publishHome(database, "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee").status
+    ).toBe("published");
+    expect(
+      content.updateIfDraftVersion(
+        edited.id,
+        { data: edited.data },
+        "owner",
+        edited.draftVersion
+      )
+    ).toEqual({
+      status: "conflict",
+      currentDraftVersion: edited.draftVersion + 1,
+    });
+  });
+
+  test("a transaction failure leaves the draft, pointer, routes, and generation unchanged", () => {
+    const { database, content, publication } = setup();
+    const edited = editHome(database, "Rollback");
+    const beforeRevision = publication.currentRevision(edited.id)!;
+    const beforeGeneration = database
+      .query("SELECT site_generation AS generation FROM publication_state")
+      .get() as { generation: number };
+    const beforeRoutes = publication.routeRedirects();
+    database.exec(`CREATE TRIGGER refuse_publication_audit
+      BEFORE INSERT ON publication_audit
+      BEGIN SELECT RAISE(ABORT, 'forced publication failure'); END`);
+
+    expect(() =>
+      publishHome(database, "ffffffff-ffff-4fff-8fff-ffffffffffff")
+    ).toThrow("forced publication failure");
+
+    expect(publication.currentRevision(edited.id)?.id).toBe(beforeRevision.id);
+    expect(publication.listRevisions(edited.id)).toHaveLength(1);
+    expect(publication.routeRedirects()).toEqual(beforeRoutes);
+    expect(
+      database
+        .query("SELECT site_generation AS generation FROM publication_state")
+        .get()
+    ).toEqual(beforeGeneration);
+    expect(content.findById(edited.id)?.draftVersion).toBe(edited.draftVersion);
   });
 
   test("defaults the first Blog publication date once", () => {
@@ -246,6 +310,31 @@ describe("history, restore, and routes", () => {
     expect(publication.routeRedirects()[oldRoute]).toBe(
       "/projects/moved-project"
     );
+
+    const baseline = publication
+      .listRevisions(project.id)
+      .find((revision) => revision.revisionNumber === 1)!;
+    const currentDraft = content.findById(project.id)!;
+    const pendingMove = content.updateIfDraftVersion(
+      project.id,
+      { slug: "pending-project" },
+      "owner",
+      currentDraft.draftVersion
+    );
+    if (pendingMove.status !== "updated")
+      throw new Error("fixture pending move failed");
+    expect(
+      restorePublishedRevision(
+        {
+          contentId: project.id,
+          revisionId: baseline.id,
+          expectedDraftVersion: pendingMove.item.draftVersion,
+          actorGithubUserId: 42,
+        },
+        { database, refreshPublished: () => null, refreshPreview: () => null }
+      ).status
+    ).toBe("restored");
+    expect(content.findById(project.id)?.slug).toBe("moved-project");
 
     const build = buildSiteSnapshot(database, { cloudName: "fixture-cloud" });
     expect(build.status).toBe("built");

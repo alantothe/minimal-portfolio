@@ -13,7 +13,11 @@ import type { Database } from "bun:sqlite";
 import { rmSync } from "node:fs";
 import { buildSiteSnapshot, type SiteSnapshot } from "./snapshot";
 import { PublishedSite } from "./site";
-import { renderPublishedPage, blogPostBody } from "./render";
+import {
+  renderPublishedPage,
+  renderPublishedDocument,
+  blogPostBody,
+} from "./render";
 import { publishedBlogPostPayload } from "./representations";
 import { toInlineHtml, unwrapSingleParagraph } from "./inlineCopy";
 import { publishedSeoMetadata } from "./seo";
@@ -148,6 +152,22 @@ describe("what the renderer restores", () => {
     // They disagreed once — the SSR page had the heading and the payload did
     // not — which is what a shared helper prevents.
     expect(rendered.content).toContain(payload.html as string);
+  });
+
+  test("marks database-backed documents for SPA cache revalidation", async () => {
+    const db = database();
+    seedSite(db);
+    const { site, snapshot } = siteFor(db);
+
+    const document = await renderPublishedDocument(
+      found(site, "/"),
+      snapshot,
+      new URL("https://example.test/")
+    );
+
+    expect(document).toContain(
+      `data-publication-generation="${snapshot.generation}"`
+    );
   });
 
   test("the portrait is sized to what is actually delivered", async () => {

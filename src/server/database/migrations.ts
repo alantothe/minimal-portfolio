@@ -369,6 +369,7 @@ export const MIGRATIONS: Migration[] = [
          idempotency_key TEXT PRIMARY KEY,
          content_id TEXT NOT NULL REFERENCES content_items(id),
          expected_draft_version INTEGER NOT NULL,
+         request_fingerprint TEXT NOT NULL,
          revision_id TEXT NOT NULL REFERENCES published_revisions(id),
          created_at TEXT NOT NULL
        )`,

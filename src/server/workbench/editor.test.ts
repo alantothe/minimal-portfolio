@@ -204,6 +204,35 @@ describe("Content editor", () => {
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
   });
 
+  test("warns before changing a published Public route and offers conflict recovery", () => {
+    const html = renderEditorPanel({
+      status: "ready",
+      media: [],
+      publicationEnabled: true,
+      publishedRevisionNumber: 2,
+      draft: draft(
+        "blog_post",
+        {
+          title: "Published Blog post",
+          excerpt: "A useful excerpt",
+          bodyMarkdown: "## Body",
+          sharingImage: null,
+          seo: { title: null, description: null, sharingImage: null },
+        },
+        { slug: "published-post", publishedAt: "2026-08-14" }
+      ),
+    });
+
+    expect(html).toContain('name="slug"');
+    expect(html).toContain("readonly");
+    expect(html).toContain('id="change-url-dialog"');
+    expect(html).toContain("saved links and search results");
+    expect(html).toContain('id="confirm-change-url"');
+    expect(html).toContain('id="draft-conflict-dialog"');
+    expect(html).toContain('id="copy-unsaved-content"');
+    expect(html).toContain('id="reload-latest-draft"');
+  });
+
   test("escapes stored Content and renders autosave controls", () => {
     const html = renderEditorPanel({
       status: "ready",

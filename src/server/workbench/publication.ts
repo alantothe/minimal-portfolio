@@ -8,6 +8,7 @@ import {
 import { MediaRepository } from "../database/mediaRepository";
 import {
   PublicationRepository,
+  publicationRequestFingerprint,
   revisionChecksum,
   revisionSnapshot,
   type PublishedRevision,
@@ -83,71 +84,82 @@ export function publishContent(
 ): PublishOutcome {
   const publication = new PublicationRepository(dependencies.database);
   const now = input.now ?? new Date();
-  const outcome = publication.transactional<PublishTransactionOutcome>(() => {
-    const replay = publication.findRequest(input.idempotencyKey);
-    if (replay) {
-      return replay.contentId === input.contentId
-        ? { status: "replayed", revision: replay }
-        : { status: "idempotency-conflict" };
-    }
-    if (
-      new SystemStateRepository(dependencies.database).getCutoverPhase() !==
-      "sealed"
-    ) {
-      return { status: "disabled" };
-    }
-
-    const content = new ContentRepository(dependencies.database);
-    const media = new MediaRepository(dependencies.database);
-    const stored = content.findById(input.contentId);
-    if (!stored) return { status: "not-found" };
-    if (stored.draftVersion !== input.expectedDraftVersion) {
-      return { status: "conflict", currentDraftVersion: stored.draftVersion };
-    }
-
-    // The first Blog publication acquires today's UTC date if the Owner did
-    // not choose one. Later publications preserve the existing date.
-    const candidate: ContentItem =
-      stored.type === "blog_post" &&
-      stored.currentPublishedRevisionId === null &&
-      stored.publishedAt === null
-        ? { ...stored, publishedAt: now.toISOString().slice(0, 10) }
-        : stored;
-    const findings = publicationFindings(candidate, { content, media });
-    const route = routeFor(candidate);
-    if (route) {
-      const owner = publication.routeOwner(route);
-      if (owner && owner !== candidate.id) {
-        findings.push({
-          field: "slug",
-          code: "historical_route_reserved",
-          severity: "error",
-        });
-      }
-    }
-    if (hasBlockingError(findings)) return { status: "invalid", findings };
-
-    const current = publication.currentRevision(candidate.id);
-    if (
-      current &&
-      normalizedRevisionChecksum(current) ===
-        revisionChecksum(revisionSnapshot(candidate))
-    ) {
-      return { status: "no-change", revision: current };
-    }
-
-    const revision = publication.insertRevision({
-      item: candidate,
-      source: candidate.restoredFromRevisionId ? "restore-publish" : "publish",
-      actorGithubUserId: input.actorGithubUserId,
-      note: input.note?.trim() || null,
-      idempotencyKey: input.idempotencyKey,
-      expectedDraftVersion: input.expectedDraftVersion,
-      now,
-    });
-    if (route) publication.activateRoute(candidate.id, route, revision.id);
-    return { status: "committed", revision };
+  const normalizedNote = input.note?.trim() || null;
+  const requestFingerprint = publicationRequestFingerprint({
+    contentId: input.contentId,
+    expectedDraftVersion: input.expectedDraftVersion,
+    note: normalizedNote,
   });
+  const outcome = dependencies.database.transaction(
+    (): PublishTransactionOutcome => {
+      const replay = publication.findRequest(input.idempotencyKey);
+      if (replay) {
+        return replay.requestFingerprint === requestFingerprint
+          ? { status: "replayed", revision: replay.revision }
+          : { status: "idempotency-conflict" };
+      }
+      if (
+        new SystemStateRepository(dependencies.database).getCutoverPhase() !==
+        "sealed"
+      ) {
+        return { status: "disabled" };
+      }
+
+      const content = new ContentRepository(dependencies.database);
+      const media = new MediaRepository(dependencies.database);
+      const stored = content.findById(input.contentId);
+      if (!stored) return { status: "not-found" };
+      if (stored.draftVersion !== input.expectedDraftVersion) {
+        return { status: "conflict", currentDraftVersion: stored.draftVersion };
+      }
+
+      // The first Blog publication acquires today's UTC date if the Owner did
+      // not choose one. Later publications preserve the existing date.
+      const candidate: ContentItem =
+        stored.type === "blog_post" &&
+        stored.currentPublishedRevisionId === null &&
+        stored.publishedAt === null
+          ? { ...stored, publishedAt: now.toISOString().slice(0, 10) }
+          : stored;
+      const findings = publicationFindings(candidate, { content, media });
+      const route = routeFor(candidate);
+      if (route) {
+        const owner = publication.routeOwner(route);
+        if (owner && owner !== candidate.id) {
+          findings.push({
+            field: "slug",
+            code: "historical_route_reserved",
+            severity: "error",
+          });
+        }
+      }
+      if (hasBlockingError(findings)) return { status: "invalid", findings };
+
+      const current = publication.currentRevision(candidate.id);
+      if (
+        current &&
+        normalizedRevisionChecksum(current) ===
+          revisionChecksum(revisionSnapshot(candidate))
+      ) {
+        return { status: "no-change", revision: current };
+      }
+
+      const revision = publication.insertRevision({
+        item: candidate,
+        source: candidate.restoredFromRevisionId
+          ? "restore-publish"
+          : "publish",
+        actorGithubUserId: input.actorGithubUserId,
+        note: normalizedNote,
+        idempotencyKey: input.idempotencyKey,
+        expectedDraftVersion: input.expectedDraftVersion,
+        requestFingerprint,
+        now,
+      });
+      if (route) publication.activateRoute(candidate.id, route, revision.id);
+      return { status: "committed", revision };
+    }
+  )();
 
   if (outcome.status === "replayed") {
     const content = new ContentRepository(dependencies.database);
@@ -187,11 +199,12 @@ export function restorePublishedRevision(
   dependencies: PublicationDependencies
 ): RestoreOutcome {
   const publication = new PublicationRepository(dependencies.database);
-  const result = publication.transactional(() => {
+  const result = dependencies.database.transaction(() => {
     const content = new ContentRepository(dependencies.database);
     const item = content.findById(input.contentId);
     const revision = publication.findRevision(input.revisionId);
-    if (!item || !revision || revision.contentId !== item.id)
+    const current = item ? publication.currentRevision(item.id) : null;
+    if (!item || !revision || !current || revision.contentId !== item.id)
       return { status: "not-found" } as const;
     if (item.draftVersion !== input.expectedDraftVersion) {
       return {
@@ -201,6 +214,7 @@ export function restorePublishedRevision(
     }
     const version = publication.restoreRevision({
       revision,
+      currentPublicSlug: current.snapshot.slug,
       expectedDraftVersion: input.expectedDraftVersion,
       actorGithubUserId: input.actorGithubUserId,
       now: input.now ?? new Date(),
@@ -211,7 +225,7 @@ export function restorePublishedRevision(
           currentDraftVersion: item.draftVersion,
         } as const)
       : ({ status: "restored" } as const);
-  });
+  })();
   if (result.status !== "restored") return result;
 
   const content = new ContentRepository(dependencies.database);

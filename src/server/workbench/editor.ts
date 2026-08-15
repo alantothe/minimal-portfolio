@@ -373,6 +373,22 @@ function readyPanel(panel: Extract<EditorPanel, { status: "ready" }>): string {
       ? `Published revision ${panel.publishedRevisionNumber}.`
       : "Not published yet."
     : "Publishing unlocks after the database cutover is sealed.";
+  const changeUrlDialog =
+    collection && panel.publishedRevisionNumber
+      ? `<dialog id="change-url-dialog" aria-labelledby="change-url-heading" aria-describedby="change-url-description">
+  <h3 id="change-url-heading">Change Public route?</h3>
+  <p id="change-url-description">Changing this address can affect saved links and search results. The current route stays public until you Publish; afterward it redirects permanently to the new route.</p>
+  <div class="field">
+    <label class="field-label" for="change-url-value">New route slug</label>
+    <span class="field-hint">${collection === "project" ? "/projects/" : "/blog/"}</span>
+    <input id="change-url-value" value="${escapeHtml(draft.slug ?? "")}">
+  </div>
+  <div class="dialog-actions">
+    <form method="dialog"><button value="cancel">Cancel</button></form>
+    <button type="button" class="primary" id="confirm-change-url">Use in Content draft</button>
+  </div>
+</dialog>`
+      : "";
 
   return `<form id="content-editor" data-content-id="${escapeHtml(draft.id)}" data-content-type="${escapeHtml(draft.type)}" data-updated-at="${escapeHtml(draft.updatedAt)}" data-draft-version="${draft.draftVersion}" data-slug="${escapeHtml(draft.slug ?? "")}" data-display-order="${escapeHtml(String(draft.displayOrder ?? ""))}" data-published-at="${escapeHtml(draft.publishedAt ?? "")}" data-publish-findings="${escapeHtml(JSON.stringify(draft.publishFindings))}">
   <div class="editor-intro">
@@ -393,10 +409,21 @@ function readyPanel(panel: Extract<EditorPanel, { status: "ready" }>): string {
   </div>
 </form>
 ${deleteDialog}
+${changeUrlDialog}
 <dialog id="publication-history" aria-labelledby="publication-history-heading">
   <h3 id="publication-history-heading">Publication history</h3>
   <div id="publication-history-list"><p>Loading history…</p></div>
   <form method="dialog"><button value="close">Close</button></form>
+</dialog>
+<dialog id="draft-conflict-dialog" aria-labelledby="draft-conflict-heading" aria-describedby="draft-conflict-description">
+  <h3 id="draft-conflict-heading">This Content draft changed elsewhere</h3>
+  <p id="draft-conflict-description">Reload the latest draft before editing again. Copy your unsaved values first if you need to keep them.</p>
+  <label class="field-label" for="unsaved-content">Unsaved values</label>
+  <textarea id="unsaved-content" rows="8" readonly></textarea>
+  <div class="dialog-actions">
+    <button type="button" id="copy-unsaved-content">Copy unsaved text</button>
+    <button type="button" class="primary" id="reload-latest-draft">Reload latest draft</button>
+  </div>
 </dialog>`;
 }
 

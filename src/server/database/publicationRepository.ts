@@ -337,7 +337,7 @@ export class PublicationRepository extends Repository {
    * existed. JavaScript computes the real SHA-256 checksum; SQL random bytes
    * would only look like integrity metadata without protecting anything.
    */
-  reconcileImportedBaselines(now: Date = new Date()): number {
+  reconcileUneditedImportedBaselines(now: Date = new Date()): number {
     return this.transaction(() => {
       const ids = this.database
         .query(

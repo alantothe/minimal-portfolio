@@ -121,7 +121,7 @@ describe("migrations", () => {
     seedSite(database);
 
     runMigrations(database);
-    new PublicationRepository(database).reconcileImportedBaselines(
+    new PublicationRepository(database).reconcileUneditedImportedBaselines(
       new Date("2026-08-14T12:00:00.000Z")
     );
 
@@ -153,7 +153,7 @@ describe("migrations", () => {
       .get("dddddddd-1111-4111-8111-dddddddddddd", at, at) as { id: string };
 
     expect(
-      new PublicationRepository(database).reconcileImportedBaselines()
+      new PublicationRepository(database).reconcileUneditedImportedBaselines()
     ).toBe(0);
     expect(
       new PublicationRepository(database).currentRevision(draft.id)

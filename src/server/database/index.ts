@@ -43,7 +43,7 @@ export function initializeDatabase(): DatabaseHealth {
     const outcome = runMigrations(database);
     const baselines = new PublicationRepository(
       database
-    ).reconcileImportedBaselines();
+    ).reconcileUneditedImportedBaselines();
     state = { database, file, error: null };
 
     if (outcome.applied.length > 0) {

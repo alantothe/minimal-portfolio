@@ -13,6 +13,7 @@ import {
 import { MediaRepository } from "../database/mediaRepository";
 import { isSingletonType, type ContentType } from "../content/identity";
 import { validateContentAddress } from "../content/address";
+import { renderMarkdown } from "../content/markdown";
 import {
   parseContentData,
   type AboutContent,
@@ -129,6 +130,26 @@ function validateMedia(
   return findings;
 }
 
+function validateMarkdownMedia(
+  type: ContentType,
+  data: ContentData,
+  media: MediaRepository
+): Finding[] {
+  if (type !== "project" && type !== "blog_post") return [];
+
+  const bodyMarkdown = (data as ProjectContent | BlogPostContent).bodyMarkdown;
+  return renderMarkdown("bodyMarkdown", bodyMarkdown, "body", {
+    resolveMedia(mediaAssetId) {
+      const asset = media.findById(mediaAssetId);
+      return asset?.status === "ready"
+        ? { url: "", width: 1, height: 1 }
+        : null;
+    },
+  })
+    .findings.filter((finding) => finding.code === "media_asset_unavailable")
+    .map((finding) => ({ ...finding, code: "media_unavailable" }));
+}
+
 function addressFindings(
   item: ContentItem,
   content: ContentRepository,
@@ -160,6 +181,7 @@ export function publicationFindings(
     ...parseContentData(item.type, parsed.data, "publish").findings,
     ...addressFindings(item, dependencies.content, "publish"),
     ...validateMedia(item.type, parsed.data, dependencies.media),
+    ...validateMarkdownMedia(item.type, parsed.data, dependencies.media),
   ];
 }
 
@@ -183,6 +205,7 @@ function toDraft(
       ...publish,
       ...addressFindings(item, dependencies.content, "publish"),
       ...validateMedia(type, parsed.data, dependencies.media),
+      ...validateMarkdownMedia(type, parsed.data, dependencies.media),
     ],
   };
 }

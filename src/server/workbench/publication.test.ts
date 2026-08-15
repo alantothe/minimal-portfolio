@@ -217,6 +217,61 @@ describe("publishing a Content draft", () => {
     expect(content.findById(edited.id)?.draftVersion).toBe(edited.draftVersion);
   });
 
+  test("missing inline Markdown Media blocks publication before public state changes", () => {
+    const { database, content, publication } = setup();
+    const project = content.list("project")[0]!;
+    const edited = content.updateIfDraftVersion(
+      project.id,
+      {
+        data: {
+          ...(project.data as object),
+          bodyMarkdown:
+            "## Diagram\n\n![Architecture](media:missing-inline-asset)",
+        },
+      },
+      "owner",
+      project.draftVersion
+    );
+    if (edited.status !== "updated") throw new Error("fixture edit failed");
+
+    const beforeRevision = publication.currentRevision(project.id)!;
+    const beforeRevisions = publication.listRevisions(project.id);
+    const beforeRoutes = publication.routeRedirects();
+    const beforeGeneration = database
+      .query("SELECT site_generation AS generation FROM publication_state")
+      .get();
+
+    const outcome = publishContent(
+      {
+        contentId: project.id,
+        expectedDraftVersion: edited.item.draftVersion,
+        idempotencyKey: "abababab-abab-4bab-8bab-abababababab",
+        actorGithubUserId: 42,
+      },
+      { database, refreshPublished: () => null, refreshPreview: () => null }
+    );
+
+    expect(outcome.status).toBe("invalid");
+    if (outcome.status === "invalid") {
+      expect(outcome.findings).toContainEqual({
+        field: "bodyMarkdown",
+        code: "media_unavailable",
+        severity: "error",
+      });
+    }
+    expect(publication.currentRevision(project.id)?.id).toBe(beforeRevision.id);
+    expect(publication.listRevisions(project.id)).toEqual(beforeRevisions);
+    expect(publication.routeRedirects()).toEqual(beforeRoutes);
+    expect(
+      database
+        .query("SELECT site_generation AS generation FROM publication_state")
+        .get()
+    ).toEqual(beforeGeneration);
+    expect(content.findById(project.id)?.draftVersion).toBe(
+      edited.item.draftVersion
+    );
+  });
+
   test("defaults the first Blog publication date once", () => {
     const { database, content } = setup();
     const post = content.create({

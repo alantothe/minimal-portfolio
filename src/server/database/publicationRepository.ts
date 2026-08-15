@@ -2,7 +2,7 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import { Repository } from "./repository";
-import type { ContentItem } from "./contentRepository";
+import { ContentRepository, type ContentItem } from "./contentRepository";
 import type { ContentType } from "../content/identity";
 
 export type PublicationSource = "publish" | "restore-publish" | "migration";
@@ -314,7 +314,38 @@ export class PublicationRepository extends Repository {
           ? `/blog/${item.slug}`
           : null;
     if (route) this.activateRoute(item.id, route, id);
+    this.database
+      .query(
+        `UPDATE publication_state
+            SET site_generation = site_generation + 1, updated_at = ? WHERE id = 1`
+      )
+      .run(at);
     return toRevision(row);
+  }
+
+  /**
+   * Resumable post-migration backfill for content accepted before revisions
+   * existed. JavaScript computes the real SHA-256 checksum; SQL random bytes
+   * would only look like integrity metadata without protecting anything.
+   */
+  reconcileImportedBaselines(now: Date = new Date()): number {
+    return this.transactional(() => {
+      const ids = this.database
+        .query(
+          `SELECT id FROM content_items
+            WHERE deleted_at IS NULL AND current_published_revision_id IS NULL`
+        )
+        .all() as Array<{ id: string }>;
+      const content = new ContentRepository(this.database);
+      let seeded = 0;
+      for (const { id } of ids) {
+        const item = content.findById(id);
+        if (!item) continue;
+        this.seedMigrationRevision(item, now);
+        seeded += 1;
+      }
+      return seeded;
+    });
   }
 
   activateRoute(contentId: string, route: string, revisionId: string): void {

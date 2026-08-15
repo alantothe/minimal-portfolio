@@ -387,58 +387,7 @@ export const MIGRATIONS: Migration[] = [
          updated_at TEXT NOT NULL
        )`,
       `INSERT INTO publication_state (id, site_generation, updated_at)
-       VALUES (1, 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
-
-      // Content imported before Slice 8 was already the accepted public
-      // baseline. Preserve it as revision 1 so deploying the new schema cannot
-      // make the shadow generation empty.
-      `INSERT INTO published_revisions (
-         id, content_id, revision_number, schema_version, snapshot, source,
-         actor_github_user_id, published_at, note, checksum,
-         restored_from_revision_id
-       )
-       SELECT lower(hex(randomblob(16))), id, 1, schema_version,
-              json_object(
-                'id', id,
-                'type', type,
-                'slug', slug,
-                'schemaVersion', schema_version,
-                'data', json(data),
-                'displayOrder', display_order,
-                'publishedAt', published_at,
-                'origin', origin,
-                'ownerEditedAt', owner_edited_at,
-                'deletedAt', deleted_at,
-                'createdAt', created_at,
-                'updatedAt', updated_at
-              ),
-              'migration', NULL, updated_at,
-              'Baseline imported before publication history',
-              lower(hex(randomblob(32))), NULL
-         FROM content_items
-        WHERE deleted_at IS NULL`,
-      `UPDATE content_items
-          SET base_published_revision_id = (
-                SELECT id FROM published_revisions
-                 WHERE content_id = content_items.id AND revision_number = 1
-              ),
-              current_published_revision_id = (
-                SELECT id FROM published_revisions
-                 WHERE content_id = content_items.id AND revision_number = 1
-              )
-        WHERE deleted_at IS NULL`,
-      `INSERT INTO published_routes (
-         route, content_id, is_current, first_revision_id, last_revision_id
-       )
-       SELECT CASE type
-                WHEN 'project' THEN '/projects/' || slug
-                ELSE '/blog/' || slug
-              END,
-              id, 1, current_published_revision_id, current_published_revision_id
-         FROM content_items
-        WHERE deleted_at IS NULL
-          AND type IN ('project', 'blog_post')
-          AND slug IS NOT NULL`,
+       VALUES (1, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
     ],
   },
 ];

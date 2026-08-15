@@ -14,7 +14,10 @@ import { MIGRATIONS, type Migration } from "./migrations";
 import { checksumOf, listAppliedMigrations, runMigrations } from "./migrator";
 import { SystemStateRepository } from "./repository";
 import { seedSite } from "../published/fixtures";
-import { PublicationRepository } from "./publicationRepository";
+import {
+  PublicationRepository,
+  revisionChecksum,
+} from "./publicationRepository";
 
 const temporaryDirectories: string[] = [];
 
@@ -118,6 +121,9 @@ describe("migrations", () => {
     seedSite(database);
 
     runMigrations(database);
+    new PublicationRepository(database).reconcileImportedBaselines(
+      new Date("2026-08-14T12:00:00.000Z")
+    );
 
     const publication = new PublicationRepository(database);
     const published = publication.listPublishedContent();
@@ -128,6 +134,8 @@ describe("migrations", () => {
     expect(
       database.query("SELECT COUNT(*) AS total FROM published_revisions").get()
     ).toEqual({ total: 6 });
+    const homeRevision = publication.listRevisions("singleton:home")[0]!;
+    expect(homeRevision.checksum).toBe(revisionChecksum(homeRevision.snapshot));
     database.close();
   });
 

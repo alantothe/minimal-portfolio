@@ -228,6 +228,46 @@ describe("a successful upload", () => {
 
     expect(deps.repository.findById(body.id)?.digest).toMatch(/^[0-9a-f]{64}$/);
   });
+
+  test("protects original bytes after provider and database completion", async () => {
+    const deps = dependencies();
+    const protectedOriginals: Array<{
+      mediaId: string;
+      format: string;
+      digest: string;
+      bytes: number;
+    }> = [];
+    deps.protectOriginal = async (input) => {
+      expect(deps.repository.findById(input.mediaId)?.status).toBe("ready");
+      protectedOriginals.push({ ...input, bytes: input.bytes.byteLength });
+    };
+
+    const response = await handleMediaUpload(await pngUpload(), deps);
+    const body = (await response.json()) as { id: string };
+
+    expect(response.status).toBe(201);
+    expect(protectedOriginals).toEqual([
+      {
+        mediaId: body.id,
+        format: "png",
+        digest: deps.repository.findById(body.id)!.digest!,
+        bytes: 64,
+      },
+    ]);
+  });
+
+  test("a failed offsite copy alerts without losing accepted upload", async () => {
+    const deps = dependencies();
+    deps.protectOriginal = async () => {
+      throw new Error("R2 unavailable");
+    };
+
+    const response = await handleMediaUpload(await pngUpload(), deps);
+    const body = (await response.json()) as { id: string };
+
+    expect(response.status).toBe(201);
+    expect(deps.repository.findById(body.id)?.status).toBe("ready");
+  });
 });
 
 describe("files that are refused before reaching the provider", () => {

@@ -42,6 +42,7 @@ import {
 } from "../src/server/media/config";
 import type { Database } from "bun:sqlite";
 import type { ImportMediaResolver } from "../src/server/content/import/plan";
+import { createConfiguredCoordinator } from "../src/server/recovery/runtime";
 
 function flag(name: string): boolean {
   return process.argv.includes(`--${name}`);
@@ -117,6 +118,11 @@ async function main(): Promise<void> {
 
   const database = openDatabase(databasePath);
   runMigrations(database);
+  const recovery = createConfiguredCoordinator(database, databasePath);
+
+  if (commit && recovery) {
+    await recovery.checkpoint("pre-change", { changeId: "pre-import" });
+  }
 
   const resolver = chooseResolver(database);
 
@@ -145,6 +151,10 @@ async function main(): Promise<void> {
   // The report goes to stdout so it can be redirected and diffed; everything
   // else goes to stderr.
   process.stdout.write(serializeReport(report));
+
+  if (report.committed && recovery) {
+    await recovery.checkpoint("pre-change", { changeId: "post-import" });
+  }
 
   const blocking = report.findings.filter((f) => f.severity === "error");
 

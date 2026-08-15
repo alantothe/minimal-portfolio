@@ -28,6 +28,12 @@ export interface UploadDependencies {
   config: MediaConfig;
   repository: MediaRepository;
   provider: MediaProvider;
+  protectOriginal?: (input: {
+    mediaId: string;
+    format: "jpg" | "png" | "webp";
+    digest: string;
+    bytes: Uint8Array;
+  }) => Promise<void>;
 }
 
 /** The form field the workspace posts the image in. */
@@ -52,6 +58,30 @@ function json(status: number, body: unknown): Response {
 function refuse(status: number, reason: string): Response {
   logEvent(`upload_rejected:${reason}`);
   return json(status, { error: reason });
+}
+
+async function protectOriginal(
+  dependencies: UploadDependencies,
+  asset: MediaAsset,
+  format: "jpg" | "png" | "webp",
+  digest: string,
+  bytes: Uint8Array
+): Promise<void> {
+  if (!dependencies.protectOriginal) return;
+  try {
+    await dependencies.protectOriginal({
+      mediaId: asset.id,
+      format,
+      digest,
+      bytes,
+    });
+    logEvent("original_protected");
+  } catch {
+    // Cloudinary already holds a validated, provider-backed asset and the
+    // database records an actionable recovery alert. Losing an otherwise valid
+    // upload would neither remove that provider copy nor improve recoverability.
+    logEvent("original_protection_failed");
+  }
 }
 
 /**
@@ -193,6 +223,13 @@ export async function handleMediaUpload(
       );
 
       if (finalized) {
+        await protectOriginal(
+          dependencies,
+          finalized,
+          detected.format,
+          digest,
+          bytes
+        );
         return json(201, describe(finalized));
       }
     }
@@ -212,6 +249,13 @@ export async function handleMediaUpload(
   }
 
   logEvent("upload_ready");
+  await protectOriginal(
+    dependencies,
+    finalized,
+    detected.format,
+    digest,
+    bytes
+  );
   return json(201, describe(finalized));
 }
 

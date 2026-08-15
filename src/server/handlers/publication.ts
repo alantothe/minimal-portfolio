@@ -12,6 +12,7 @@ import {
   type PublicationDependencies,
 } from "../workbench/publication";
 import { readBoundedJsonObject } from "./jsonBody";
+import { requestPublicationCheckpoint } from "../recovery/runtime";
 
 const MAX_PUBLICATION_REQUEST_BYTES = 32 * 1024;
 
@@ -37,6 +38,7 @@ function dependencies(): PublicationDependencies | null {
         ? { status: "activated", generation: build.snapshot.generation }
         : { status: "rejected", findings: build.findings };
     },
+    afterPublication: requestPublicationCheckpoint,
   };
 }
 

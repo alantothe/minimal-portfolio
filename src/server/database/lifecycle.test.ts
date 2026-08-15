@@ -112,12 +112,22 @@ describe("/readyz", () => {
     const body = (await response.json()) as {
       status: string;
       database: { status: string; cutoverPhase: string };
+      recovery: {
+        status: string;
+        alerts: string[];
+        gatesReadiness: boolean;
+      };
     };
 
     expect(response.status).toBe(200);
     expect(body.status).toBe("ready");
     expect(body.database.status).toBe("ok");
     expect(body.database.cutoverPhase).toBe("legacy");
+    expect(body.recovery).toEqual({
+      status: "unconfigured",
+      alerts: ["recovery_unconfigured"],
+      gatesReadiness: false,
+    });
     expect(response.headers.get("Cache-Control")).toBe("no-store");
   });
 

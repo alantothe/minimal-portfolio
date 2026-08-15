@@ -23,6 +23,10 @@
     "baseline:capture": "bun scripts/baseline.ts capture",
     "shadow:parity": "bun scripts/shadow-parity.ts",
     "cloudinary:configure": "bun scripts/configure-cloudinary.ts",
+    "recovery:status": "bun scripts/recovery.ts status",
+    "recovery:checkpoint": "bun scripts/recovery.ts checkpoint manual",
+    "recovery:drill": "bun scripts/recovery.ts drill-latest",
+    "recovery:fixture-drill": "bun scripts/recovery.ts fixture-drill",
     "prepare": "if command -v husky >/dev/null 2>&1; then husky; fi",
     "work:start": "bun scripts/workflow.ts start",
     "work:status": "bun scripts/workflow.ts status",
@@ -34,6 +38,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1111.0",
     "gray-matter": "^4.0.3",
     "highlight.js": "^11.11.1",
     "marked": "^16.4.1"

@@ -63,6 +63,8 @@ copy `.env.example` to your deployment environment and configure:
 - `CONTENT_DATABASE_FILE` — path on the same volume for the content database;
   defaults to `/data/content.sqlite` in production and must be absolute there
 - `GITHUB_USERNAME` / `GITHUB_TOKEN` — optional commit statistics
+- `RECOVERY_R2_*` and `RECOVERY_AGE_*` — encrypted portable recovery; see
+  [`docs/runbooks/recovery.md`](./docs/runbooks/recovery.md)
 
 before sending production traffic:
 
@@ -85,6 +87,13 @@ migrations no longer match the code.
 the JSON view store safely serializes writes within one application process. run
 one instance when view counts matter. use shared database or KV storage before
 deploying to serverless or multiple replicas.
+
+recovery uses three independent layers: railway volume snapshots, encrypted
+application-consistent sqlite and media-original bundles in private r2, and
+cloudinary provider backup. `GET /readyz` reports recovery alerts without
+exposing content or object identities. before cutover, complete the one-time
+provider settings and a real r2 restore drill in
+[`docs/runbooks/recovery.md`](./docs/runbooks/recovery.md).
 
 ### railway
 
@@ -152,6 +161,9 @@ bun run dev                 # dev server
 bun run start               # production
 bun run check               # typecheck and test
 bun run help                # quick local and deployment guide
+bun run recovery:status     # safe backup/drill age and alert summary
+bun run recovery:checkpoint # encrypted manual checkpoint
+bun run recovery:fixture-drill # isolated encrypted restore proof
 bun run work:status         # explain current git state
 bun run work:learn          # guided feature-to-production workflow
 bun scripts/new-blog.ts     # new blog post

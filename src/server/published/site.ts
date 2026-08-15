@@ -195,6 +195,11 @@ export class PublishedSite {
       return { outcome: "redirect", location: redirect };
     }
 
+    const historical = this.active?.redirects[url.pathname];
+    if (historical) {
+      return { outcome: "redirect", location: historical };
+    }
+
     const target = parseTarget(url);
 
     if (target === null) {

@@ -22,6 +22,8 @@ import { createToken, digestToken } from "./tokens";
 import { seedSite } from "../published/fixtures";
 import { SINGLETON_IDS, importedContentId } from "../content/identity";
 import { ContentRepository } from "../database/contentRepository";
+import { PublicationRepository } from "../database/publicationRepository";
+import { SystemStateRepository } from "../database/repository";
 
 const ORIGIN = "https://example.test";
 
@@ -410,6 +412,7 @@ describe("Content draft API", () => {
     const current = (await read.json()) as {
       draft: {
         updatedAt: string;
+        draftVersion: number;
         data: Record<string, unknown>;
       };
     };
@@ -423,7 +426,7 @@ describe("Content draft API", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
         data: { ...current.draft.data, displayName: "Grace Hopper" },
       }),
     });
@@ -445,7 +448,7 @@ describe("Content draft API", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
         data: current.draft.data,
       }),
     });
@@ -459,7 +462,11 @@ describe("Content draft API", () => {
     const path = `/admin/api/content/${encodeURIComponent(SINGLETON_IDS.home)}`;
     const read = await send(path, { cookie });
     const current = (await read.json()) as {
-      draft: { updatedAt: string; data: Record<string, unknown> };
+      draft: {
+        updatedAt: string;
+        draftVersion: number;
+        data: Record<string, unknown>;
+      };
     };
 
     const response = await send(path, {
@@ -471,7 +478,7 @@ describe("Content draft API", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
         data: { ...current.draft.data, arbitraryHtml: "<b>no</b>" },
       }),
     });
@@ -498,6 +505,7 @@ describe("Content draft API", () => {
     const current = (await read.json()) as {
       draft: {
         updatedAt: string;
+        draftVersion: number;
         data: Record<string, unknown>;
       };
     };
@@ -511,7 +519,7 @@ describe("Content draft API", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        expectedUpdatedAt: current.draft.updatedAt,
+        expectedDraftVersion: current.draft.draftVersion,
         data: { ...current.draft.data, title: "Updated project" },
         attributes: { slug: "updated-project", displayOrder: 9 },
       }),
@@ -553,7 +561,7 @@ describe("Content draft API", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        expectedUpdatedAt: before.updatedAt,
+        expectedDraftVersion: before.draftVersion,
         data: before.data,
         attributes: {
           slug: "changed-project",
@@ -584,7 +592,7 @@ describe("Content draft API", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        expectedUpdatedAt: before.updatedAt,
+        expectedDraftVersion: before.draftVersion,
         data: before.data,
         attributes: { slug: ["not", "a", "slug"], displayOrder: 1 },
       }),
@@ -595,6 +603,68 @@ describe("Content draft API", () => {
     expect(new ContentRepository(getDatabase()).findById(projectId)).toEqual(
       before
     );
+  });
+});
+
+describe("publication API", () => {
+  test("publishes and lists immutable history only after the cutover is sealed", async () => {
+    seedSite(getDatabase());
+    const content = new ContentRepository(getDatabase());
+    const publication = new PublicationRepository(getDatabase());
+    for (const type of [
+      "home",
+      "about",
+      "branding",
+      "project",
+      "blog_post",
+    ] as const) {
+      for (const item of content.list(type)) {
+        publication.seedMigrationRevision(
+          item,
+          new Date("2026-08-01T12:00:00.000Z")
+        );
+      }
+    }
+    const home = content.findById(SINGLETON_IDS.home)!;
+    const edited = content.updateIfDraftVersion(
+      home.id,
+      {
+        data: {
+          ...(home.data as Record<string, unknown>),
+          professionalTitle: "Published through HTTP",
+        },
+      },
+      "owner",
+      home.draftVersion
+    );
+    if (edited.status !== "updated") throw new Error("fixture edit failed");
+    const { cookie, csrfToken } = establishSession();
+    const path = `/admin/api/content/${encodeURIComponent(home.id)}/publish`;
+    const request = () =>
+      send(path, {
+        method: "POST",
+        cookie,
+        headers: {
+          Origin: ORIGIN,
+          "X-CSRF-Token": csrfToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          expectedDraftVersion: edited.item.draftVersion,
+          idempotencyKey: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        }),
+      });
+
+    expect((await request()).status).toBe(409);
+    new SystemStateRepository(getDatabase()).setCutoverPhase("sealed");
+    expect((await request()).status).toBe(201);
+
+    const history = await send(
+      `/admin/api/content/${encodeURIComponent(home.id)}/history`,
+      { cookie }
+    );
+    expect(history.status).toBe(200);
+    expect((await history.json()).revisions).toHaveLength(2);
   });
 });
 

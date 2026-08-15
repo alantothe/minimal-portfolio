@@ -38,6 +38,10 @@ export interface ContentItem {
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  draftVersion: number;
+  basePublishedRevisionId: string | null;
+  currentPublishedRevisionId: string | null;
+  restoredFromRevisionId: string | null;
 }
 
 interface ContentRow {
@@ -53,6 +57,10 @@ interface ContentRow {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+  draft_version: number;
+  base_published_revision_id: string | null;
+  current_published_revision_id: string | null;
+  restored_from_revision_id: string | null;
 }
 
 export class UnsupportedSchemaVersionError extends Error {
@@ -88,6 +96,10 @@ function toItem(row: ContentRow): ContentItem {
     deletedAt: row.deleted_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    draftVersion: row.draft_version,
+    basePublishedRevisionId: row.base_published_revision_id,
+    currentPublishedRevisionId: row.current_published_revision_id,
+    restoredFromRevisionId: row.restored_from_revision_id,
   };
 }
 
@@ -116,6 +128,11 @@ export type ConditionalContentUpdate =
   | { status: "updated"; item: ContentItem }
   | { status: "not-found" }
   | { status: "conflict"; currentUpdatedAt: string };
+
+export type VersionedContentUpdate =
+  | { status: "updated"; item: ContentItem }
+  | { status: "not-found" }
+  | { status: "conflict"; currentDraftVersion: number };
 
 export class ContentRepository extends Repository {
   /**
@@ -294,6 +311,72 @@ export class ContentRepository extends Repository {
           : { status: "not-found" };
       }
 
+      return { status: "updated", item: toItem(row) };
+    });
+  }
+
+  /** Integer-versioned draft write used by the publication workflow. */
+  updateIfDraftVersion(
+    id: string,
+    changes: {
+      slug?: string | null;
+      data?: unknown;
+      displayOrder?: number | null;
+      publishedAt?: string | null;
+    },
+    editor: ContentOrigin,
+    expectedDraftVersion: number,
+    now: Date = new Date()
+  ): VersionedContentUpdate {
+    return this.transaction(() => {
+      const existing = this.database
+        .query("SELECT * FROM content_items WHERE id = ?")
+        .get(id) as ContentRow | null;
+      if (!existing || existing.deleted_at !== null)
+        return { status: "not-found" };
+      if (existing.draft_version !== expectedDraftVersion) {
+        return {
+          status: "conflict",
+          currentDraftVersion: existing.draft_version,
+        };
+      }
+
+      const at = nextTimestamp(existing.updated_at, now);
+      const ownerEditedAt = editor === "owner" ? at : existing.owner_edited_at;
+      const row = this.database
+        .query(
+          `UPDATE content_items
+              SET slug = ?, data = ?, schema_version = ?, display_order = ?,
+                  published_at = ?, owner_edited_at = ?, updated_at = ?,
+                  draft_version = draft_version + 1
+            WHERE id = ? AND draft_version = ? AND deleted_at IS NULL
+          RETURNING *`
+        )
+        .get(
+          changes.slug === undefined ? existing.slug : changes.slug,
+          changes.data === undefined
+            ? existing.data
+            : JSON.stringify(changes.data),
+          CONTENT_SCHEMA_VERSION,
+          changes.displayOrder === undefined
+            ? existing.display_order
+            : changes.displayOrder,
+          changes.publishedAt === undefined
+            ? existing.published_at
+            : changes.publishedAt,
+          ownerEditedAt,
+          at,
+          id,
+          expectedDraftVersion
+        ) as ContentRow | null;
+      if (!row) {
+        const current = this.database
+          .query("SELECT draft_version FROM content_items WHERE id = ?")
+          .get(id) as { draft_version: number } | null;
+        return current
+          ? { status: "conflict", currentDraftVersion: current.draft_version }
+          : { status: "not-found" };
+      }
       return { status: "updated", item: toItem(row) };
     });
   }

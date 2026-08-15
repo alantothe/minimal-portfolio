@@ -20,6 +20,7 @@
 import { randomUUID, createHash } from "node:crypto";
 import type { Database } from "bun:sqlite";
 import { ContentRepository } from "../../database/contentRepository";
+import { PublicationRepository } from "../../database/publicationRepository";
 import { planIsWritable, type ImportPlan, type PlannedEntity } from "./plan";
 import type { Finding } from "../validation";
 
@@ -149,6 +150,7 @@ export function runImport(
 ): ReconciliationReport {
   const now = options.now ?? new Date();
   const repository = new ContentRepository(database);
+  const publication = new PublicationRepository(database);
   const findings: Finding[] = [...plan.findings];
 
   if (options.mode === "production") {
@@ -264,8 +266,9 @@ export function runImport(
       );
 
     for (const { entity, outcome } of decisions) {
+      let written = repository.findIncludingArchivedById(entity.id);
       if (outcome === "created") {
-        repository.create(
+        written = repository.create(
           {
             id: entity.id,
             type: entity.type,
@@ -278,7 +281,7 @@ export function runImport(
           now
         );
       } else if (outcome === "replaced") {
-        repository.update(
+        written = repository.update(
           entity.id,
           {
             slug: entity.slug,
@@ -289,6 +292,10 @@ export function runImport(
           "import",
           now
         );
+      }
+
+      if ((outcome === "created" || outcome === "replaced") && written) {
+        publication.seedMigrationRevision(written, now);
       }
 
       database

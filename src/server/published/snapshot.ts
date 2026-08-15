@@ -27,6 +27,7 @@ import {
   type ContentItem,
 } from "../database/contentRepository";
 import { MediaRepository, type MediaAsset } from "../database/mediaRepository";
+import { PublicationRepository } from "../database/publicationRepository";
 import { parseContentData } from "../content/schema";
 import type {
   AboutContent,
@@ -175,6 +176,8 @@ export interface SiteSnapshot {
   readonly projectPageSize: number;
   /** Every canonical route this generation answers, in sitemap order. */
   readonly routes: readonly string[];
+  /** Former collection routes mapped directly to their current canonical URL. */
+  readonly redirects: Readonly<Record<string, string>>;
 }
 
 export type SnapshotBuild =
@@ -577,20 +580,27 @@ function buildSnapshot(
 ): SnapshotBuild {
   const content = new ContentRepository(database);
   const media = new MediaRepository(database);
+  const publication = new PublicationRepository(database);
   const findings: Finding[] = [];
 
   let items: ContentItem[];
   let assetList: MediaAsset[];
+  let redirects: Record<string, string>;
 
   try {
-    ({ items, assetList } = database.transaction(() => {
-      const loaded = [
-        ...content.list("home"),
-        ...content.list("about"),
-        ...content.list("branding"),
-        ...content.list("project"),
-        ...content.list("blog_post"),
-      ];
+    ({ items, assetList, redirects } = database.transaction(() => {
+      const revisions =
+        validationMode === "publish" ? publication.listPublishedContent() : [];
+      const loaded =
+        validationMode === "publish" && revisions.length > 0
+          ? revisions
+          : [
+              ...content.list("home"),
+              ...content.list("about"),
+              ...content.list("branding"),
+              ...content.list("project"),
+              ...content.list("blog_post"),
+            ];
 
       const assets: MediaAsset[] = [];
       for (const id of collectMediaIds(loaded)) {
@@ -598,7 +608,14 @@ function buildSnapshot(
         if (asset) assets.push(asset);
       }
 
-      return { items: loaded, assetList: assets };
+      return {
+        items: loaded,
+        assetList: assets,
+        redirects:
+          validationMode === "publish" && revisions.length > 0
+            ? publication.routeRedirects()
+            : {},
+      };
     })());
   } catch (cause) {
     // An unsupported schema version is the expected shape of this failure and
@@ -671,10 +688,20 @@ function buildSnapshot(
   const publishedHome = buildHome(home, context);
   const publishedAbout = buildAbout(about, context);
   const publishedBranding = buildBranding(branding, context);
-  const projects = byType("project").map((item) => buildProject(item, context));
-  const blogPosts = byType("blog_post").map((item) =>
-    buildBlogPost(item, context)
-  );
+  const projects = byType("project")
+    .sort(
+      (a, b) =>
+        (a.displayOrder ?? -1) - (b.displayOrder ?? -1) ||
+        a.createdAt.localeCompare(b.createdAt)
+    )
+    .map((item) => buildProject(item, context));
+  const blogPosts = byType("blog_post")
+    .sort(
+      (a, b) =>
+        (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "") ||
+        b.createdAt.localeCompare(a.createdAt)
+    )
+    .map((item) => buildBlogPost(item, context));
 
   // A duplicate route would make `resolve` non-deterministic, which the unique
   // index should already prevent. Checked because the cost of being wrong is a
@@ -717,6 +744,7 @@ function buildSnapshot(
         ])
       )
     ),
+    redirects: Object.freeze(redirects),
   });
 
   return { status: "built", snapshot };

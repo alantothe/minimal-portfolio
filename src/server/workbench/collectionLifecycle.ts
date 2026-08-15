@@ -189,6 +189,9 @@ export function archiveCollectionDraft(
   const current = dependencies.content.findById(input.id);
   if (!current) return { status: "not-found" };
   if (isSingletonType(current.type)) return { status: "not-deletable" };
+  if (current.currentPublishedRevisionId !== null) {
+    return { status: "not-deletable" };
+  }
 
   const archived = dependencies.content.archiveIfCurrent(
     input.id,

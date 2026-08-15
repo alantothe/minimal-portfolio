@@ -39,6 +39,7 @@ export interface DraftRecord {
   displayOrder: number | null;
   publishedAt: string | null;
   updatedAt: string;
+  draftVersion: number;
   publishFindings: Finding[];
 }
 
@@ -52,7 +53,10 @@ export type SaveDraftOutcome =
       preview: RefreshOutcome | null;
     }
   | { status: "invalid"; findings: Finding[] }
-  | { status: "conflict"; currentUpdatedAt: string }
+  | {
+      status: "conflict";
+      currentDraftVersion: number;
+    }
   | { status: "not-found" };
 
 export interface DraftReadDependencies {
@@ -146,6 +150,19 @@ function addressFindings(
   return findings;
 }
 
+/** Complete publish-mode validation for one candidate revision. */
+export function publicationFindings(
+  item: ContentItem,
+  dependencies: DraftReadDependencies
+): Finding[] {
+  const parsed = parseContentData(item.type, item.data, "draft");
+  return [
+    ...parseContentData(item.type, parsed.data, "publish").findings,
+    ...addressFindings(item, dependencies.content, "publish"),
+    ...validateMedia(item.type, parsed.data, dependencies.media),
+  ];
+}
+
 function toDraft(
   item: ContentItem,
   dependencies: DraftReadDependencies
@@ -161,6 +178,7 @@ function toDraft(
     displayOrder: item.displayOrder,
     publishedAt: item.publishedAt,
     updatedAt: item.updatedAt,
+    draftVersion: item.draftVersion,
     publishFindings: [
       ...publish,
       ...addressFindings(item, dependencies.content, "publish"),
@@ -188,7 +206,7 @@ export function saveContentDraft(
       displayOrder?: unknown;
       publishedAt?: unknown;
     };
-    expectedUpdatedAt: string;
+    expectedDraftVersion: number;
   },
   dependencies: DraftDependencies
 ): SaveDraftOutcome {
@@ -274,11 +292,11 @@ export function saveContentDraft(
     return { status: "invalid", findings };
   }
 
-  const update = dependencies.content.updateIfCurrent(
+  const update = dependencies.content.updateIfDraftVersion(
     input.id,
     changes,
     "owner",
-    input.expectedUpdatedAt
+    input.expectedDraftVersion
   );
   if (update.status !== "updated") return update;
 

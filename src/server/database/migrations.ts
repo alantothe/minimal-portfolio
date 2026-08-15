@@ -308,4 +308,137 @@ export const MIGRATIONS: Migration[] = [
          END`,
     ],
   },
+  {
+    id: 8,
+    name: "create_publication_history",
+    statements: [
+      // The editable row remains the one private draft. Its integer version is
+      // the optimistic-concurrency token; timestamps are display metadata, not
+      // a coordination primitive. The two pointers make draft ancestry and the
+      // currently public revision explicit.
+      `ALTER TABLE content_items ADD COLUMN draft_version INTEGER NOT NULL DEFAULT 1 CHECK (draft_version > 0)`,
+      `ALTER TABLE content_items ADD COLUMN base_published_revision_id TEXT`,
+      `ALTER TABLE content_items ADD COLUMN current_published_revision_id TEXT`,
+      `ALTER TABLE content_items ADD COLUMN restored_from_revision_id TEXT`,
+
+      // One immutable, complete Content snapshot per publication. A revision
+      // can always be rendered or restored without consulting a later draft.
+      `CREATE TABLE published_revisions (
+         id TEXT PRIMARY KEY,
+         content_id TEXT NOT NULL REFERENCES content_items(id),
+         revision_number INTEGER NOT NULL CHECK (revision_number > 0),
+         schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+         snapshot TEXT NOT NULL,
+         source TEXT NOT NULL CHECK (source IN ('publish', 'restore-publish', 'migration')),
+         actor_github_user_id INTEGER,
+         published_at TEXT NOT NULL,
+         note TEXT,
+         checksum TEXT NOT NULL,
+         restored_from_revision_id TEXT REFERENCES published_revisions(id),
+         UNIQUE (content_id, revision_number)
+       )`,
+      `CREATE INDEX published_revisions_content
+         ON published_revisions (content_id, revision_number DESC)`,
+      `CREATE TRIGGER published_revisions_are_immutable
+         BEFORE UPDATE ON published_revisions
+         BEGIN
+           SELECT RAISE(ABORT, 'published revisions are immutable');
+         END`,
+      `CREATE TRIGGER published_revisions_cannot_be_deleted
+         BEFORE DELETE ON published_revisions
+         BEGIN
+           SELECT RAISE(ABORT, 'published revisions cannot be deleted');
+         END`,
+
+      // Every former collection route stays reserved to one immutable Content
+      // id. `is_current` identifies the direct redirect destination without
+      // constructing redirect chains.
+      `CREATE TABLE published_routes (
+         route TEXT PRIMARY KEY,
+         content_id TEXT NOT NULL REFERENCES content_items(id),
+         is_current INTEGER NOT NULL CHECK (is_current IN (0, 1)),
+         first_revision_id TEXT NOT NULL REFERENCES published_revisions(id),
+         last_revision_id TEXT NOT NULL REFERENCES published_revisions(id)
+       )`,
+      `CREATE UNIQUE INDEX published_routes_one_current
+         ON published_routes (content_id) WHERE is_current = 1`,
+
+      // A retried publish request returns the same revision rather than making
+      // a second one. The key is globally unique and retained permanently.
+      `CREATE TABLE publication_requests (
+         idempotency_key TEXT PRIMARY KEY,
+         content_id TEXT NOT NULL REFERENCES content_items(id),
+         expected_draft_version INTEGER NOT NULL,
+         revision_id TEXT NOT NULL REFERENCES published_revisions(id),
+         created_at TEXT NOT NULL
+       )`,
+      `CREATE TABLE publication_audit (
+         id TEXT PRIMARY KEY,
+         event TEXT NOT NULL CHECK (event IN ('publish', 'restore')),
+         content_id TEXT NOT NULL REFERENCES content_items(id),
+         revision_id TEXT REFERENCES published_revisions(id),
+         actor_github_user_id INTEGER NOT NULL,
+         occurred_at TEXT NOT NULL,
+         detail TEXT
+       )`,
+      `CREATE TABLE publication_state (
+         id INTEGER PRIMARY KEY CHECK (id = 1),
+         site_generation INTEGER NOT NULL CHECK (site_generation >= 0),
+         updated_at TEXT NOT NULL
+       )`,
+      `INSERT INTO publication_state (id, site_generation, updated_at)
+       VALUES (1, 1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
+
+      // Content imported before Slice 8 was already the accepted public
+      // baseline. Preserve it as revision 1 so deploying the new schema cannot
+      // make the shadow generation empty.
+      `INSERT INTO published_revisions (
+         id, content_id, revision_number, schema_version, snapshot, source,
+         actor_github_user_id, published_at, note, checksum,
+         restored_from_revision_id
+       )
+       SELECT lower(hex(randomblob(16))), id, 1, schema_version,
+              json_object(
+                'id', id,
+                'type', type,
+                'slug', slug,
+                'schemaVersion', schema_version,
+                'data', json(data),
+                'displayOrder', display_order,
+                'publishedAt', published_at,
+                'origin', origin,
+                'ownerEditedAt', owner_edited_at,
+                'deletedAt', deleted_at,
+                'createdAt', created_at,
+                'updatedAt', updated_at
+              ),
+              'migration', NULL, updated_at,
+              'Baseline imported before publication history',
+              lower(hex(randomblob(32))), NULL
+         FROM content_items
+        WHERE deleted_at IS NULL`,
+      `UPDATE content_items
+          SET base_published_revision_id = (
+                SELECT id FROM published_revisions
+                 WHERE content_id = content_items.id AND revision_number = 1
+              ),
+              current_published_revision_id = (
+                SELECT id FROM published_revisions
+                 WHERE content_id = content_items.id AND revision_number = 1
+              )
+        WHERE deleted_at IS NULL`,
+      `INSERT INTO published_routes (
+         route, content_id, is_current, first_revision_id, last_revision_id
+       )
+       SELECT CASE type
+                WHEN 'project' THEN '/projects/' || slug
+                ELSE '/blog/' || slug
+              END,
+              id, 1, current_published_revision_id, current_published_revision_id
+         FROM content_items
+        WHERE deleted_at IS NULL
+          AND type IN ('project', 'blog_post')
+          AND slug IS NOT NULL`,
+    ],
+  },
 ];

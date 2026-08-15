@@ -35,6 +35,7 @@ function draft(
     displayOrder: attributes.displayOrder ?? null,
     publishedAt: attributes.publishedAt ?? null,
     updatedAt: "2026-08-14T00:00:00.000Z",
+    draftVersion: 1,
     publishFindings: [],
   };
 }
@@ -223,7 +224,9 @@ describe("Content editor", () => {
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
     expect(html).toContain('id="content-editor"');
     expect(html).toContain("Save now");
-    expect(html).toContain("Publishing arrives in slice 8");
+    expect(html).toContain(
+      "Publishing unlocks after the database cutover is sealed"
+    );
   });
 
   test("renders an explicit slug-confirmation form for new collection items", () => {

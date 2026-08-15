@@ -13,6 +13,8 @@ import { checkDatabaseHealth } from "./health";
 import { MIGRATIONS, type Migration } from "./migrations";
 import { checksumOf, listAppliedMigrations, runMigrations } from "./migrator";
 import { SystemStateRepository } from "./repository";
+import { seedSite } from "../published/fixtures";
+import { PublicationRepository } from "./publicationRepository";
 
 const temporaryDirectories: string[] = [];
 
@@ -110,6 +112,25 @@ describe("connection durability", () => {
 });
 
 describe("migrations", () => {
+  test("seeds existing imported content as immutable revision one", () => {
+    const database = openDatabase(temporaryDatabaseFile());
+    runMigrations(database, MIGRATIONS.slice(0, 7));
+    seedSite(database);
+
+    runMigrations(database);
+
+    const publication = new PublicationRepository(database);
+    const published = publication.listPublishedContent();
+    expect(published).toHaveLength(6);
+    expect(
+      published.every((item) => item.currentPublishedRevisionId !== null)
+    ).toBe(true);
+    expect(
+      database.query("SELECT COUNT(*) AS total FROM published_revisions").get()
+    ).toEqual({ total: 6 });
+    database.close();
+  });
+
   test("apply on first run and record themselves", () => {
     const { database } = migratedDatabase();
 

@@ -301,9 +301,7 @@ class SPARouter {
     await this.switchPage(page, 1);
   }
 
-  /**
-   * Fetch a page fragment on first navigation, then switch cached containers.
-   */
+  /** Fetch on every navigation so a newly published generation is observed. */
   async switchPage(pageName, pageNumber = 1) {
     this.isNavigating = true;
     try {
@@ -312,14 +310,7 @@ class SPARouter {
         throw new Error(`Unknown page: ${pageName}`);
       }
 
-      const cacheKey = pageCacheKey(pageName, pageNumber);
-      const cachedPage = this.pagesData[cacheKey];
-      const pageData =
-        pageContainer.dataset.loaded === "true" &&
-        Number(pageContainer.dataset.pageNumber || 1) === pageNumber &&
-        cachedPage?.seo
-          ? cachedPage
-          : await this.loadPage(pageName, pageContainer, pageNumber);
+      const pageData = await this.loadPage(pageName, pageContainer, pageNumber);
 
       await this.updatePageCSS(pageData.pageCSS);
 

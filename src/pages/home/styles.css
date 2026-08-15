@@ -583,9 +583,48 @@ h3 {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
+  .profile-section {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .stats,
   .github-activity {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .github-activity__trigger {
+    display: none;
+  }
+
+  .github-activity__panel {
+    box-shadow: none;
+    height: auto;
+    left: auto;
+    margin-top: 12px;
     max-width: 100%;
+    opacity: 1;
+    pointer-events: auto;
+    position: static;
+    top: auto;
+    transform: none;
+    visibility: visible;
+    width: 100%;
+  }
+
+  .github-activity__panel::before {
+    display: none;
+  }
+
+  .github-activity__map-frame {
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .github-activity__heatmap {
+    height: auto;
   }
 }
 

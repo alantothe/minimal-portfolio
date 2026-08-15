@@ -119,4 +119,22 @@ describe("SPA navigation", () => {
     );
     expect(homeStyles).toContain("@media (max-width: 900px)");
   });
+
+  test("shows the complete GitHub activity graph inline on phones", () => {
+    expect(homeStyles).toMatch(
+      /@media \(max-width: 640px\) \{[\s\S]*?\.profile-section \{[^}]*flex-direction: column;[\s\S]*?\.stats,\s*\.github-activity \{[^}]*width: 100%;/
+    );
+    expect(homeStyles).toMatch(
+      /@media \(max-width: 640px\) \{[\s\S]*?\.github-activity__trigger \{[^}]*display: none;/
+    );
+    expect(homeStyles).toMatch(
+      /@media \(max-width: 640px\) \{[\s\S]*?\.github-activity__panel \{[^}]*height: auto;[^}]*opacity: 1;[^}]*position: static;[^}]*visibility: visible;[^}]*width: 100%;/
+    );
+    expect(homeStyles).toMatch(
+      /@media \(max-width: 640px\) \{[\s\S]*?\.github-activity__map-frame \{[^}]*overflow: hidden;[^}]*width: 100%;/
+    );
+    expect(homeStyles).toMatch(
+      /@media \(max-width: 640px\) \{[\s\S]*?\.github-activity__heatmap \{[^}]*height: auto;/
+    );
+  });
 });

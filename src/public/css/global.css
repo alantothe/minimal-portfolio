@@ -80,7 +80,7 @@ nav {
   display: block;
 }
 
-.hamburger {
+.menu-toggle {
   display: none;
 }
 
@@ -143,7 +143,7 @@ h1 {
     gap: 24px;
   }
 
-  .hamburger {
+  .menu-toggle {
     display: none;
   }
 
@@ -189,7 +189,7 @@ h1 {
     gap: 16px;
   }
 
-  .hamburger {
+  .menu-toggle {
     display: none;
   }
 
@@ -389,7 +389,7 @@ h1 {
   opacity: 1 !important;
 }
 
-/* PHONE: Small screens (480px and below) - hamburger menu */
+/* PHONE: Small screens (480px and below) - collapsible menu */
 @media (max-width: 480px) {
   /* Container and sidebar */
   .container {
@@ -408,7 +408,7 @@ h1 {
     z-index: 100;
   }
 
-  /* Navbar header - logo and hamburger in a row */
+  /* Navbar header - logo and menu control in a row */
   .navbar-header {
     display: flex;
     flex-direction: row;
@@ -418,54 +418,33 @@ h1 {
     gap: 16px;
   }
 
-  /* Hamburger button styling - Chevron */
-  .hamburger {
+  /* Mobile menu button */
+  .menu-toggle {
     display: flex;
-    flex-direction: column;
-    gap: 0;
-    background: none;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    min-height: 44px;
+    padding: 0;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    background: transparent;
     border: none;
     cursor: pointer;
-    padding: 8px;
-    justify-content: center;
-    align-items: center;
-    width: 40px;
-    height: 40px;
+    transition: color 0.2s ease;
   }
 
-  .hamburger span {
-    width: 12px;
-    height: 2px;
-    background-color: #666666;
-    transition: all 0.3s ease;
-    display: block;
-    position: absolute;
+  .menu-toggle:hover,
+  .menu-toggle:focus-visible {
+    color: #999999;
   }
 
-  .hamburger:hover span {
-    background-color: #999999;
-  }
-
-  /* Chevron Down - closed state (default) */
-  .hamburger span:nth-child(1) {
-    transform: rotate(135deg) translateY(-5px);
-  }
-
-  .hamburger span:nth-child(2) {
-    transform: rotate(45deg) translateY(5px);
-  }
-
-  .hamburger span:nth-child(3) {
-    display: none;
-  }
-
-  /* Chevron Up - open state */
-  .hamburger.active span:nth-child(1) {
-    transform: rotate(45deg) translateY(-5px);
-  }
-
-  .hamburger.active span:nth-child(2) {
-    transform: rotate(135deg) translateY(5px);
+  .menu-toggle:focus-visible {
+    outline: 1px solid #666666;
+    outline-offset: 4px;
   }
 
   /* Mobile nav - HIDDEN by default, expands with .active class */

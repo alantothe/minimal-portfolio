@@ -4,7 +4,10 @@ const HOUR_MS = 60 * 60 * 1_000;
 
 interface ScheduledRecovery {
   status(): RecoveryStatus;
-  checkpoint(kind: BackupKind): Promise<BackupResult>;
+  checkpoint(
+    kind: BackupKind,
+    options?: { changeId?: string }
+  ): Promise<BackupResult>;
 }
 
 interface TimerDependencies {
@@ -12,6 +15,7 @@ interface TimerDependencies {
   setInterval: (callback: () => void, milliseconds: number) => TimerHandle;
   clearInterval: (timer: TimerHandle) => void;
   reconcileMedia?: () => Promise<unknown>;
+  publicationRetryDelaysMs: number[];
 }
 
 interface TimerHandle {
@@ -45,6 +49,9 @@ export class RecoveryScheduler {
         timers.clearInterval ??
         ((timer) => globalThis.clearInterval(timer as never)),
       reconcileMedia: timers.reconcileMedia,
+      publicationRetryDelaysMs: timers.publicationRetryDelaysMs ?? [
+        0, 30_000, 90_000, 180_000,
+      ],
     };
   }
 
@@ -90,8 +97,26 @@ export class RecoveryScheduler {
   }
 
   afterPublication(): void {
-    void this.coordinator
-      .checkpoint("hourly")
-      .catch((error) => reportFailure("publication_backup", error));
+    void this.checkpointWithRetry("hourly", "publication_backup");
+  }
+
+  private async checkpointWithRetry(
+    kind: BackupKind,
+    scope: string
+  ): Promise<void> {
+    const delays = this.timers.publicationRetryDelaysMs;
+    let lastError: unknown;
+    for (const delay of delays) {
+      if (delay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+      try {
+        await this.coordinator.checkpoint(kind);
+        return;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    reportFailure(scope, lastError);
   }
 }

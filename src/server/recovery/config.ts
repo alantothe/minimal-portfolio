@@ -108,8 +108,10 @@ export function resolveRecoveryConfig(
   };
 }
 
-export function validateRecoveryConfigAtStartup(): void {
-  const resolution = resolveRecoveryConfig();
+export function validateRecoveryConfigAtStartup(
+  environment: NodeJS.ProcessEnv = process.env
+): void {
+  const resolution = resolveRecoveryConfig(environment);
   if (resolution.status === "invalid") {
     throw new Error(`Recovery misconfigured: ${resolution.reason}`);
   }

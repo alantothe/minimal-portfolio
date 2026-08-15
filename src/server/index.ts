@@ -5,12 +5,20 @@ import { serverConfig, getServerUrl } from "./core/config";
 import { syncViewsWithBlogPosts } from "./services/views";
 import { validateProductionSiteUrl } from "./services/seo";
 import { logDevelopmentWorkflowBanner } from "./core/developmentWorkflow";
-import { getDatabase, initializeDatabase } from "./database";
+import {
+  initializeRecovery,
+  requestChangeCheckpoint,
+} from "./recovery/runtime";
+import { validateRecoveryConfigAtStartup } from "./recovery/config";
+import {
+  appliedMigrationsThisBoot,
+  getDatabase,
+  initializeDatabase,
+} from "./database";
 import { initializePublishedSite } from "./published/lifecycle";
 import { validateAuthConfigAtStartup } from "./auth/config";
 import { validateMediaConfigAtStartup } from "./media/config";
 import { reconcileStartupImportBaselines } from "./content/import/startupBaselines";
-import { initializeRecovery } from "./recovery/runtime";
 
 const router = new Router();
 setupRoutes(router);
@@ -29,6 +37,9 @@ validateAuthConfigAtStartup();
 // disable uploading, which costs the public site nothing. A contradictory
 // configuration is still fatal, because it means someone meant to set this up.
 validateMediaConfigAtStartup();
+// Recovery is optional until R2 recipients exist. Partial configuration is
+// fatal everywhere, matching media: someone meant to turn this on.
+validateRecoveryConfigAtStartup();
 
 // Sync view data with blog posts on startup
 await syncViewsWithBlogPosts();
@@ -54,6 +65,10 @@ if (database.status === "ok") {
   await reconcileStartupImportBaselines(getDatabase());
   initializePublishedSite();
   initializeRecovery();
+  const applied = appliedMigrationsThisBoot();
+  if (applied.length > 0) {
+    requestChangeCheckpoint(`migration-${applied.join("-")}`);
+  }
 }
 
 // start server

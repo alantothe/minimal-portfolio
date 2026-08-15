@@ -23,6 +23,7 @@ interface DatabaseState {
   database: Database | null;
   file: string;
   error: string | null;
+  appliedThisBoot: number[];
 }
 
 let state: DatabaseState | null = null;
@@ -34,7 +35,12 @@ export function initializeDatabase(): DatabaseHealth {
   try {
     file = resolveDatabaseFile();
   } catch (error) {
-    state = { database: null, file: "<unresolved>", error: message(error) };
+    state = {
+      database: null,
+      file: "<unresolved>",
+      error: message(error),
+      appliedThisBoot: [],
+    };
     return databaseHealth();
   }
 
@@ -44,7 +50,7 @@ export function initializeDatabase(): DatabaseHealth {
     const baselines = new PublicationRepository(
       database
     ).reconcileUneditedImportedBaselines();
-    state = { database, file, error: null };
+    state = { database, file, error: null, appliedThisBoot: outcome.applied };
 
     if (outcome.applied.length > 0) {
       console.log(
@@ -55,11 +61,20 @@ export function initializeDatabase(): DatabaseHealth {
       console.log(`[database] seeded ${baselines} publication baseline(s)`);
     }
   } catch (error) {
-    state = { database: null, file, error: message(error) };
+    state = {
+      database: null,
+      file,
+      error: message(error),
+      appliedThisBoot: [],
+    };
     console.error(`[database] unavailable at ${file}: ${message(error)}`);
   }
 
   return databaseHealth();
+}
+
+export function appliedMigrationsThisBoot(): number[] {
+  return state?.appliedThisBoot ?? [];
 }
 
 /**

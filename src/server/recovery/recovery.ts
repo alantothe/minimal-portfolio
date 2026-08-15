@@ -328,16 +328,42 @@ function validateDatabase(file: string): Validation {
       content_id: string;
       is_current: number;
     }>;
-    const currentByContent = new Map(
-      routeRows
-        .filter((row) => row.is_current === 1)
-        .map((row) => [row.content_id, row.route])
-    );
+    const seenRoutes = new Set<string>();
+    const currentByContent = new Map<string, string>();
+    const redirectTo = new Map<string, string>();
     for (const row of routeRows) {
-      if (row.is_current === 0 && !currentByContent.has(row.content_id)) {
+      if (seenRoutes.has(row.route)) {
+        throw new Error(`duplicate Public route ${row.route}`);
+      }
+      seenRoutes.add(row.route);
+      if (row.is_current === 1) {
+        if (currentByContent.has(row.content_id)) {
+          throw new Error(
+            `content ${row.content_id} has more than one current Public route`
+          );
+        }
+        currentByContent.set(row.content_id, row.route);
+      }
+    }
+    for (const row of routeRows) {
+      if (row.is_current !== 0) continue;
+      const destination = currentByContent.get(row.content_id);
+      if (!destination) {
         throw new Error(
           `Public-route redirect ${row.route} has no destination`
         );
+      }
+      redirectTo.set(row.route, destination);
+    }
+    for (const [start, first] of redirectTo) {
+      const seen = new Set<string>([start]);
+      let current = first;
+      while (redirectTo.has(current)) {
+        if (seen.has(current)) {
+          throw new Error(`Public-route redirect ${start} loops`);
+        }
+        seen.add(current);
+        current = redirectTo.get(current)!;
       }
     }
 
@@ -443,11 +469,19 @@ async function unpack(archive: string, directory: string): Promise<void> {
   await run(["tar", "-xf", archive, "-C", directory]);
 }
 
+function sanitizeChangeId(changeId: string): string {
+  if (!/^[a-zA-Z0-9._-]{1,64}$/.test(changeId)) {
+    throw new Error("pre-change id must be a short filesystem-safe token");
+  }
+  return changeId;
+}
+
 function objectKey(
   kind: BackupKind,
   at: Date,
   generation: number,
-  nonce: string
+  nonce: string,
+  changeId = "manual"
 ): string {
   const iso = at.toISOString();
   const day = iso.slice(0, 10).replaceAll("-", "/");
@@ -456,11 +490,27 @@ function objectKey(
   if (kind === "monthly") {
     return `db/monthly/${month}/${timestamp}-${generation}-${nonce}.tar.age`;
   }
-  if (kind === "pre-change") {
-    return `db/pre-change/${day}/${timestamp}-${generation}-${nonce}.tar.age`;
+  if (kind === "pre-change" || kind === "manual") {
+    return `db/pre-change/${day}/${sanitizeChangeId(changeId)}-${generation}-${nonce}.tar.age`;
   }
-  const prefix = kind === "manual" ? "pre-change" : kind;
-  return `db/${prefix}/${day}/${timestamp}-${generation}-${nonce}.tar.age`;
+  return `db/${kind}/${day}/${timestamp}-${generation}-${nonce}.tar.age`;
+}
+
+async function verifyUploadedObject(
+  store: RecoveryObjectStore,
+  key: string,
+  body: Uint8Array,
+  digest: string,
+  message: string
+): Promise<void> {
+  const head = await store.head(key);
+  if (
+    !head ||
+    head.bytes !== body.byteLength ||
+    head.metadata.sha256 !== digest
+  ) {
+    throw new Error(message);
+  }
 }
 
 async function ensureMissing(file: string): Promise<void> {
@@ -491,31 +541,32 @@ export class RecoveryCoordinator {
     const backup = this.dependencies.database
       .query(
         `SELECT status, completed_at FROM recovery_operations
-          ORDER BY completed_at DESC, id DESC LIMIT 1`
+          ORDER BY datetime(completed_at) DESC, rowid DESC LIMIT 1`
       )
       .get() as OperationRow | null;
     const successfulBackup = this.dependencies.database
       .query(
         `SELECT completed_at FROM recovery_operations
           WHERE status = 'succeeded'
-          ORDER BY completed_at DESC, id DESC LIMIT 1`
+          ORDER BY datetime(completed_at) DESC, rowid DESC LIMIT 1`
       )
       .get() as { completed_at: string } | null;
     const drill = this.dependencies.database
       .query(
         `SELECT status, completed_at FROM recovery_drills
-          ORDER BY completed_at DESC, id DESC LIMIT 1`
+          ORDER BY datetime(completed_at) DESC, rowid DESC LIMIT 1`
       )
       .get() as OperationRow | null;
     const successfulDrill = this.dependencies.database
       .query(
         `SELECT completed_at FROM recovery_drills
           WHERE status = 'succeeded'
-          ORDER BY completed_at DESC, id DESC LIMIT 1`
+          ORDER BY datetime(completed_at) DESC, rowid DESC LIMIT 1`
       )
       .get() as { completed_at: string } | null;
     const now = this.clock().getTime();
     const hourAgo = now - 60 * 60 * 1_000;
+    const publicationRpoAgo = now - 5 * 60 * 1_000;
     const unprotectedMediaIds = (
       this.dependencies.database
         .query(
@@ -529,10 +580,14 @@ export class RecoveryCoordinator {
       .map((row) => row.id);
     const alerts: RecoveryAlert[] = [];
     if (backup?.status === "failed") alerts.push("backup_failed");
-    if (
-      !successfulBackup ||
-      Date.parse(successfulBackup.completed_at) <= hourAgo
-    ) {
+    const lastSuccessAt = successfulBackup
+      ? Date.parse(successfulBackup.completed_at)
+      : null;
+    const hourlyOverdue = lastSuccessAt === null || lastSuccessAt <= hourAgo;
+    const publicationOverdue =
+      backup?.status === "failed" &&
+      (lastSuccessAt === null || lastSuccessAt <= publicationRpoAgo);
+    if (hourlyOverdue || publicationOverdue) {
       alerts.push("backup_overdue");
     }
     if (drill?.status === "failed") alerts.push("restore_drill_failed");
@@ -570,14 +625,17 @@ export class RecoveryCoordinator {
     return keys[0] ?? null;
   }
 
-  checkpoint(kind: BackupKind): Promise<BackupResult> {
+  checkpoint(
+    kind: BackupKind,
+    options: { changeId?: string } = {}
+  ): Promise<BackupResult> {
     this.queued += 1;
     const operation = this.tail.then(async () => {
       this.queued -= 1;
       this.running = true;
       const startedAt = this.clock().toISOString();
       try {
-        const result = await this.createCheckpoint(kind);
+        const result = await this.createCheckpoint(kind, options.changeId);
         this.recordBackup({
           kind,
           status: "succeeded",
@@ -640,7 +698,10 @@ export class RecoveryCoordinator {
       );
   }
 
-  private async createCheckpoint(kind: BackupKind): Promise<BackupResult> {
+  private async createCheckpoint(
+    kind: BackupKind,
+    changeId?: string
+  ): Promise<BackupResult> {
     const at = this.clock();
     await mkdir(this.dependencies.stagingRoot, { recursive: true });
     const [source, filesystem] = await Promise.all([
@@ -691,7 +752,9 @@ export class RecoveryCoordinator {
         kind,
         at,
         validation.publicationGeneration,
-        randomBytes(6).toString("hex")
+        randomBytes(6).toString("hex"),
+        changeId ??
+          (kind === "manual" || kind === "pre-change" ? kind : "manual")
       );
       await this.dependencies.store.put({
         key,
@@ -702,14 +765,13 @@ export class RecoveryCoordinator {
           schema: String(validation.schemaVersion),
         },
       });
-      const head = await this.dependencies.store.head(key);
-      if (
-        !head ||
-        head.bytes !== body.byteLength ||
-        head.metadata.sha256 !== bundleDigest
-      ) {
-        throw new Error("uploaded backup did not pass object verification");
-      }
+      await verifyUploadedObject(
+        this.dependencies.store,
+        key,
+        body,
+        bundleDigest,
+        "uploaded backup did not pass object verification"
+      );
       return {
         objectKey: key,
         bundleDigest,
@@ -868,8 +930,13 @@ export class RecoveryCoordinator {
       }
       await mkdir(dirname(input.targetDatabaseFile), { recursive: true });
       const pending = `${input.targetDatabaseFile}.restore-${randomBytes(4).toString("hex")}`;
-      await copyFile(sanitized, pending);
-      await rename(pending, input.targetDatabaseFile);
+      try {
+        await copyFile(sanitized, pending);
+        await rename(pending, input.targetDatabaseFile);
+      } catch (error) {
+        await rm(pending, { force: true });
+        throw error;
+      }
 
       return {
         objectKey: input.objectKey,
@@ -929,16 +996,13 @@ export class RecoveryCoordinator {
           media_id: input.mediaId,
         },
       });
-      const head = await this.dependencies.store.head(key);
-      if (
-        !head ||
-        head.bytes !== body.byteLength ||
-        head.metadata.sha256 !== bundleDigest
-      ) {
-        throw new Error(
-          "uploaded Media original did not pass object verification"
-        );
-      }
+      await verifyUploadedObject(
+        this.dependencies.store,
+        key,
+        body,
+        bundleDigest,
+        "uploaded Media original did not pass object verification"
+      );
       const result = {
         objectKey: key,
         bundleDigest,

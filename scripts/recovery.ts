@@ -26,7 +26,7 @@ import { isAbsolute, join, resolve } from "node:path";
 function usage(): never {
   console.error(`Usage:
   bun scripts/recovery.ts status
-  bun scripts/recovery.ts checkpoint [hourly|daily|monthly|pre-change|manual]
+  bun scripts/recovery.ts checkpoint [hourly|daily|monthly|pre-change|manual] [--change-id <id>]
   bun scripts/recovery.ts restore --object <key> --target <file> --identity <file> [--operator]
   bun scripts/recovery.ts drill-latest --target <file> --identity <file>
   bun scripts/recovery.ts fixture-drill`);
@@ -155,7 +155,12 @@ async function main(): Promise<void> {
         !["hourly", "daily", "monthly", "pre-change", "manual"].includes(kind)
       )
         usage();
-      console.log(JSON.stringify(await coordinator.checkpoint(kind)));
+      const changeId = option(args, "--change-id");
+      console.log(
+        JSON.stringify(
+          await coordinator.checkpoint(kind, changeId ? { changeId } : {})
+        )
+      );
       return;
     }
     if (command === "restore" || command === "drill-latest") {

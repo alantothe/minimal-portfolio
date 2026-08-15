@@ -70,4 +70,30 @@ describe("RecoveryScheduler", () => {
 
     expect(checkpoints).toEqual(["hourly"]);
   });
+
+  test("retries a failed Publication checkpoint inside the five-minute RPO", async () => {
+    const { checkpoints, coordinator } = schedulerFixture();
+    let attempts = 0;
+    coordinator.checkpoint = async (kind: BackupKind) => {
+      checkpoints.push(kind);
+      attempts += 1;
+      if (attempts < 3) throw new Error("object storage unavailable");
+      return {
+        objectKey: kind,
+        bundleDigest: "digest",
+        publicationGeneration: 1,
+        publishedFingerprint: "generation",
+        mediaReferences: [],
+        createdAt: "2026-08-14T12:00:00.000Z",
+      };
+    };
+    const scheduler = new RecoveryScheduler(coordinator, {
+      publicationRetryDelaysMs: [0, 0, 0],
+    });
+
+    scheduler.afterPublication();
+    await Bun.sleep(20);
+
+    expect(checkpoints).toEqual(["hourly", "hourly", "hourly"]);
+  });
 });

@@ -66,7 +66,7 @@ class CopyCipher implements RecoveryCipher {
 const directories: string[] = [];
 const databases: Database[] = [];
 
-async function fixture() {
+async function fixture(options: { clock?: () => Date } = {}) {
   const migrated = migratedDatabase();
   directories.push(migrated.directory);
   databases.push(migrated.database);
@@ -82,7 +82,7 @@ async function fixture() {
     cipher: new CopyCipher(),
     recipients: ["age1owner", "age1drill"],
     appCommit: "abc1234",
-    clock: () => new Date("2026-08-14T12:34:56.000Z"),
+    clock: options.clock ?? (() => new Date("2026-08-14T12:34:56.000Z")),
   });
   return { ...migrated, coordinator, store, stagingRoot };
 }
@@ -254,5 +254,78 @@ describe("Media original recovery", () => {
       "asset-sharing",
     ]);
     expect(coordinator.status().unprotectedMediaIds).toEqual([]);
+  });
+});
+
+describe("backup semantics", () => {
+  test("refuses a Public-route redirect with no current destination", async () => {
+    const { coordinator, database } = await fixture();
+    const current = database
+      .query(
+        `SELECT route, content_id, first_revision_id, last_revision_id
+           FROM published_routes WHERE is_current = 1 LIMIT 1`
+      )
+      .get() as {
+      route: string;
+      content_id: string;
+      first_revision_id: string;
+      last_revision_id: string;
+    };
+    database
+      .query(
+        `INSERT INTO published_routes
+           (route, content_id, is_current, first_revision_id, last_revision_id)
+         VALUES (?, ?, 0, ?, ?)`
+      )
+      .run(
+        `${current.route}-former`,
+        current.content_id,
+        current.first_revision_id,
+        current.last_revision_id
+      );
+    database
+      .query("DELETE FROM published_routes WHERE route = ?")
+      .run(current.route);
+
+    await expect(coordinator.checkpoint("hourly")).rejects.toThrow(
+      `Public-route redirect ${current.route}-former has no destination`
+    );
+  });
+
+  test("puts pre-change objects under the change id", async () => {
+    const { coordinator } = await fixture();
+
+    const backup = await coordinator.checkpoint("pre-change", {
+      changeId: "migration-9",
+    });
+
+    expect(backup.objectKey).toMatch(
+      /^db\/pre-change\/2026\/08\/14\/migration-9-\d+-[0-9a-f]{12}\.tar\.age$/
+    );
+  });
+
+  test("treats a failed backup older than five minutes as overdue", async () => {
+    let now = new Date("2026-08-14T12:34:56.000Z");
+    const { coordinator, store } = await fixture({ clock: () => now });
+    await coordinator.checkpoint("hourly");
+    store.failWrites = true;
+    await expect(coordinator.checkpoint("hourly")).rejects.toThrow(
+      "object storage unavailable"
+    );
+
+    now = new Date("2026-08-14T12:40:56.000Z");
+    expect(coordinator.status().alerts).toContain("backup_overdue");
+  });
+
+  test("keeps hourly recovery point at one hour when backups succeed", async () => {
+    let now = new Date("2026-08-14T12:34:56.000Z");
+    const { coordinator } = await fixture({ clock: () => now });
+    await coordinator.checkpoint("hourly");
+
+    now = new Date("2026-08-14T13:04:56.000Z");
+    expect(coordinator.status().alerts).not.toContain("backup_overdue");
+
+    now = new Date("2026-08-14T13:35:56.000Z");
+    expect(coordinator.status().alerts).toContain("backup_overdue");
   });
 });

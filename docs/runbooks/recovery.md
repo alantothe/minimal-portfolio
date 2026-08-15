@@ -141,8 +141,9 @@ Keep the old unmounted volume until recovery is accepted.
 
 - `backup_failed`: inspect R2 reachability, `age`, staging space, then run a
   manual checkpoint.
-- `backup_overdue`: newest successful point is older than one hour; run a
-  checkpoint and verify scheduling.
+- `backup_overdue`: newest successful point is older than one hour, or a
+  failed backup has left Publication unprotected for more than five minutes;
+  run a checkpoint and verify scheduling.
 - `media_original_overdue`: at least one ready Media asset lacks a verified R2
   original after one hour; reconcile it before cutover.
 - `restore_drill_failed`: preserve the selected object and investigate in an

@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { resolveRecoveryConfig } from "./config";
+import {
+  resolveRecoveryConfig,
+  validateRecoveryConfigAtStartup,
+} from "./config";
 
 const COMPLETE = {
   RECOVERY_R2_ACCOUNT_ID: "0123456789abcdef0123456789abcdef",
@@ -61,5 +64,15 @@ describe("recovery configuration", () => {
       status: "invalid",
       reason: "Recovery age recipients must be public age1 keys",
     });
+  });
+
+  test("absent recovery configuration is tolerated at startup", () => {
+    expect(() => validateRecoveryConfigAtStartup({})).not.toThrow();
+  });
+
+  test("partial recovery configuration is fatal at startup", () => {
+    expect(() =>
+      validateRecoveryConfigAtStartup({ RECOVERY_R2_BUCKET: "partial" })
+    ).toThrow("Recovery misconfigured");
   });
 });

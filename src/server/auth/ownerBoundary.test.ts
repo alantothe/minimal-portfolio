@@ -858,7 +858,12 @@ describe("collection lifecycle API", () => {
     const project = repository.findById(
       importedContentId("project", "questurian")
     )!;
-    repository.update(project.id, { data: project.data }, "owner");
+    repository.update(
+      project.id,
+      { data: project.data },
+      "owner",
+      new Date(Date.parse(project.updatedAt) + 1_000)
+    );
     const { cookie, csrfToken } = establishSession();
     const headers = {
       Origin: ORIGIN,

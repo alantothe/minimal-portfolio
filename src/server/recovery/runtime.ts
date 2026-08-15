@@ -1,3 +1,4 @@
+import type { Database } from "bun:sqlite";
 import { getDatabase } from "../database";
 import type { RecoveryCipher, RecoveryObjectStore } from "./recovery";
 import { RecoveryCoordinator } from "./recovery";
@@ -116,4 +117,41 @@ export function recoveryRuntimeStatus(): RecoveryRuntimeStatus {
 
 export function requestPublicationCheckpoint(): void {
   state?.scheduler.afterPublication();
+}
+
+export function requestChangeCheckpoint(changeId: string): void {
+  void state?.coordinator
+    .checkpoint("pre-change", { changeId })
+    .catch((error) => {
+      console.error("[recovery] change_checkpoint_failed");
+      if (process.env.NODE_ENV !== "production") {
+        console.error(error instanceof Error ? error.message : String(error));
+      }
+    });
+}
+
+export function createConfiguredCoordinator(
+  database: Database,
+  databaseFile: string
+): RecoveryCoordinator | null {
+  const resolution = resolveRecoveryConfig();
+  if (resolution.status === "unconfigured") return null;
+  if (resolution.status === "invalid") {
+    throw new Error(`Recovery misconfigured: ${resolution.reason}`);
+  }
+  const { config } = resolution;
+  return new RecoveryCoordinator({
+    database,
+    databaseFile,
+    stagingRoot: config.stagingRoot,
+    store: new R2ObjectStore({
+      endpoint: config.endpoint,
+      bucket: config.bucket,
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+    }),
+    cipher: new AgeCipher(),
+    recipients: config.recipients,
+    appCommit: config.appCommit,
+  });
 }

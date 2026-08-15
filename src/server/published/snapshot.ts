@@ -574,11 +574,9 @@ function buildSnapshot(
 
   try {
     ({ items, assetList, redirects } = database.transaction(() => {
-      const revisions =
-        validationMode === "publish" ? publication.listPublishedContent() : [];
       const loaded =
-        validationMode === "publish" && revisions.length > 0
-          ? revisions
+        validationMode === "publish"
+          ? publication.listPublishedContent()
           : [
               ...content.list("home"),
               ...content.list("about"),
@@ -597,9 +595,7 @@ function buildSnapshot(
         items: loaded,
         assetList: assets,
         redirects:
-          validationMode === "publish" && revisions.length > 0
-            ? publication.routeRedirects()
-            : {},
+          validationMode === "publish" ? publication.routeRedirects() : {},
       };
     })());
   } catch (cause) {

@@ -288,6 +288,11 @@ export class PublicationRepository extends Repository {
 
   /** Establishes or advances the accepted baseline during a controlled import. */
   seedMigrationRevision(item: ContentItem, now: Date): PublishedRevision {
+    const route = publicRouteFor(item);
+    const existingOwner = route ? this.routeOwner(route) : null;
+    if (existingOwner && existingOwner !== item.id) {
+      throw new Error(`published route is reserved to another Content item`);
+    }
     const id = randomUUID();
     const at = now.toISOString();
     const snapshot = revisionSnapshot(item);
@@ -317,7 +322,6 @@ export class PublicationRepository extends Repository {
           WHERE id = ?`
       )
       .run(id, id, item.id);
-    const route = publicRouteFor(item);
     if (route) this.activateRoute(item.id, route, id);
     this.database
       .query(
@@ -356,7 +360,34 @@ export class PublicationRepository extends Repository {
     });
   }
 
+  missingImportedBaselineIds(): string[] {
+    const rows = this.database
+      .query(
+        `SELECT id FROM content_items
+          WHERE deleted_at IS NULL
+            AND current_published_revision_id IS NULL
+            AND origin = 'import'
+          ORDER BY id`
+      )
+      .all() as Array<{ id: string }>;
+    return rows.map((row) => row.id);
+  }
+
+  acceptedImportSourceHash(contentId: string): string | null {
+    const row = this.database
+      .query(
+        `SELECT source_hash FROM import_entities
+          WHERE content_id = ? ORDER BY rowid DESC LIMIT 1`
+      )
+      .get(contentId) as { source_hash: string } | null;
+    return row?.source_hash ?? null;
+  }
+
   activateRoute(contentId: string, route: string, revisionId: string): void {
+    const existingOwner = this.routeOwner(route);
+    if (existingOwner && existingOwner !== contentId) {
+      throw new Error(`published route is reserved to another Content item`);
+    }
     this.database
       .query("UPDATE published_routes SET is_current = 0 WHERE content_id = ?")
       .run(contentId);
@@ -366,7 +397,8 @@ export class PublicationRepository extends Repository {
            (route, content_id, is_current, first_revision_id, last_revision_id)
          VALUES (?, ?, 1, ?, ?)
          ON CONFLICT (route) DO UPDATE SET
-           is_current = 1, last_revision_id = excluded.last_revision_id`
+           is_current = 1, last_revision_id = excluded.last_revision_id
+         WHERE published_routes.content_id = excluded.content_id`
       )
       .run(route, contentId, revisionId, revisionId);
   }

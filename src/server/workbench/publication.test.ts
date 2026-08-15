@@ -251,6 +251,43 @@ describe("publishing a Content draft", () => {
 });
 
 describe("history, restore, and routes", () => {
+  test("a changed import cannot claim another Content item's historical route", () => {
+    const { database, content, publication } = setup();
+    const [first, second] = content.list("project");
+    const firstOriginalSlug = first!.slug!;
+    const secondOriginalSlug = second!.slug!;
+
+    database.transaction(() => {
+      const moved = content.update(
+        first!.id,
+        { slug: "imported-project-moved" },
+        "import"
+      )!;
+      publication.seedMigrationRevision(
+        moved,
+        new Date("2026-08-14T13:00:00.000Z")
+      );
+    })();
+
+    expect(() =>
+      database.transaction(() => {
+        const collision = content.update(
+          second!.id,
+          { slug: firstOriginalSlug },
+          "import"
+        )!;
+        publication.seedMigrationRevision(
+          collision,
+          new Date("2026-08-14T14:00:00.000Z")
+        );
+      })()
+    ).toThrow("published route is reserved");
+    expect(content.findById(second!.id)?.slug).toBe(secondOriginalSlug);
+    expect(publication.routeOwner(`/projects/${firstOriginalSlug}`)).toBe(
+      first!.id
+    );
+  });
+
   test("restore changes only the draft; restore-publish creates a new top revision", () => {
     const { database, content, publication, dependencies } = setup();
     const home = content.findSingleton("home")!;

@@ -13,7 +13,7 @@ import type { SiteSnapshot } from "../published/snapshot";
 import {
   FIXTURE_CLOUD_NAME,
   migratedDatabase,
-  seedSite,
+  seedPublishedSite,
 } from "../published/fixtures";
 import {
   contentLibrary,
@@ -26,7 +26,7 @@ const directories: string[] = [];
 function snapshot(): SiteSnapshot {
   const { database, directory } = migratedDatabase();
   directories.push(directory);
-  seedSite(database as Database);
+  seedPublishedSite(database as Database);
 
   const build = buildSiteSnapshot(database as Database, {
     cloudName: FIXTURE_CLOUD_NAME,

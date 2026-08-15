@@ -21,7 +21,11 @@ import {
 import { publishedBlogPostPayload } from "./representations";
 import { toInlineHtml, unwrapSingleParagraph } from "./inlineCopy";
 import { publishedSeoMetadata } from "./seo";
-import { FIXTURE_CLOUD_NAME, migratedDatabase, seedSite } from "./fixtures";
+import {
+  FIXTURE_CLOUD_NAME,
+  migratedDatabase,
+  seedPublishedSite,
+} from "./fixtures";
 import type { FoundPage } from "./target";
 
 const directories: string[] = [];
@@ -111,7 +115,7 @@ describe("system-owned behaviour hooks", () => {
     const db = database();
     // Markdown carrying raw HTML is dropped by the restricted renderer, so an
     // Owner cannot hand-write a data attribute into their bio.
-    seedSite(db, {
+    seedPublishedSite(db, {
       homeBio:
         'Contact <span id="copy-email" data-email="evil@test">me</span>.',
     });
@@ -126,7 +130,7 @@ describe("system-owned behaviour hooks", () => {
 describe("what the renderer restores", () => {
   test("a blog post gets its heading back", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const { snapshot } = siteFor(db);
 
     const html = blogPostBody(snapshot.blogPosts[0]!);
@@ -138,7 +142,7 @@ describe("what the renderer restores", () => {
 
   test("the SSR page and the JSON payload carry the same body", async () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const { site, snapshot } = siteFor(db);
     const page = found(site, "/blog/first-post");
 
@@ -156,7 +160,7 @@ describe("what the renderer restores", () => {
 
   test("marks database-backed documents for SPA cache revalidation", async () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const { site, snapshot } = siteFor(db);
 
     const document = await renderPublishedDocument(
@@ -172,7 +176,7 @@ describe("what the renderer restores", () => {
 
   test("the portrait is sized to what is actually delivered", async () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const { site, snapshot } = siteFor(db);
 
     const rendered = await renderPublishedPage(found(site, "/").view, snapshot);
@@ -184,7 +188,7 @@ describe("what the renderer restores", () => {
 
   test("a blog post's published time is an instant, not a calendar date", () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const { site, snapshot } = siteFor(db);
 
     const seo = publishedSeoMetadata(
@@ -200,7 +204,7 @@ describe("what the renderer restores", () => {
 describe("optional enrichment", () => {
   test("a page renders completely with nothing gathered", async () => {
     const db = database();
-    seedSite(db);
+    seedPublishedSite(db);
     const { site, snapshot } = siteFor(db);
 
     const rendered = await renderPublishedPage(found(site, "/").view, snapshot);
@@ -211,7 +215,7 @@ describe("optional enrichment", () => {
 
   test("collection pages render their own page's items only", async () => {
     const db = database();
-    seedSite(db, {
+    seedPublishedSite(db, {
       blogPosts: Array.from({ length: 5 }, (_, index) => ({
         slug: `post-${index}`,
         date: `2026-01-0${index + 1}`,
@@ -236,7 +240,7 @@ describe("optional enrichment", () => {
 
   test("pagination marks the page being viewed", async () => {
     const db = database();
-    seedSite(db, {
+    seedPublishedSite(db, {
       blogPosts: Array.from({ length: 5 }, (_, index) => ({
         slug: `post-${index}`,
         date: `2026-01-0${index + 1}`,

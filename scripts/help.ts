@@ -65,6 +65,13 @@ RECOVERY COMMANDS
   bun run recovery:fixture-drill  Prove restore with isolated fixture
   Full runbook: docs/runbooks/recovery.md
 
+CUTOVER COMMANDS
+  bun run cutover:status          Show persisted phase and serving policy
+  bun scripts/cutover.ts advance shadow|sqlite-observation|sealed [--confirm-checks]
+  bun scripts/cutover.ts rollback legacy
+  bun scripts/cutover.ts reconcile-views [--commit]
+  Full runbook: docs/runbooks/cutover.md
+
 IMPORTANT
   Never push directly from main.
   Never commit .env files or secrets.

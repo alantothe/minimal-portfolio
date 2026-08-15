@@ -1,11 +1,12 @@
 /**
  * Database lifecycle for the running server.
  *
- * Startup deliberately does not throw. During this slice the public site is
- * still served entirely from repository content, so a database that fails to
- * open must not take down a site that is otherwise working perfectly. The
- * failure surfaces through readiness instead: `/readyz` reports it, Railway's
- * health check fails the new deployment, and the previous one keeps serving.
+ * During `legacy` the public site is still served from repository content, so a
+ * database that fails to open must not take down a site that is otherwise
+ * working. The failure surfaces through readiness instead: `/readyz` reports
+ * it, Railway's health check fails the new deployment, and the previous one
+ * keeps serving. From `sqlite-observation` onward that same probe refuses a
+ * process with no published generation.
  *
  * What must never happen is a silent fallback to ephemeral storage. If the
  * volume is missing, the database is unavailable and says so — it does not

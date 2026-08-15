@@ -354,7 +354,7 @@ function readyPanel(panel: Extract<EditorPanel, { status: "ready" }>): string {
     collection === "project" ? "Delete Project" : "Delete Blog post";
   const deleteControl = collection
     ? panel.publishedRevisionNumber
-      ? `<button type="button" disabled title="Published Content cannot be deleted">${deleteLabel}</button>`
+      ? `<button type="button" disabled title="Published Content items cannot be deleted">${deleteLabel}</button>`
       : `<button type="button" id="delete-content">${deleteLabel}</button>`
     : "";
   const deleteDialog = collection

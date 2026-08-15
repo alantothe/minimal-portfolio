@@ -5,6 +5,7 @@ import { Repository } from "./repository";
 import { ContentRepository, type ContentItem } from "./contentRepository";
 import type { ContentType } from "../content/identity";
 import { stableStringify } from "../content/stableJson";
+import { publicRouteFor } from "../content/address";
 
 export type PublicationSource = "publish" | "restore-publish" | "migration";
 
@@ -316,12 +317,7 @@ export class PublicationRepository extends Repository {
           WHERE id = ?`
       )
       .run(id, id, item.id);
-    const route =
-      item.type === "project" && item.slug
-        ? `/projects/${item.slug}`
-        : item.type === "blog_post" && item.slug
-          ? `/blog/${item.slug}`
-          : null;
+    const route = publicRouteFor(item);
     if (route) this.activateRoute(item.id, route, id);
     this.database
       .query(

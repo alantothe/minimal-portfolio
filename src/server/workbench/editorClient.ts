@@ -177,7 +177,7 @@ export const EDITOR_SCRIPT = `
     malformed_slug: "Use lowercase letters, numbers, and single hyphens.",
     reserved_slug: "This address is reserved.",
     duplicate_slug: "This address is already in use.",
-    historical_route_reserved: "This former address belongs to other Content.",
+    historical_route_reserved: "This former address belongs to another Content item.",
     invalid_display_order: "Enter a whole number of zero or greater.",
     invalid_date: "Enter a real date in YYYY-MM-DD form.",
     future_publication_date: "Future publication dates are not scheduled.",
@@ -287,7 +287,7 @@ export const EDITOR_SCRIPT = `
 
       if (response.status === 409) {
         showFindings([]);
-        showConflict("Content changed elsewhere. Reload before saving again.");
+        showConflict("Content draft changed elsewhere. Reload before saving again.");
         return;
       }
       if (response.status === 422) {
@@ -504,7 +504,7 @@ export const EDITOR_SCRIPT = `
       } else if (result.error === "publication_disabled_until_sealed") {
         setStatus("Publishing locked", "Publishing unlocks after database cutover");
       } else if (response.status === 409) {
-        showConflict("Content changed elsewhere. Reload before publishing.");
+        showConflict("Content draft changed elsewhere. Reload before publishing.");
       } else {
         setStatus("Publish failed — retry available", "Publication failed; retry with the same request");
       }
@@ -579,7 +579,7 @@ export const EDITOR_SCRIPT = `
         return;
       }
       if (response.status === 409) {
-        showConflict("Content changed elsewhere. Reload before restoring.");
+        showConflict("Content draft changed elsewhere. Reload before restoring.");
       } else {
         setStatus("Restore refused — reload required", "Revision restore was refused");
       }

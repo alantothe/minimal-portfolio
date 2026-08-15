@@ -145,7 +145,7 @@ export const COLLECTION_LIFECYCLE_SCRIPT = `
       const body = await response.json();
       if (response.status === 409) {
         dialog.close();
-        announce("Conflict — reload required", "Content changed elsewhere. Reload before deleting.");
+        announce("Conflict — reload required", "Content draft changed elsewhere. Reload before deleting.");
         return;
       }
       if (!response.ok) {

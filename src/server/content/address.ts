@@ -16,6 +16,19 @@ export interface ContentAddress {
   publishedAt: string | null;
 }
 
+/** Canonical Visitor path for collection Content; singletons own fixed routes. */
+export function publicRouteFor(
+  address: Pick<ContentAddress, "type" | "slug">
+): string | null {
+  if (address.type === "project" && address.slug) {
+    return `/projects/${address.slug}`;
+  }
+  if (address.type === "blog_post" && address.slug) {
+    return `/blog/${address.slug}`;
+  }
+  return null;
+}
+
 function required(field: string): Finding {
   return { field, code: "required", severity: "error" };
 }

@@ -21,6 +21,7 @@ import {
   type DraftRecord,
 } from "./contentDraft";
 import type { RefreshOutcome } from "../published/site";
+import { publicRouteFor } from "../content/address";
 
 export interface PublicationDependencies {
   database: Database;
@@ -51,12 +52,6 @@ type PublishTransactionOutcome =
   | { status: "idempotency-conflict" }
   | { status: "no-change"; revision: PublishedRevision }
   | { status: "not-found" };
-
-function routeFor(item: ContentItem): string | null {
-  if (item.type === "project" && item.slug) return `/projects/${item.slug}`;
-  if (item.type === "blog_post" && item.slug) return `/blog/${item.slug}`;
-  return null;
-}
 
 function normalizedRevisionChecksum(revision: PublishedRevision): string {
   const snapshot = revision.snapshot;
@@ -122,7 +117,7 @@ export function publishContent(
           ? { ...stored, publishedAt: now.toISOString().slice(0, 10) }
           : stored;
       const findings = publicationFindings(candidate, { content, media });
-      const route = routeFor(candidate);
+      const route = publicRouteFor(candidate);
       if (route) {
         const owner = publication.routeOwner(route);
         if (owner && owner !== candidate.id) {

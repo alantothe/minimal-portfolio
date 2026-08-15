@@ -64,7 +64,10 @@ docs/*
 !docs/adr/**
 !docs/research/
 !docs/research/**
+!docs/runbooks/
+!docs/runbooks/**
+!docs/operations/
+!docs/operations/**
 
 # Claude Code
 CLAUDE.md
-

@@ -13,6 +13,7 @@ import { CloudinaryProvider } from "../media/cloudinary";
 import { handleMediaUpload, type UploadDependencies } from "../media/upload";
 import { MediaRepository } from "../database/mediaRepository";
 import { getDatabase, isDatabaseAvailable } from "../database";
+import { getRecoveryCoordinator } from "../recovery/runtime";
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -43,12 +44,18 @@ function mediaDependencies(): Resolution {
   }
 
   try {
+    const recovery = getRecoveryCoordinator();
     return {
       ready: true,
       dependencies: {
         config: resolution.config,
         repository: new MediaRepository(getDatabase()),
         provider: new CloudinaryProvider(resolution.config),
+        protectOriginal: recovery
+          ? async (input) => {
+              await recovery.protectMediaOriginal(input);
+            }
+          : undefined,
       },
     };
   } catch {

@@ -115,6 +115,43 @@ describe("publishing a Content draft", () => {
     ).toThrow("cannot be deleted");
   });
 
+  test("requests recovery only after a new Publication commits", () => {
+    const { database } = setup();
+    const edited = editHome(database, "Protected");
+    let recoveryRequests = 0;
+    const dependencies = {
+      database,
+      refreshPublished: () => null,
+      refreshPreview: () => null,
+      afterPublication: () => {
+        recoveryRequests += 1;
+      },
+    };
+
+    const published = publishContent(
+      {
+        contentId: edited.id,
+        expectedDraftVersion: edited.draftVersion,
+        idempotencyKey: "10101010-1010-4010-8010-101010101010",
+        actorGithubUserId: 42,
+      },
+      dependencies
+    );
+    const replayed = publishContent(
+      {
+        contentId: edited.id,
+        expectedDraftVersion: edited.draftVersion,
+        idempotencyKey: "10101010-1010-4010-8010-101010101010",
+        actorGithubUserId: 42,
+      },
+      dependencies
+    );
+
+    expect(published.status).toBe("published");
+    expect(replayed.status).toBe("replayed");
+    expect(recoveryRequests).toBe(1);
+  });
+
   test("refuses stale, invalid, and no-op publication", () => {
     const { database, content } = setup();
     const home = content.findSingleton("home")!;

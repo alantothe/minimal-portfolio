@@ -21,11 +21,13 @@ import {
   getPublishedSite,
   publishedSiteGatesReadiness,
 } from "../published/lifecycle";
+import { recoveryRuntimeStatus } from "../recovery/runtime";
 
 export async function readinessHandler(): Promise<Response> {
   const database = databaseHealth();
   const site = getPublishedSite();
   const published = site?.state() ?? null;
+  const recovery = recoveryRuntimeStatus();
 
   const phase = database.cutoverPhase;
   const gates = phase !== undefined && publishedSiteGatesReadiness(phase);
@@ -40,6 +42,7 @@ export async function readinessHandler(): Promise<Response> {
     JSON.stringify({
       status: ready ? "ready" : "unready",
       database,
+      recovery,
       published: published
         ? {
             status: published.status,

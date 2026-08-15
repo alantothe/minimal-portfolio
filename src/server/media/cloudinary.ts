@@ -209,6 +209,10 @@ export class CloudinaryProvider implements MediaProvider {
     form.append("public_id", publicId);
     form.append("upload_preset", UPLOAD_PRESET);
     form.append("overwrite", "false");
+    // Provider-native recovery is requested per asset even when an account's
+    // global backup toggle is later changed. The app-owned R2 copy remains a
+    // separate portability layer.
+    form.append("backup", "true");
     // Ask the provider to reject anything that is not an image, so the
     // application's magic-byte check is backed by a second opinion rather than
     // being the only one.

@@ -10,6 +10,7 @@ import { initializePublishedSite } from "./published/lifecycle";
 import { validateAuthConfigAtStartup } from "./auth/config";
 import { validateMediaConfigAtStartup } from "./media/config";
 import { reconcileStartupImportBaselines } from "./content/import/startupBaselines";
+import { initializeRecovery } from "./recovery/runtime";
 
 const router = new Router();
 setupRoutes(router);
@@ -52,6 +53,7 @@ console.log(
 if (database.status === "ok") {
   await reconcileStartupImportBaselines(getDatabase());
   initializePublishedSite();
+  initializeRecovery();
 }
 
 // start server

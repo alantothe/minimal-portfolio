@@ -5,6 +5,10 @@ on:
   push:
     branches:
       - main
+  schedule:
+    # Weekly isolated restore evidence. Production R2 drills use the operator
+    # command and read-only credentials documented in the recovery runbook.
+    - cron: "17 7 * * 0"
 
 permissions:
   contents: read
@@ -20,10 +24,24 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run check
 
+  recovery-drill:
+    name: Encrypted clean-room restore
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.0
+      - run: bun install --frozen-lockfile
+      - name: Install age
+        run: sudo apt-get update && sudo apt-get install --yes age
+      - name: Create, encrypt, restore, and verify fixture
+        run: bun run recovery:fixture-drill
+
   deploy:
     name: Deploy production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: check
+    needs: [check, recovery-drill]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:

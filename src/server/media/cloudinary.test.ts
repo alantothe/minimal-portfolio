@@ -142,6 +142,7 @@ describe("the upload request", () => {
     // published revision pointing at the old bytes.
     expect(captured!.parts.get("overwrite")).toBe("false");
     expect(captured!.parts.get("resource_type")).toBe("image");
+    expect(captured!.parts.get("backup")).toBe("true");
   });
 
   test("posts to the image upload endpoint for the configured cloud", async () => {

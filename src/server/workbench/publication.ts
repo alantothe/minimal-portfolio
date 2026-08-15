@@ -27,6 +27,7 @@ export interface PublicationDependencies {
   database: Database;
   refreshPublished: () => RefreshOutcome | null;
   refreshPreview: () => RefreshOutcome | null;
+  afterPublication?: () => void;
 }
 
 export type PublishOutcome =
@@ -170,6 +171,7 @@ export function publishContent(
   const media = new MediaRepository(dependencies.database);
   const read = readContentDraft(input.contentId, { content, media });
   if (read.status === "not-found") return { status: "not-found" };
+  dependencies.afterPublication?.();
   return {
     status: "published",
     revision: outcome.revision,

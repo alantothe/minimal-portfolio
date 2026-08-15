@@ -391,4 +391,56 @@ export const MIGRATIONS: Migration[] = [
        VALUES (1, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
     ],
   },
+  {
+    id: 9,
+    name: "record_recovery_operations",
+    statements: [
+      // An asset is usable as soon as Cloudinary accepts it, but is not
+      // provider-independent until its encrypted original has passed an R2
+      // HEAD check. These fields keep those two states separate.
+      `ALTER TABLE media_assets ADD COLUMN recovery_object_key TEXT`,
+      `ALTER TABLE media_assets ADD COLUMN recovery_backed_up_at TEXT`,
+      `ALTER TABLE media_assets ADD COLUMN recovery_error_at TEXT`,
+      `ALTER TABLE media_assets ADD COLUMN recovery_error_code TEXT`,
+      `CREATE UNIQUE INDEX media_assets_recovery_object
+         ON media_assets (recovery_object_key)
+         WHERE recovery_object_key IS NOT NULL`,
+
+      // Backup completion is operational state, not content history. Only
+      // stable error codes are stored: provider responses, paths, content, and
+      // credentials must never leak into a public probe or a restored bundle.
+      `CREATE TABLE recovery_operations (
+         id TEXT PRIMARY KEY,
+         kind TEXT NOT NULL CHECK (kind IN (
+           'hourly', 'daily', 'monthly', 'pre-change', 'manual'
+         )),
+         status TEXT NOT NULL CHECK (status IN ('succeeded', 'failed')),
+         started_at TEXT NOT NULL,
+         completed_at TEXT NOT NULL,
+         object_key TEXT UNIQUE,
+         bundle_digest TEXT,
+         publication_generation INTEGER,
+         error_code TEXT
+       )`,
+      `CREATE INDEX recovery_operations_recent
+         ON recovery_operations (completed_at DESC)`,
+
+      // Both automated clean-room restores and quarterly operator drills leave
+      // evidence in the same append-only log. The caller supplies the kind;
+      // restoring production is never an automated test action.
+      `CREATE TABLE recovery_drills (
+         id TEXT PRIMARY KEY,
+         kind TEXT NOT NULL CHECK (kind IN ('automated', 'operator')),
+         status TEXT NOT NULL CHECK (status IN ('succeeded', 'failed')),
+         object_key TEXT NOT NULL,
+         publication_generation INTEGER,
+         published_fingerprint TEXT,
+         started_at TEXT NOT NULL,
+         completed_at TEXT NOT NULL,
+         error_code TEXT
+       )`,
+      `CREATE INDEX recovery_drills_recent
+         ON recovery_drills (completed_at DESC)`,
+    ],
+  },
 ];

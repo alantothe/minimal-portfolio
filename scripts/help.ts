@@ -59,6 +59,12 @@ CONTENT COMMANDS
   bun scripts/new-blog.ts       Create a blog post
   bun scripts/new-project.ts    Create a project
 
+RECOVERY COMMANDS
+  bun run recovery:status         Show safe backup/drill status
+  bun run recovery:checkpoint     Create verified encrypted checkpoint
+  bun run recovery:fixture-drill  Prove restore with isolated fixture
+  Full runbook: docs/runbooks/recovery.md
+
 IMPORTANT
   Never push directly from main.
   Never commit .env files or secrets.

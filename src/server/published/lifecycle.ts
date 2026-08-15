@@ -6,9 +6,9 @@
  * be built. That warm generation is also what survives SQLite becoming
  * unreachable later, which is the whole point of holding it in memory.
  *
- * **Nothing here is reachable from a route.** The site is built, validated, and
- * reported on; it is not served. Until the cutover slice moves public reads onto
- * it, its only consumers are the readiness probe and the shadow parity run.
+ * **Public routes read this generation from `sqlite-observation` onward.**
+ * Until then it is built, validated, and reported on so a later phase change
+ * does not have to wait for the first Visitor to warm it.
  *
  * Startup deliberately does not throw, for the same reason `database/index.ts`
  * does not: during `legacy` the public site is served entirely from repository
@@ -17,6 +17,7 @@
  * with that based on the cutover phase.
  */
 
+import { cutoverPolicy } from "../cutover/policy";
 import { getDatabase, isDatabaseAvailable } from "../database";
 import type { CutoverPhase } from "../database/repository";
 import { buildSiteSnapshot } from "./snapshot";
@@ -93,5 +94,5 @@ export function closePublishedSite(): void {
  * than an outage.
  */
 export function publishedSiteGatesReadiness(phase: CutoverPhase): boolean {
-  return phase === "sqlite-observation" || phase === "sealed";
+  return cutoverPolicy(phase).gatesReadiness;
 }

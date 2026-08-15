@@ -7,6 +7,7 @@ import {
   isOwnerPath,
 } from "../auth/ownerBoundary";
 import { applyImagePolicy } from "./securityHeaders";
+import { maybeServePublishedVisitor } from "../cutover/visitor";
 
 async function compressResponse(
   request: Request,
@@ -106,12 +107,16 @@ export class RequestHandler {
     }
 
     let response: Response;
+    const published =
+      isOwnerRequest || isStatic
+        ? null
+        : await maybeServePublishedVisitor(request);
 
-    // Handle static assets first
-    if (isStatic) {
+    if (published) {
+      response = published;
+    } else if (isStatic) {
       response = await this.staticHandler.handleStaticRequest(request);
     } else {
-      // Handle API routes
       response = await this.router.handleRequest(request);
     }
 

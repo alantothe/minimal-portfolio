@@ -1,7 +1,8 @@
 # Recovery operations
 
 This runbook implements the recovery decision in issue #35 and Slice 9 in
-issue #46. Public traffic remains on legacy content until Slice 10.
+issue #46. Public traffic remains on legacy content until an operator advances
+the cutover phase; see `docs/runbooks/cutover.md`.
 
 ## Recovery layers
 

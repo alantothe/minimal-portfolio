@@ -13,6 +13,7 @@ import {
   revisionSnapshot,
   type PublishedRevision,
 } from "../database/publicationRepository";
+import { cutoverPolicy } from "../cutover/policy";
 import { SystemStateRepository } from "../database/repository";
 import { hasBlockingError, type Finding } from "../content/validation";
 import {
@@ -95,8 +96,9 @@ export function publishContent(
           : { status: "idempotency-conflict" };
       }
       if (
-        new SystemStateRepository(dependencies.database).getCutoverPhase() !==
-        "sealed"
+        !cutoverPolicy(
+          new SystemStateRepository(dependencies.database).getCutoverPhase()
+        ).publicationEnabled
       ) {
         return { status: "disabled" };
       }

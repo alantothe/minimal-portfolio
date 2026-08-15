@@ -39,21 +39,25 @@ export abstract class Repository {
 }
 
 export class SystemStateRepository extends Repository {
+  getCutoverState(): { phase: CutoverPhase; updatedAt: string } {
+    const row = this.database
+      .query("SELECT cutover_phase, updated_at FROM system_state WHERE id = 1")
+      .get() as { cutover_phase: CutoverPhase; updated_at: string } | null;
+
+    if (!row) {
+      throw new Error("system_state row is missing; migrations did not run");
+    }
+
+    return { phase: row.cutover_phase, updatedAt: row.updated_at };
+  }
+
   /**
    * Which content source is authoritative right now. `legacy` means the public
    * site is still served entirely from repository content and nothing reads
    * from this database.
    */
   getCutoverPhase(): CutoverPhase {
-    const row = this.database
-      .query("SELECT cutover_phase FROM system_state WHERE id = 1")
-      .get() as { cutover_phase: CutoverPhase } | null;
-
-    if (!row) {
-      throw new Error("system_state row is missing; migrations did not run");
-    }
-
-    return row.cutover_phase;
+    return this.getCutoverState().phase;
   }
 
   setCutoverPhase(phase: CutoverPhase): void {

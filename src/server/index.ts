@@ -10,6 +10,7 @@ import {
   requestChangeCheckpoint,
 } from "./recovery/runtime";
 import { validateRecoveryConfigAtStartup } from "./recovery/config";
+import { refuseLegacyContentWhenSealed } from "./cutover/policy";
 import {
   appliedMigrationsThisBoot,
   getDatabase,
@@ -45,22 +46,26 @@ validateRecoveryConfigAtStartup();
 await syncViewsWithBlogPosts();
 
 // Open the content database and apply pending migrations. This never throws:
-// nothing public reads from it yet, so a failure must not take down a site that
-// is otherwise serving fine. It surfaces through /readyz, which fails the
-// deployment and leaves the previous one in place.
+// during `legacy` and `shadow` the public site is served from repository
+// content, so a database that fails to open must not take down a working site.
+// From `sqlite-observation` onward `/readyz` fails the deploy instead.
 const database = initializeDatabase();
+if (database.status === "ok" && database.cutoverPhase) {
+  refuseLegacyContentWhenSealed(database.cutoverPhase, {
+    forceLegacyContent: process.env.CUTOVER_FORCE_LEGACY_CONTENT === "1",
+  });
+}
 console.log(
   database.status === "ok"
     ? `[database] ready at ${database.file} (${database.appliedMigrations} migration(s), phase ${database.cutoverPhase})`
     : `[database] NOT READY at ${database.file}: ${database.error}`
 );
 
-// Build and warm the published generation. Nothing serves it — no route reaches
-// it until the cutover slice — but warming it here means the generation is
-// validated at a known point in time, and a process that survives SQLite going
-// away later still holds a complete last-known-good site. Like the database
-// above, a failure is reported rather than fatal: during `legacy` the public
-// site is served entirely from repository content.
+// Build and warm the published generation. Public routes read it from
+// `sqlite-observation` onward. Warming here means a later phase change does
+// not wait for the first Visitor, and a process that survives SQLite going
+// away later still holds a last-known-good site. During `legacy` a build
+// failure is reported rather than fatal.
 if (database.status === "ok") {
   await reconcileStartupImportBaselines(getDatabase());
   initializePublishedSite();

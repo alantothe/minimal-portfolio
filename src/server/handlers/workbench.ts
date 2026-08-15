@@ -10,8 +10,7 @@
  * #44 asks for by the word "exact".
  *
  * Both routes sit under `/admin`, so both are behind the Owner boundary and
- * neither is reachable by a Visitor. No visitor-facing behaviour changes here:
- * the published generation is still served to nobody.
+ * neither is reachable by a Visitor.
  */
 
 import type { RouteContext } from "../core/router";
@@ -21,6 +20,7 @@ import { getDatabase, isDatabaseAvailable } from "../database";
 import { ContentRepository } from "../database/contentRepository";
 import { MediaRepository } from "../database/mediaRepository";
 import { PublicationRepository } from "../database/publicationRepository";
+import { cutoverPolicy } from "../cutover/policy";
 import { SystemStateRepository } from "../database/repository";
 import { renderPublishedDocument } from "../published/render";
 import { collectEnrichment } from "../published/enrichment";
@@ -128,8 +128,9 @@ export async function workbenchHandler({
                 "This Content item has not been imported yet. Run the migration before editing.",
             };
       if (editor.status === "ready") {
-        editor.publicationEnabled =
-          new SystemStateRepository(database).getCutoverPhase() === "sealed";
+        editor.publicationEnabled = cutoverPolicy(
+          new SystemStateRepository(database).getCutoverPhase()
+        ).publicationEnabled;
         editor.publishedRevisionNumber =
           publication.currentRevision(editor.draft.id)?.revisionNumber ?? null;
       }

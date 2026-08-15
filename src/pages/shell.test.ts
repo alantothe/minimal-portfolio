@@ -21,6 +21,15 @@ describe("SPA navigation", () => {
     expect(router).not.toContain("pageContainer.classList.add('navigating')");
   });
 
+  test("uses a clear, accessible mobile menu control", () => {
+    expect(shell).toMatch(
+      /id="mobile-menu-toggle"[\s\S]*aria-controls="mobile-nav"[\s\S]*aria-expanded="false"[\s\S]*>\s*Menu\s*<\/button>/
+    );
+    expect(router).toContain(
+      'menuToggle.setAttribute("aria-expanded", String(isOpen))'
+    );
+  });
+
   test("preserves server-rendered content during initial boot", () => {
     expect(router).not.toContain("preloadAllPages");
     expect(router).not.toContain("fetch('/api/pages')");

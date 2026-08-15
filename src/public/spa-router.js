@@ -34,7 +34,7 @@ class SPARouter {
       this.attachNavListeners();
       this.attachContentLinkListeners();
     }
-    this.attachHamburgerListener();
+    this.attachMobileMenuListener();
     this.attachEmailListener();
     this.attachResizeListener();
     if (!this.previewRoute)
@@ -263,28 +263,30 @@ class SPARouter {
     });
   }
 
-  attachHamburgerListener() {
-    const hamburger = document.getElementById("hamburger-toggle");
+  attachMobileMenuListener() {
+    const menuToggle = document.getElementById("mobile-menu-toggle");
     const mobileNav = document.getElementById("mobile-nav");
 
-    if (hamburger) {
-      hamburger.addEventListener("click", () => {
+    if (menuToggle) {
+      menuToggle.addEventListener("click", () => {
         // Only allow toggle if in mobile breakpoint
-        if (this.isMobileBreakpoint()) {
-          hamburger.classList.toggle("active");
-          mobileNav.classList.toggle("active");
+        if (this.isMobileBreakpoint() && mobileNav) {
+          const isOpen = menuToggle.classList.toggle("active");
+          mobileNav.classList.toggle("active", isOpen);
+          menuToggle.setAttribute("aria-expanded", String(isOpen));
         }
       });
     }
   }
 
   closeMobileNav() {
-    const hamburger = document.getElementById("hamburger-toggle");
+    const menuToggle = document.getElementById("mobile-menu-toggle");
     const mobileNav = document.getElementById("mobile-nav");
 
-    if (hamburger && mobileNav) {
-      hamburger.classList.remove("active");
+    if (menuToggle && mobileNav) {
+      menuToggle.classList.remove("active");
       mobileNav.classList.remove("active");
+      menuToggle.setAttribute("aria-expanded", "false");
     }
   }
 

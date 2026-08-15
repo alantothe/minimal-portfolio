@@ -51,8 +51,8 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "257110d4dc94f0bc450b2e366ad9804f98e85f564f97a9677b610f88a88c576f",
-      "textHash": "0e9c4c313907dfb3caa6ab13285903e273d88f530afb51a489ad39f9ac5d5c20",
+      "bodyHash": "30256d87f3f8330785a8e975741b4ba0b92f203dacd777cf44f8ed36e467a7df",
+      "textHash": "c03825234a20eda8963b38ce9815de999a8e755a8aba6b413f84dcb71dafb989",
       "headings": ["h1:Alan Malpartida"],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
       "images": [
@@ -119,8 +119,8 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "d524adba36f8703831d46f84d806d52ddb78116910b3802f1722bf1a8b701fd5",
-      "textHash": "47170ce903b16f9ad3f4135a50fbf477217caff561f73feb105b20e65a856228",
+      "bodyHash": "c82e0f40859b9e6d4557ff639716c2023650e4533c3ef62a4580431b37c44eab",
+      "textHash": "fa5103bb69b66b6a2d38c880344b495481d459614ed8fb9191165ee05287e035",
       "headings": ["h1:About", "h1:About Questurian"],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
       "images": [
@@ -169,8 +169,8 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "fb9833963e6eefe82e8f9182988610cc48036796ab0ffb2c1412f8be102f9dec",
-      "textHash": "93782f695fe80f7dada6b7f1fac84ac50ada0cb4a0b24dbf88805cfe83a0df77",
+      "bodyHash": "f3c81cee002e0efb679d1e54b1c6e9d1f10e17f6bd09f6c1ef06353e4f008607",
+      "textHash": "b1954f16b62ba28d14781cbf994d43267cf12d93203b2f258a5740a6e5d63cbf",
       "headings": [
         "h1:Blog",
         "h2:Who Is Alan Malpartida - Software Engineer, Founder, and Builder"
@@ -213,8 +213,8 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "796af1761188e563dff4df491878bcbebc26fa094ac46e9042b08c3be06c39e3",
-      "textHash": "4d486fc758c8989bb8abb3e6797b1f01d2dc9c29516936f573525a25a7b812b6",
+      "bodyHash": "062e42282b3178bab709ecd51fe7d952925dd643a09cb0cd34bc1bdb19eb65c5",
+      "textHash": "cf8375a50a563448c03f4b583bb95ffba222edd4ba5117231408f38cd121c5fe",
       "headings": ["h1:Projects", "h2:Questurian", "h2:Minimal Portfolio"],
       "internalLinks": [
         "/",
@@ -263,8 +263,8 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "742cfd3fe196c147f63a2781eb82e535b8f0fef6d4e29667a861a6195517d723",
-      "textHash": "b20fc2f3e63665303ceebe98284ad1c26958f530231052eac304d6812b5d57f9",
+      "bodyHash": "c9107e8cccdc45a3f76bfc7e0c0d6d8cf26091266d70f620a46bbf882ebf3f9e",
+      "textHash": "031964e52f85f679464438a7f45eb53752bfd684c75436cb591ad5dcabe350cd",
       "headings": [
         "h1:Who Is Alan Malpartida - Software Engineer, Founder, and Builder",
         "h2:What I Do",
@@ -320,8 +320,8 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "93cdc786d89cc36d01672172c5a4cdb57949a1c2a54d4b1ff66a28a6052f2e07",
-      "textHash": "6a2c6fab5c3c9850ae3d32ec2dce9107c052f624464339c5c6e8bc616e30f595",
+      "bodyHash": "b226f343bdaf7c76a9e627191ea657b37db54ef44343ac1b87fb28d2ae4d9763",
+      "textHash": "0ca8dafba9c23c53cf44dec78c22fe21487fe07b66c103573cb58be87243e76f",
       "headings": [
         "h1:Minimal Portfolio",
         "h2:Context",
@@ -362,8 +362,8 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "ebc95e8be99994010e1457c6b911a35495cc55a956438f6c88cef1ccc99dbfed",
-      "textHash": "309e2a655b329c9ec5ce7f6b7293dc35e8d7623a7a4b4897cb5e40d56e9377c1",
+      "bodyHash": "a672fe1e01916b375bfa672eeeea6f73a970c3d4424ed376ff151418a720b091",
+      "textHash": "f24db61cfcf1082d3389bcd1465af4240bd9a1cc222bf5c8ded47af2227544f5",
       "headings": [
         "h1:Questurian",
         "h2:Context",
@@ -717,8 +717,8 @@
     },
     {
       "path": "src/pages/shell.html",
-      "bytes": 4098,
-      "sha256": "6ad09af1d8c1c52f987ceec1472dab8baca64ef1a910d836183fa03ecfcbbc9c"
+      "bytes": 4097,
+      "sha256": "1d9e5cac460c2a3fbcf99ce620e66bf60253ad0352ce972e3a4a73bd4d6f11cd"
     }
   ],
   "media": [

@@ -217,6 +217,45 @@ describe("the library", () => {
     expect(html).toContain('<h3 id="lib-pages">Pages</h3>');
     expect(html).toContain('<ul aria-labelledby="lib-pages">');
   });
+
+  test("Projects have accessible reorder controls with disabled boundaries", () => {
+    const projectSection = sections.find(
+      (section) => section.id === "projects"
+    )!;
+    const html = renderWorkbench(
+      view({
+        sections: [
+          ...sections.filter((section) => section.id !== "projects"),
+          {
+            ...projectSection,
+            entries: [
+              projectSection.entries[0]!,
+              {
+                id: "project:minimal-portfolio",
+                label: "Minimal Portfolio",
+                route: "/projects/minimal-portfolio",
+                supportingText: "live",
+              },
+            ],
+          },
+        ],
+      })
+    );
+    const markup = html.split("</style>")[1]!;
+
+    expect(markup).toContain(
+      'data-project-order="up" data-project-id="project:questurian" data-order-boundary="true" aria-label="Move Questurian up" title="Move up" disabled'
+    );
+    expect(markup).toContain(
+      'data-project-order="down" data-project-id="project:minimal-portfolio" data-order-boundary="true" aria-label="Move Minimal Portfolio down" title="Move down" disabled'
+    );
+    expect(markup).toContain("Publish affected Projects when ready.");
+    expect(markup).toContain('fetch("/admin/api/projects/order"');
+    expect(markup).toContain('"X-CSRF-Token": csrf');
+    const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+    expect(script).toBeString();
+    expect(() => new Function(script!)).not.toThrow();
+  });
 });
 
 describe("the tabbed reflow fallback", () => {

@@ -134,6 +134,13 @@ export type VersionedContentUpdate =
   | { status: "not-found" }
   | { status: "conflict"; currentDraftVersion: number };
 
+export class ProjectOrderMismatchError extends Error {
+  constructor() {
+    super("Project order must contain every active Project exactly once");
+    this.name = "ProjectOrderMismatchError";
+  }
+}
+
 export class ContentRepository extends Repository {
   /**
    * Inserts a content item.
@@ -437,6 +444,54 @@ export class ContentRepository extends Repository {
       .all(type) as ContentRow[];
 
     return rows.map(toItem);
+  }
+
+  /**
+   * Replaces the complete Project order in one transaction.
+   *
+   * Requiring the full active set prevents a stale caller from silently
+   * dropping a Project created in another tab. Positions are normalized to a
+   * dense zero-based sequence so duplicate or gapped imported values cannot
+   * make later Move up / Move down actions ambiguous.
+   */
+  reorderProjects(orderedIds: string[], now: Date = new Date()): ContentItem[] {
+    return this.transaction(() => {
+      const rows = this.database
+        .query(
+          `SELECT * FROM content_items
+            WHERE type = 'project' AND deleted_at IS NULL
+            ORDER BY display_order ASC, created_at ASC`
+        )
+        .all() as ContentRow[];
+      const rowsById = new Map(rows.map((row) => [row.id, row]));
+
+      if (
+        orderedIds.length !== rows.length ||
+        new Set(orderedIds).size !== orderedIds.length ||
+        orderedIds.some((id) => !rowsById.has(id))
+      ) {
+        throw new ProjectOrderMismatchError();
+      }
+
+      return orderedIds.map((id, displayOrder) => {
+        const existing = rowsById.get(id)!;
+        if (existing.display_order === displayOrder) return toItem(existing);
+
+        const at = nextTimestamp(existing.updated_at, now);
+        const row = this.database
+          .query(
+            `UPDATE content_items
+                SET display_order = ?, owner_edited_at = ?, updated_at = ?,
+                    draft_version = draft_version + 1
+              WHERE id = ? AND type = 'project' AND deleted_at IS NULL
+            RETURNING *`
+          )
+          .get(displayOrder, at, at, id) as ContentRow | null;
+
+        if (!row) throw new ProjectOrderMismatchError();
+        return toItem(row);
+      });
+    });
   }
 
   /** Every slug already taken in a collection, for collision suggestions. */

@@ -37,6 +37,7 @@ class SPARouter {
     this.attachMobileMenuListener();
     this.attachEmailListener();
     this.attachResizeListener();
+    this.attachOuterWheelListener();
     if (!this.previewRoute)
       window.addEventListener("popstate", (event) => {
         if (event.state) {
@@ -263,6 +264,43 @@ class SPARouter {
     });
   }
 
+  attachOuterWheelListener() {
+    document.addEventListener(
+      "wheel",
+      (event) => {
+        if (event.ctrlKey || event.deltaY === 0) {
+          return;
+        }
+
+        const target = event.target;
+        if (
+          target instanceof Element &&
+          (target.closest("#app-content") || target.closest('[role="dialog"]'))
+        ) {
+          return;
+        }
+
+        const content = document.getElementById("app-content");
+        if (!content) {
+          return;
+        }
+
+        const lineHeight =
+          Number.parseFloat(getComputedStyle(content).lineHeight) || 16;
+        const deltaScale =
+          event.deltaMode === WheelEvent.DOM_DELTA_LINE
+            ? lineHeight
+            : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+              ? content.clientHeight
+              : 1;
+
+        content.scrollTop += event.deltaY * deltaScale;
+        event.preventDefault();
+      },
+      { passive: false }
+    );
+  }
+
   attachMobileMenuListener() {
     const menuToggle = document.getElementById("mobile-menu-toggle");
     const mobileNav = document.getElementById("mobile-nav");
@@ -303,6 +341,13 @@ class SPARouter {
     await this.switchPage(page, 1);
   }
 
+  resetContentScroll() {
+    const content = document.getElementById("app-content");
+    if (content) {
+      content.scrollTop = 0;
+    }
+  }
+
   /** Revalidate database-backed pages; retain legacy navigation until cutover. */
   async switchPage(pageName, pageNumber = 1) {
     this.isNavigating = true;
@@ -331,6 +376,7 @@ class SPARouter {
         container.classList.remove("active");
       });
       pageContainer.classList.add("active");
+      this.resetContentScroll();
 
       if (pageData?.seo) {
         this.applySeoMetadata(pageData.seo);
@@ -564,6 +610,7 @@ class SPARouter {
           </article>
         `;
         blogPostContainer.classList.add("active");
+        this.resetContentScroll();
 
         const backLink = blogPostContainer.querySelector(".back-to-blog");
         if (backLink) {
@@ -632,6 +679,7 @@ class SPARouter {
           </div>
         `;
         projectContainer.classList.add("active");
+        this.resetContentScroll();
 
         const backLink = projectContainer.querySelector(".back-to-projects");
         if (backLink) {

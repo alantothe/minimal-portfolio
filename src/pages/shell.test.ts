@@ -61,13 +61,37 @@ describe("SPA navigation", () => {
     expect(shell).not.toContain("data-publication-generation");
   });
 
-  test("accounts for the desktop top inset in the sticky sidebar height", () => {
-    expect(globalStyles).not.toMatch(
-      /\.sidebar\s*\{[^}]*height:\s*100vh;[^}]*\}/
+  test("locks the outer shell and scrolls only the inner page content", () => {
+    expect(shell).toMatch(
+      /html,\s*body\s*\{[^}]*height:\s*100%;[^}]*overflow:\s*hidden;/
+    );
+    expect(shell).toMatch(
+      /\.container\s*\{[^}]*height:\s*100dvh;[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;/
     );
     expect(globalStyles).toMatch(
-      /\.sidebar\s*\{[^}]*height:\s*calc\(100vh - 130px\);[^}]*\}/
+      /#app-content\s*\{[^}]*min-height:\s*0;[^}]*overflow-x:\s*hidden;[^}]*overflow-y:\s*auto;/
     );
+    expect(globalStyles).toMatch(
+      /#app-content\s*\{[^}]*scrollbar-width:\s*none;/
+    );
+    expect(globalStyles).toMatch(
+      /#app-content::-webkit-scrollbar\s*\{[^}]*display:\s*none;/
+    );
+    expect(globalStyles).toMatch(
+      /\.sidebar\s*\{[^}]*height:\s*100%;[^}]*flex-shrink:\s*0;/
+    );
+    expect(router).toMatch(
+      /resetContentScroll\(\)\s*\{[\s\S]*?content\.scrollTop = 0;/
+    );
+    expect(router.match(/this\.resetContentScroll\(\);/g)).toHaveLength(3);
+  });
+
+  test("routes wheel gestures outside the content into the locked inner page", () => {
+    expect(router).toContain("this.attachOuterWheelListener();");
+    expect(router).toContain('document.addEventListener(\n      "wheel"');
+    expect(router).toContain('target.closest("#app-content")');
+    expect(router).toContain("content.scrollTop += event.deltaY * deltaScale;");
+    expect(router).toMatch(/\{ passive: false \}/);
   });
 
   test("supports pinning and dismissing the GitHub activity popover", () => {

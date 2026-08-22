@@ -392,6 +392,19 @@ describe("ordering", () => {
     ]);
   });
 
+  test("a reorder requires every active Project and leaves no partial writes", () => {
+    const { repo } = repository();
+    const first = project(repo, "first", 1);
+    project(repo, "second", 2);
+
+    expect(() => repo.reorderProjects([first.id])).toThrow(
+      "every active Project exactly once"
+    );
+    expect(repo.list("project").map((item) => item.displayOrder)).toEqual([
+      1, 2,
+    ]);
+  });
+
   test("blog posts come back newest first", () => {
     const { repo } = repository();
     for (const [slug, date] of [

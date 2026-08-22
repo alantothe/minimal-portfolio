@@ -203,6 +203,12 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .pane h3:first-of-type { margin-top: 0; }
 .library ul { list-style: none; margin: 0; padding: 0; }
 .library li { margin: 0 0 0.15rem; }
+.library li.project-order-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem;
+  align-items: center;
+}
 .library a {
   display: block;
   padding: 0.4rem 0.5rem;
@@ -219,6 +225,14 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 .library .detail { display: block; color: var(--muted); font-size: 0.8rem; }
 .library p.empty { color: var(--muted); margin: 0; }
+.library-order-actions { display: flex; gap: 0.15rem; }
+.library-order-actions button {
+  width: 1.8rem;
+  min-height: 1.8rem;
+  padding: 0;
+  line-height: 1;
+}
+.library-order-note { color: var(--muted); font-size: 0.76rem; margin: 0.35rem 0 0; }
 .library-section-heading {
   display: flex;
   align-items: baseline;
@@ -452,6 +466,44 @@ const SCRIPT = `
     });
   });
 
+  let reorderingProject = false;
+  document.getElementById("library").addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-project-order]");
+    if (!button || reorderingProject) return;
+    reorderingProject = true;
+    const orderButtons = Array.from(document.querySelectorAll("[data-project-order]"));
+    orderButtons.forEach((candidate) => { candidate.disabled = true; });
+    const status = document.getElementById("workbench-status");
+    status.textContent = "Saving Project order";
+
+    try {
+      const response = await fetch("/admin/api/projects/order", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf,
+        },
+        body: JSON.stringify({
+          id: button.dataset.projectId,
+          direction: button.dataset.projectOrder,
+        }),
+      });
+      if (!response.ok) throw new Error("Project order was refused");
+
+      const workspaceUrl = new URL(window.location.href);
+      workspaceUrl.searchParams.delete("new");
+      workspaceUrl.searchParams.set("preview", "/projects");
+      window.location.assign(workspaceUrl.toString());
+    } catch {
+      reorderingProject = false;
+      orderButtons.forEach((candidate) => {
+        candidate.disabled = candidate.dataset.orderBoundary === "true";
+      });
+      status.textContent = "Project order could not be saved. Try again.";
+    }
+  });
+
   narrow.addEventListener("change", apply);
   apply();
 })();
@@ -473,7 +525,7 @@ function librarySection(
   }
 
   const items = section.entries
-    .map((entry) => {
+    .map((entry, index) => {
       // `aria-current` marks the Content item the editor is focused on. It is the
       // property that tells a screen reader which of a set of links is the one
       // you are on, which a visual highlight alone does not.
@@ -482,13 +534,27 @@ function librarySection(
         ? `<span class="detail">${escapeHtml(entry.supportingText)}</span>`
         : "";
 
-      return `<li><a href="/admin?content=${encodeURIComponent(entry.id)}"${
+      const orderControls =
+        section.collectionType === "project" && section.entries.length > 1
+          ? `<span class="library-order-actions">
+        <button type="button" data-project-order="up" data-project-id="${escapeHtml(entry.id)}" data-order-boundary="${index === 0}" aria-label="Move ${escapeHtml(entry.label)} up" title="Move up"${index === 0 ? " disabled" : ""}>&uarr;</button>
+        <button type="button" data-project-order="down" data-project-id="${escapeHtml(entry.id)}" data-order-boundary="${index === section.entries.length - 1}" aria-label="Move ${escapeHtml(entry.label)} down" title="Move down"${index === section.entries.length - 1 ? " disabled" : ""}>&darr;</button>
+      </span>`
+          : "";
+      const itemClass = orderControls ? ' class="project-order-item"' : "";
+
+      return `<li${itemClass}><a href="/admin?content=${encodeURIComponent(entry.id)}"${
         isCurrent ? ' aria-current="true"' : ""
-      }>${escapeHtml(entry.label)}${supportingText}</a></li>`;
+      }>${escapeHtml(entry.label)}${supportingText}</a>${orderControls}</li>`;
     })
     .join("\n");
 
-  return `${heading}\n<ul aria-labelledby="lib-${escapeHtml(section.id)}">\n${items}\n</ul>`;
+  const orderNote =
+    section.collectionType === "project" && section.entries.length > 1
+      ? '<p class="library-order-note">Use arrows to reorder the Project drafts. Publish affected Projects when ready.</p>'
+      : "";
+
+  return `${heading}\n<ul aria-labelledby="lib-${escapeHtml(section.id)}">\n${items}\n</ul>${orderNote}`;
 }
 
 export function renderWorkbench(view: WorkbenchView): string {

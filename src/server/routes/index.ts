@@ -24,6 +24,7 @@ import {
 import { mediaListHandler, mediaUploadHandler } from "../handlers/media";
 import { contentDraftHandler } from "../handlers/contentDraft";
 import { collectionCreateHandler } from "../handlers/collectionLifecycle";
+import { projectOrderingHandler } from "../handlers/projectOrdering";
 import {
   historyHandler,
   publishHandler,
@@ -92,6 +93,9 @@ export function setupRoutes(router: Router): void {
     methods: ["GET", "PUT", "DELETE"],
   });
   router.addRoute("/admin/api/content", collectionCreateHandler, {
+    methods: ["POST"],
+  });
+  router.addRoute("/admin/api/projects/order", projectOrderingHandler, {
     methods: ["POST"],
   });
   router.addRoute("/admin/api/content/:id/publish", publishHandler, {

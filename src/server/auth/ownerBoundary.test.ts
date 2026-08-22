@@ -928,6 +928,60 @@ describe("the public site", () => {
   });
 });
 
+describe("Project ordering API", () => {
+  test("moves a Project draft through the protected mutation boundary", async () => {
+    seedSite(getDatabase());
+    const content = new ContentRepository(getDatabase());
+    const moved = content.findBySlug("project", "minimal-portfolio")!;
+
+    expect(
+      (
+        await send("/admin/api/projects/order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: moved.id, direction: "up" }),
+        })
+      ).status
+    ).toBe(401);
+
+    const { cookie, csrfToken } = establishSession();
+    const response = await send("/admin/api/projects/order", {
+      method: "POST",
+      cookie,
+      headers: {
+        Origin: ORIGIN,
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: moved.id, direction: "up" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ status: "moved" });
+    expect(content.list("project").map((item) => item.slug)).toEqual([
+      "minimal-portfolio",
+      "questurian",
+    ]);
+  });
+
+  test("strictly rejects malformed ordering actions", async () => {
+    const { cookie, csrfToken } = establishSession();
+    const response = await send("/admin/api/projects/order", {
+      method: "POST",
+      cookie,
+      headers: {
+        Origin: ORIGIN,
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: "project-id", direction: "sideways" }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "invalid_request" });
+  });
+});
+
 /**
  * The media endpoint is guarded by the same boundary as everything else under
  * /admin, but "the prefix covers it" is worth proving against the real

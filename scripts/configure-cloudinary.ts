@@ -12,7 +12,6 @@ import { readHiddenInput } from "../src/shared/hiddenPrompt";
 import {
   CloudinaryAdminClient,
   PORTFOLIO_TRANSFORMATIONS,
-  RAILWAY_PRODUCTION_TARGET,
   applyCloudinaryBootstrap,
   planCloudinaryBootstrap,
   railwayVariableCommand,
@@ -21,6 +20,7 @@ import {
   type CloudinaryBootstrapOperation,
 } from "../src/shared/cloudinaryBootstrap";
 import { UPLOAD_PRESET } from "../src/server/media/config";
+import { RAILWAY_PRODUCTION_TARGET } from "../src/shared/railwayTarget";
 
 async function ask(question: string): Promise<string> {
   const prompt = createInterface({

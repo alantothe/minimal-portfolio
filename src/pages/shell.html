@@ -41,7 +41,10 @@
       }
 
       /* Ensure body and container are ready before content loads */
+      html,
       body {
+        height: 100%;
+        overflow: hidden;
         background-color: #0a0a0a;
         color: #ffffff;
         /* Aggressive sans-serif fallback - avoid any serifs until fonts load */
@@ -54,7 +57,10 @@
       /* Hidden until content is loaded, then revealed by .ready class */
       .container {
         display: flex;
-        min-height: 100vh;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        overflow: hidden;
         opacity: 0;
       }
 

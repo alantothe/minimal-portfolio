@@ -26,6 +26,7 @@ describe("project help command", () => {
     expect(output).toContain("bun scripts/new-blog.ts");
     expect(output).toContain("bun scripts/new-project.ts");
     expect(output).toContain("bun run recovery:checkpoint");
+    expect(output).toContain("bun run db:pull-local");
     expect(output).toContain("docs/runbooks/recovery.md");
 
     expect(output.indexOf("bun run dev")).toBeLessThan(

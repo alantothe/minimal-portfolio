@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pull Production Database"
+  short_description: "Refresh local content from production safely"
+  default_prompt: "Use $pull-production-database to refresh my local database from production."

@@ -60,6 +60,7 @@ CONTENT COMMANDS
   bun scripts/new-project.ts    Create a project
 
 RECOVERY COMMANDS
+  bun run db:pull-local            Replace local DB from sanitized production snapshot
   bun run recovery:status         Show safe backup/drill status
   bun run recovery:checkpoint     Create verified encrypted checkpoint
   bun run recovery:fixture-drill  Prove restore with isolated fixture

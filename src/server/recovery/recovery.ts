@@ -120,7 +120,7 @@ interface RecoveryDependencies {
   clock?: () => Date;
 }
 
-interface Validation {
+export interface RecoveryDatabaseValidation {
   schemaVersion: number;
   publicationGeneration: number;
   publishedFingerprint: string;
@@ -188,7 +188,9 @@ function stableJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
-function validateDatabase(file: string): Validation {
+export function validateRecoveryDatabase(
+  file: string
+): RecoveryDatabaseValidation {
   const database = new Database(file, { readonly: true, strict: true });
   try {
     const integrity = database.query("PRAGMA integrity_check").all() as Array<
@@ -717,7 +719,7 @@ export class RecoveryCoordinator {
     try {
       const databaseFile = join(directory, BUNDLE_DATABASE);
       this.dependencies.database.query("VACUUM INTO ?").run(databaseFile);
-      const validation = validateDatabase(databaseFile);
+      const validation = validateRecoveryDatabase(databaseFile);
       const databaseBytes = await readFile(databaseFile);
       const manifest: RecoveryManifest = {
         version: 1,
@@ -893,7 +895,7 @@ export class RecoveryCoordinator {
       if (sha256(databaseBytes) !== manifest.databaseDigest) {
         throw new Error("restored database digest does not match manifest");
       }
-      const before = validateDatabase(bundledDatabase);
+      const before = validateRecoveryDatabase(bundledDatabase);
       if (
         before.publicationGeneration !== manifest.publicationGeneration ||
         before.publishedFingerprint !== manifest.publishedFingerprint ||
@@ -924,7 +926,7 @@ export class RecoveryCoordinator {
       } finally {
         database.close();
       }
-      const after = validateDatabase(sanitized);
+      const after = validateRecoveryDatabase(sanitized);
       if (after.publishedFingerprint !== before.publishedFingerprint) {
         throw new Error("session invalidation changed published content");
       }

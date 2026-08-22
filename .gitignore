@@ -41,6 +41,9 @@ bun.lockb
 src/data/content.sqlite
 src/data/content.sqlite-wal
 src/data/content.sqlite-shm
+src/data/content.sqlite.before-production-pull
+src/data/content.sqlite.pending-*
+src/data/content.sqlite.before-production-pull.pending-*
 
 # IDE/Editor files
 .vscode/

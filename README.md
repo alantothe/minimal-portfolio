@@ -164,11 +164,35 @@ bun run help                # quick local and deployment guide
 bun run recovery:status     # safe backup/drill age and alert summary
 bun run recovery:checkpoint # encrypted manual checkpoint
 bun run recovery:fixture-drill # isolated encrypted restore proof
+bun run db:pull-local       # one-way sanitized production DB refresh
 bun run work:status         # explain current git state
 bun run work:learn          # guided feature-to-production workflow
 bun scripts/new-blog.ts     # new blog post
 bun scripts/new-project.ts  # new project
 ```
+
+## refresh local content from production
+
+Stop `bun run dev`, then run:
+
+```bash
+bun run db:pull-local
+```
+
+This is a one-way copy, never a sync. The command uses Railway SSH to create an
+application-consistent production snapshot, removes Owner sessions and OAuth
+attempts from that copy, validates it, downloads it, and replaces only the
+git-ignored local `src/data/content.sqlite`. The previous local database remains
+at `src/data/content.sqlite.before-production-pull`.
+
+Railway SSH must have one local key registered. One-time setup:
+
+```bash
+railway ssh keys add
+```
+
+The temporary production snapshot is deleted after each attempt. Restart local
+development with `bun run dev` after a successful pull.
 
 ## license
 

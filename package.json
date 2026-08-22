@@ -27,6 +27,7 @@
     "recovery:checkpoint": "bun scripts/recovery.ts checkpoint manual",
     "recovery:drill": "bun scripts/recovery.ts drill-latest",
     "recovery:fixture-drill": "bun scripts/recovery.ts fixture-drill",
+    "db:pull-local": "bun scripts/pull-production-database.ts",
     "cutover:status": "bun scripts/cutover.ts status",
     "cutover:advance": "bun scripts/cutover.ts advance",
     "cutover:rollback": "bun scripts/cutover.ts rollback",

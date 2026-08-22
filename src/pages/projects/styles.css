@@ -40,6 +40,8 @@
 
   position: relative;
   isolation: isolate;
+  display: flex;
+  min-height: 220px;
   overflow: hidden;
   border: 1px solid #252525;
   border-bottom: 0;
@@ -88,6 +90,7 @@
   position: relative;
   z-index: 1;
   display: flex;
+  flex: 1;
   align-items: center;
   gap: 20px;
   color: inherit;
@@ -514,6 +517,7 @@
 
 @media (max-width: 768px) {
   .project-card {
+    min-height: 180px;
     padding: 11px 15px;
   }
 

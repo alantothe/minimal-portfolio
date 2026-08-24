@@ -156,6 +156,7 @@ class FakeElement {
 }
 
 interface HarnessOptions {
+  currentStyleHref?: string;
   fetchFails?: boolean;
   reducedMotion?: boolean;
   styleFails?: boolean;
@@ -208,7 +209,8 @@ function createHarness(options: HarnessOptions = {}) {
 
   const currentStyle = new FakeElement("page-css");
   currentStyle.rel = "stylesheet";
-  currentStyle.href = "https://portfolio.test/pages/home/styles.css";
+  currentStyle.href =
+    options.currentStyleHref ?? "https://portfolio.test/pages/home/styles.css";
   links.push(currentStyle);
 
   let openDialog: FakeElement | null = null;
@@ -459,6 +461,18 @@ function createHarness(options: HarnessOptions = {}) {
 }
 
 describe("mobile SPA navigation lifecycle", () => {
+  test("recognizes an already-loaded versioned stylesheet", async () => {
+    const stylesheet = "/pages/projects/styles.css?v=mobile-no-hover";
+    const harness = createHarness({
+      currentStyleHref: `https://portfolio.test${stylesheet}`,
+    });
+
+    await harness.router.updatePageCSS(stylesheet);
+
+    expect(harness.links).toHaveLength(1);
+    expect(harness.currentStyle.removed).toBe(false);
+  });
+
   test("a failed page request keeps the visible page and history together", async () => {
     const harness = createHarness({ fetchFails: true });
 

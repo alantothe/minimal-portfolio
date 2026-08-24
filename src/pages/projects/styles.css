@@ -549,11 +549,34 @@
     min-height: 0;
   }
 
+  .project-card:is(:hover, :focus-within) {
+    background: #0c0c0c;
+  }
+
+  .project-card:is(:hover, :focus-within)::before {
+    animation: none;
+    opacity: 0;
+  }
+
+  .project-card:is(:hover, :focus-within) .project-card__arrow {
+    color: #c6c6c3;
+  }
+
+  .project-card:is(:hover, :focus-within) .project-arrow-ring-progress {
+    animation: none;
+    stroke-dashoffset: 100;
+  }
+
   .project-link {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     column-gap: 14px;
     row-gap: 14px;
+  }
+
+  .project-link:focus-visible {
+    outline: 2px solid var(--project-accent);
+    outline-offset: -2px;
   }
 
   .project-image {
@@ -620,7 +643,9 @@
     animation: none;
     transition: none;
   }
+}
 
+@media (prefers-reduced-motion: reduce) and (min-width: 481px) {
   .project-card:is(:hover, :focus-within)::before {
     animation: none;
   }

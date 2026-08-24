@@ -133,7 +133,7 @@ export async function loadPageContent(
   const cssMap: Record<string, string> = {
     home: "/pages/home/styles.css",
     about: "/pages/about/styles.css",
-    projects: "/pages/projects/styles.css",
+    projects: "/pages/projects/styles.css?v=mobile-no-hover",
     blog: "/pages/blog/styles.css",
   };
 

@@ -676,8 +676,11 @@ class SPARouter {
     }
 
     const currentLink = document.getElementById("page-css");
-    if (currentLink && new URL(currentLink.href).pathname === cssPath) {
-      return noChange;
+    if (currentLink) {
+      const currentUrl = new URL(currentLink.href);
+      if (`${currentUrl.pathname}${currentUrl.search}` === cssPath) {
+        return noChange;
+      }
     }
 
     const nextLink = document.createElement("link");
@@ -967,7 +970,7 @@ class SPARouter {
         throw new Error(`Failed to load project: ${response.statusText}`);
       }
       const data = await response.json();
-      await this.updatePageCSS("/pages/projects/styles.css");
+      await this.updatePageCSS("/pages/projects/styles.css?v=mobile-no-hover");
 
       // Hide all pages and show project-page
       document.querySelectorAll(".page-container").forEach((container) => {

@@ -521,6 +521,8 @@ describe("mobile SPA navigation lifecycle", () => {
     attachAvatarLightboxListener(harness.fakeDocument);
     harness.router.refreshMobilePageCues();
     expect(harness.nextCue.classList.contains("visible")).toBe(true);
+    expect(harness.nextCue.textContent).toBe("Swipe up");
+    expect(harness.nextCue.dataset.destination).toBe("About");
 
     harness.fakeDocument.dispatch("click", { target: avatar.trigger });
     await harness.flushUi();

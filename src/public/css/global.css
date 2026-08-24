@@ -547,20 +547,26 @@ h1 {
   }
 
   .mobile-page-cue {
-    background: rgba(10, 10, 10, 0.88);
-    border: 1px solid #333333;
+    align-items: center;
+    backdrop-filter: blur(10px);
+    background: rgba(14, 14, 14, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.13);
     border-radius: 999px;
-    color: #b3b3b3;
-    display: block;
-    font-size: 11px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    color: #a8a8a8;
+    display: flex;
+    font-size: 10px;
+    font-weight: 700;
+    gap: 8px;
     left: 50%;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.1em;
     max-width: calc(100vw - 40px);
     opacity: 0;
-    padding: 6px 10px;
+    padding: 7px 11px 7px 8px;
     pointer-events: none;
     position: fixed;
     text-align: center;
+    text-transform: uppercase;
     transform: translate(-50%, 4px);
     transition:
       opacity 160ms ease,
@@ -570,9 +576,40 @@ h1 {
     z-index: 90;
   }
 
+  .mobile-page-cue::before {
+    align-items: center;
+    background: #f1f1f1;
+    border-radius: 50%;
+    color: #111111;
+    content: "↑";
+    display: flex;
+    font-size: 13px;
+    height: 22px;
+    justify-content: center;
+    letter-spacing: 0;
+    width: 22px;
+  }
+
+  .mobile-page-cue::after {
+    border-left: 1px solid rgba(255, 255, 255, 0.13);
+    color: #f1f1f1;
+    content: attr(data-destination);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding-left: 8px;
+    text-transform: none;
+  }
+
   .mobile-page-cue--previous {
+    left: auto;
+    right: max(16px, env(safe-area-inset-right));
     top: 78px;
-    transform: translate(-50%, -4px);
+    transform: translateY(-4px);
+  }
+
+  .mobile-page-cue--previous::before {
+    content: "↓";
   }
 
   .mobile-page-cue--next {
@@ -584,9 +621,33 @@ h1 {
     transform: translate(-50%, 0);
     visibility: visible;
   }
+
+  .mobile-page-cue--previous.visible {
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 480px) and (prefers-reduced-motion: no-preference) {
+  @keyframes mobileCueNudgeNext {
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+
+  @keyframes mobileCueNudgePrevious {
+    50% {
+      transform: translateY(3px);
+    }
+  }
+
+  .mobile-page-cue--next.visible::before {
+    animation: mobileCueNudgeNext 900ms ease-in-out 2;
+  }
+
+  .mobile-page-cue--previous.visible::before {
+    animation: mobileCueNudgePrevious 900ms ease-in-out 2;
+  }
+
   @keyframes mobilePageExit {
     to {
       opacity: 0;
@@ -629,7 +690,9 @@ h1 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mobile-page-cue {
+  .mobile-page-cue,
+  .mobile-page-cue::before {
+    animation: none;
     transition: none;
   }
 }

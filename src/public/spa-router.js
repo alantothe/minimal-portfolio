@@ -517,12 +517,15 @@ class SPARouter {
     });
     const setCue = (element, pageName, direction) => {
       if (!pageName) {
+        element.textContent = "";
+        delete element.dataset.destination;
         element.classList.remove("visible");
         return;
       }
 
       const label = pageName[0].toUpperCase() + pageName.slice(1);
-      element.textContent = `Swipe ${direction} for ${label}`;
+      element.textContent = `Swipe ${direction}`;
+      element.dataset.destination = label;
       element.classList.add("visible");
     };
 

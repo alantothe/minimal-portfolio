@@ -84,7 +84,7 @@ const PAGE_CSS: Record<string, string> = {
   home: "/pages/home/styles.css",
   about: "/pages/about/styles.css",
   blog: "/pages/blog/styles.css",
-  projects: "/pages/projects/styles.css",
+  projects: "/pages/projects/styles.css?v=mobile-no-hover",
 };
 
 const PAGE_TITLES: Record<string, string> = {

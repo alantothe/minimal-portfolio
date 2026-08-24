@@ -13,6 +13,14 @@ import {
   isCollectionPage,
   pageCacheKey,
 } from "./navigation-state.js";
+import {
+  canFinishMobilePageSwipe,
+  canStartMobilePageSwipe,
+  createMobilePageSwipeRecognizer,
+} from "./mobile-page-navigation.js";
+
+const MOBILE_SWIPE_INTERACTIVE_SELECTOR =
+  "a, button, input, textarea, select, summary, dialog, [role='button'], [role='dialog'], [contenteditable='true'], [data-mobile-swipe-ignore]";
 
 class SPARouter {
   isNavigating = false;
@@ -38,6 +46,7 @@ class SPARouter {
     this.attachEmailListener();
     this.attachResizeListener();
     this.attachOuterWheelListener();
+    this.attachMobilePageSwipeNavigation();
     if (!this.previewRoute)
       window.addEventListener("popstate", (event) => {
         if (event.state) {
@@ -299,6 +308,115 @@ class SPARouter {
       },
       { passive: false }
     );
+  }
+
+  attachMobilePageSwipeNavigation() {
+    if (this.previewRoute) {
+      return;
+    }
+
+    const content = document.getElementById("app-content");
+    if (!content) {
+      return;
+    }
+
+    const recognizer = createMobilePageSwipeRecognizer();
+    const cancelGesture = () => recognizer.cancel();
+
+    content.addEventListener(
+      "touchstart",
+      (event) => {
+        const target = event.target;
+        const mobileNav = document.getElementById("mobile-nav");
+        const isBlockedTarget =
+          target instanceof Element &&
+          Boolean(target.closest(MOBILE_SWIPE_INTERACTIVE_SELECTOR));
+
+        const canStart = canStartMobilePageSwipe({
+          isMobile: this.isMobileBreakpoint(),
+          isNavigating: this.isNavigating,
+          touchCount: event.touches.length,
+          menuOpen: Boolean(mobileNav?.classList.contains("active")),
+          dialogOpen: Boolean(document.querySelector("dialog[open]")),
+          targetIsInteractive: isBlockedTarget,
+        });
+
+        if (!canStart) {
+          cancelGesture();
+          return;
+        }
+
+        const touch = event.touches[0];
+        recognizer.start({
+          x: touch.clientX,
+          y: touch.clientY,
+          scrollTop: content.scrollTop,
+          scrollHeight: content.scrollHeight,
+          clientHeight: content.clientHeight,
+        });
+      },
+      { passive: true }
+    );
+
+    content.addEventListener(
+      "touchend",
+      (event) => {
+        const canFinish = canFinishMobilePageSwipe({
+          isMobile: this.isMobileBreakpoint(),
+          isNavigating: this.isNavigating,
+          changedTouchCount: event.changedTouches.length,
+          remainingTouchCount: event.touches.length,
+        });
+
+        if (!canFinish) {
+          cancelGesture();
+          return;
+        }
+
+        const touch = event.changedTouches[0];
+        const statePage = window.history.state?.page;
+        const currentPage =
+          typeof statePage === "string"
+            ? statePage
+            : this.getInitialRoute(
+                window.location.pathname,
+                window.location.search
+              ).page;
+        const targetPage = recognizer.finish({
+          x: touch.clientX,
+          y: touch.clientY,
+          pageName: currentPage,
+          now: performance.now(),
+        });
+
+        if (!targetPage) {
+          return;
+        }
+
+        const path = targetPage === "home" ? "/" : `/${targetPage}`;
+        void this.navigate(targetPage, path);
+      },
+      { passive: true }
+    );
+
+    document.addEventListener(
+      "touchstart",
+      (event) => {
+        if (event.touches.length !== 1) {
+          cancelGesture();
+        }
+      },
+      { passive: true, capture: true }
+    );
+    document.addEventListener("touchcancel", cancelGesture, {
+      passive: true,
+      capture: true,
+    });
+    window.addEventListener("resize", () => {
+      if (!this.isMobileBreakpoint()) {
+        cancelGesture();
+      }
+    });
   }
 
   attachMobileMenuListener() {

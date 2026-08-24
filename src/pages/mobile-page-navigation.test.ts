@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
+  canFinishMobilePageSwipe,
+  canStartMobilePageSwipe,
+  createMobilePageSwipeRecognizer,
   getAdjacentMobilePage,
   getBoundarySwipeIntent,
   getScrollBoundaries,
@@ -125,5 +128,135 @@ describe("mobile page navigation decisions", () => {
         startedAtBottom: true,
       })
     ).toBeNull();
+
+    expect(
+      getBoundarySwipeIntent({
+        startX: 20,
+        startY: 180,
+        endX: 80,
+        endY: 110,
+        startedAtTop: false,
+        startedAtBottom: true,
+      })
+    ).toBeNull();
+  });
+
+  test("recognizer arms only when a gesture starts at an edge", () => {
+    const recognizer = createMobilePageSwipeRecognizer();
+    recognizer.start({
+      x: 20,
+      y: 180,
+      scrollTop: 300,
+      scrollHeight: 1000,
+      clientHeight: 400,
+    });
+
+    expect(
+      recognizer.finish({ x: 20, y: 100, pageName: "about", now: 1000 })
+    ).toBeNull();
+  });
+
+  test("recognizer resolves an adjacent route after a boundary swipe", () => {
+    const recognizer = createMobilePageSwipeRecognizer();
+    recognizer.start({
+      x: 20,
+      y: 180,
+      scrollTop: 600,
+      scrollHeight: 1000,
+      clientHeight: 400,
+    });
+
+    expect(
+      recognizer.finish({ x: 20, y: 100, pageName: "about", now: 1000 })
+    ).toBe("projects");
+  });
+
+  test("recognizer cancellation clears an armed gesture", () => {
+    const recognizer = createMobilePageSwipeRecognizer();
+    recognizer.start({
+      x: 20,
+      y: 100,
+      scrollTop: 0,
+      scrollHeight: 1000,
+      clientHeight: 400,
+    });
+    recognizer.cancel();
+
+    expect(
+      recognizer.finish({ x: 20, y: 180, pageName: "about", now: 1000 })
+    ).toBeNull();
+  });
+
+  test("recognizer cools down after successful navigation", () => {
+    const recognizer = createMobilePageSwipeRecognizer();
+    const startAtBottom = () =>
+      recognizer.start({
+        x: 20,
+        y: 180,
+        scrollTop: 600,
+        scrollHeight: 1000,
+        clientHeight: 400,
+      });
+
+    startAtBottom();
+    expect(
+      recognizer.finish({ x: 20, y: 100, pageName: "home", now: 1000 })
+    ).toBe("about");
+
+    startAtBottom();
+    expect(
+      recognizer.finish({ x: 20, y: 100, pageName: "about", now: 1200 })
+    ).toBeNull();
+
+    startAtBottom();
+    expect(
+      recognizer.finish({ x: 20, y: 100, pageName: "about", now: 1700 })
+    ).toBe("projects");
+  });
+
+  test("start eligibility excludes non-phone, busy, menu, dialog, and interactive states", () => {
+    const eligible = {
+      isMobile: true,
+      isNavigating: false,
+      touchCount: 1,
+      menuOpen: false,
+      dialogOpen: false,
+      targetIsInteractive: false,
+    };
+
+    expect(canStartMobilePageSwipe(eligible)).toBe(true);
+    expect(canStartMobilePageSwipe({ ...eligible, isMobile: false })).toBe(
+      false
+    );
+    expect(canStartMobilePageSwipe({ ...eligible, isNavigating: true })).toBe(
+      false
+    );
+    expect(canStartMobilePageSwipe({ ...eligible, touchCount: 2 })).toBe(false);
+    expect(canStartMobilePageSwipe({ ...eligible, menuOpen: true })).toBe(
+      false
+    );
+    expect(canStartMobilePageSwipe({ ...eligible, dialogOpen: true })).toBe(
+      false
+    );
+    expect(
+      canStartMobilePageSwipe({ ...eligible, targetIsInteractive: true })
+    ).toBe(false);
+  });
+
+  test("finish eligibility requires the last remaining finger", () => {
+    const eligible = {
+      isMobile: true,
+      isNavigating: false,
+      changedTouchCount: 1,
+      remainingTouchCount: 0,
+    };
+
+    expect(canFinishMobilePageSwipe(eligible)).toBe(true);
+    expect(
+      canFinishMobilePageSwipe({ ...eligible, remainingTouchCount: 1 })
+    ).toBe(false);
+    expect(
+      canFinishMobilePageSwipe({ ...eligible, changedTouchCount: 2 })
+    ).toBe(false);
   });
 });

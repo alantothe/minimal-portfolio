@@ -94,6 +94,27 @@ describe("SPA navigation", () => {
     expect(router).toMatch(/\{ passive: false \}/);
   });
 
+  test("enables deliberate boundary swipes only for public phone navigation", () => {
+    expect(router).toContain("createMobilePageSwipeRecognizer,");
+    expect(router).toContain('from "./mobile-page-navigation.js";');
+    expect(router).toContain("this.attachMobilePageSwipeNavigation();");
+    expect(router).toMatch(
+      /attachMobilePageSwipeNavigation\(\)\s*\{[\s\S]*?if \(this\.previewRoute\)\s*\{[\s\S]*?"touchstart"[\s\S]*?"touchend"[\s\S]*?"touchcancel"/
+    );
+    expect(router).toContain("!this.isMobileBreakpoint()");
+    expect(router).toContain("canStartMobilePageSwipe");
+    expect(router).toContain("canFinishMobilePageSwipe");
+    expect(router).toContain("MOBILE_SWIPE_INTERACTIVE_SELECTOR");
+    expect(router).toContain('document.querySelector("dialog[open]")');
+    expect(router).toContain('"touchstart",\n      (event) => {');
+    expect(router).toContain("{ passive: true, capture: true }");
+    expect(router).toContain("remainingTouchCount: event.touches.length");
+    expect(router).toContain('mobileNav?.classList.contains("active")');
+    expect(router.match(/\{ passive: true \}/g)?.length).toBeGreaterThanOrEqual(
+      2
+    );
+  });
+
   test("supports pinning and dismissing the GitHub activity popover", () => {
     expect(imageLoader).toContain('import("/public/github-activity.js")');
     expect(githubActivity).toContain("attachGitHubActivityListener");

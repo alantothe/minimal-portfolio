@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { configurePreviewDocument } from "./preview";
 
-const router = '<script src="/public/spa-router.js" type="module"></script>';
+const router =
+  '<script src="/public/spa-router.js?v=next-cue-only" type="module"></script>';
 
 describe("the exact public preview", () => {
   test("gives the public router the route hidden by the owner boundary", () => {

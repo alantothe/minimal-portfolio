@@ -119,7 +119,9 @@ describe("SPA navigation", () => {
     expect(shell).toMatch(
       /id="mobile-page-cue-next"[\s\S]*class="mobile-page-cue mobile-page-cue--next"[\s\S]*aria-hidden="true"/
     );
-    expect(shell).not.toContain('id="mobile-page-cue-previous"');
+    expect(shell).not.toContain(
+      'class="mobile-page-cue mobile-page-cue--previous"'
+    );
     expect(shell).toContain('id="mobile-menu-toggle"');
     expect(router).toContain("getMobilePageBoundaryCues");
     expect(router).toContain('nextCue.textContent = "Swipe up"');
@@ -130,6 +132,21 @@ describe("SPA navigation", () => {
     expect(globalStyles).toContain("content: attr(data-destination);");
     expect(globalStyles).toContain("@keyframes mobileCueNudgeNext");
     expect(globalStyles).not.toContain("mobileCueNudgePrevious");
+  });
+
+  test("keeps the next cue available to the previously cached router", () => {
+    const cachedRouterRequiredCueIds = [
+      "mobile-page-cue-previous",
+      "mobile-page-cue-next",
+    ];
+
+    for (const id of cachedRouterRequiredCueIds) {
+      expect(shell).toContain(`id="${id}"`);
+    }
+    expect(shell).toMatch(
+      /id="mobile-page-cue-previous"[\s\S]*?hidden[\s\S]*?style="display: none !important"/
+    );
+    expect(shell).toContain('src="/public/spa-router.js?v=next-cue-only"');
   });
 
   test("scopes directional page animations to motion-safe phone styles", () => {

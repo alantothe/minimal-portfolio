@@ -10,7 +10,7 @@
 import { jsonForScript } from "./scriptValue";
 
 const ROUTER_SCRIPT =
-  '<script src="/public/spa-router.js" type="module"></script>';
+  '<script src="/public/spa-router.js?v=next-cue-only" type="module"></script>';
 
 export function configurePreviewDocument(
   document: string,

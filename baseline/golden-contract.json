@@ -51,7 +51,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "ff74e47d60ad70fe10a7c6179a8f3148498bdd29637c5a787fa4ad3447f07fa9",
+      "bodyHash": "c099b0d919c75ca8de7362a6704d819c671d15dd1a1e883107b5fe0650e21fbd",
       "textHash": "c03825234a20eda8963b38ce9815de999a8e755a8aba6b413f84dcb71dafb989",
       "headings": ["h1:Alan Malpartida"],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
@@ -404,7 +404,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "f3dd88e568184d743f69878608bdfd6b546389ac7de8ef6819e3242d233f4244",
+      "bodyHash": "60498324c6e405dbb5938ad576e5e833c4cf49e04862fa35ad9c93f424c99ef1",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -717,8 +717,8 @@
     },
     {
       "path": "src/pages/shell.html",
-      "bytes": 4611,
-      "sha256": "18367ebe26eb71fabfa3c04b57cc2de48f214074ff81bd1185289bdcf3242c93"
+      "bytes": 4649,
+      "sha256": "9175356ae4c3fc93fd0041bd988b6a13f959546d198cb73866b1396ad05f6546"
     }
   ],
   "media": [

@@ -5,6 +5,7 @@ import {
   createMobilePageSwipeRecognizer,
   getAdjacentMobilePage,
   getBoundarySwipeIntent,
+  getMobilePageBoundaryCues,
   getScrollBoundaries,
   MOBILE_PAGE_ORDER,
 } from "../public/mobile-page-navigation.js";
@@ -168,7 +169,7 @@ describe("mobile page navigation decisions", () => {
 
     expect(
       recognizer.finish({ x: 20, y: 100, pageName: "about", now: 1000 })
-    ).toBe("projects");
+    ).toEqual({ intent: "next", pageName: "projects" });
   });
 
   test("recognizer cancellation clears an armed gesture", () => {
@@ -201,7 +202,7 @@ describe("mobile page navigation decisions", () => {
     startAtBottom();
     expect(
       recognizer.finish({ x: 20, y: 100, pageName: "home", now: 1000 })
-    ).toBe("about");
+    ).toEqual({ intent: "next", pageName: "about" });
 
     startAtBottom();
     expect(
@@ -211,7 +212,7 @@ describe("mobile page navigation decisions", () => {
     startAtBottom();
     expect(
       recognizer.finish({ x: 20, y: 100, pageName: "about", now: 1700 })
-    ).toBe("projects");
+    ).toEqual({ intent: "next", pageName: "projects" });
   });
 
   test("start eligibility excludes non-phone, busy, menu, dialog, and interactive states", () => {
@@ -258,5 +259,40 @@ describe("mobile page navigation decisions", () => {
     expect(
       canFinishMobilePageSwipe({ ...eligible, changedTouchCount: 2 })
     ).toBe(false);
+  });
+
+  test("exposes only adjacent routes at reached boundaries", () => {
+    expect(
+      getMobilePageBoundaryCues("about", {
+        scrollTop: 0,
+        scrollHeight: 1000,
+        clientHeight: 400,
+      })
+    ).toEqual({ previous: "home", next: null });
+
+    expect(
+      getMobilePageBoundaryCues("about", {
+        scrollTop: 600,
+        scrollHeight: 1000,
+        clientHeight: 400,
+      })
+    ).toEqual({ previous: null, next: "projects" });
+  });
+
+  test("supports both directions on short pages and none on detail pages", () => {
+    const shortPage = {
+      scrollTop: 0,
+      scrollHeight: 300,
+      clientHeight: 400,
+    };
+
+    expect(getMobilePageBoundaryCues("about", shortPage)).toEqual({
+      previous: "home",
+      next: "projects",
+    });
+    expect(getMobilePageBoundaryCues("project", shortPage)).toEqual({
+      previous: null,
+      next: null,
+    });
   });
 });

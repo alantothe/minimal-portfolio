@@ -17,10 +17,26 @@ import {
   canFinishMobilePageSwipe,
   canStartMobilePageSwipe,
   createMobilePageSwipeRecognizer,
+  getMobilePageBoundaryCues,
 } from "./mobile-page-navigation.js";
 
 const MOBILE_SWIPE_INTERACTIVE_SELECTOR =
   "a, button, input, textarea, select, summary, dialog, [role='button'], [role='dialog'], [contenteditable='true'], [data-mobile-swipe-ignore]";
+
+const MOBILE_PAGE_TRANSITIONS = {
+  next: {
+    exitClass: "mobile-page-exit-next",
+    exitDuration: 140,
+    enterClass: "mobile-page-enter-next",
+    enterDuration: 220,
+  },
+  previous: {
+    exitClass: "mobile-page-exit-previous",
+    exitDuration: 140,
+    enterClass: "mobile-page-enter-previous",
+    enterDuration: 220,
+  },
+};
 
 class SPARouter {
   isNavigating = false;
@@ -114,6 +130,7 @@ class SPARouter {
 
     // SSR content is already complete. Reveal it without client fetches.
     document.querySelector(".container")?.classList.add("ready");
+    requestAnimationFrame(() => this.refreshMobilePageCues());
   }
 
   /**
@@ -269,6 +286,7 @@ class SPARouter {
         if (!this.isMobileBreakpoint()) {
           this.closeMobileNav();
         }
+        this.refreshMobilePageCues();
       }, 100);
     });
   }
@@ -374,27 +392,20 @@ class SPARouter {
         }
 
         const touch = event.changedTouches[0];
-        const statePage = window.history.state?.page;
-        const currentPage =
-          typeof statePage === "string"
-            ? statePage
-            : this.getInitialRoute(
-                window.location.pathname,
-                window.location.search
-              ).page;
-        const targetPage = recognizer.finish({
+        const navigation = recognizer.finish({
           x: touch.clientX,
           y: touch.clientY,
-          pageName: currentPage,
+          pageName: this.getCurrentPageName(),
           now: performance.now(),
         });
 
-        if (!targetPage) {
+        if (!navigation) {
           return;
         }
 
-        const path = targetPage === "home" ? "/" : `/${targetPage}`;
-        void this.navigate(targetPage, path);
+        const path =
+          navigation.pageName === "home" ? "/" : `/${navigation.pageName}`;
+        void this.navigate(navigation.pageName, path, navigation.intent);
       },
       { passive: true }
     );
@@ -417,6 +428,25 @@ class SPARouter {
         cancelGesture();
       }
     });
+    content.addEventListener("scroll", () => this.refreshMobilePageCues(), {
+      passive: true,
+    });
+
+    const dialogObserver = new MutationObserver((mutations) => {
+      if (
+        mutations.some(
+          ({ target }) =>
+            target instanceof Element && target.tagName === "DIALOG"
+        )
+      ) {
+        this.refreshMobilePageCues();
+      }
+    });
+    dialogObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["open"],
+      subtree: true,
+    });
   }
 
   attachMobileMenuListener() {
@@ -430,6 +460,7 @@ class SPARouter {
           const isOpen = menuToggle.classList.toggle("active");
           mobileNav.classList.toggle("active", isOpen);
           menuToggle.setAttribute("aria-expanded", String(isOpen));
+          this.refreshMobilePageCues();
         }
       });
     }
@@ -443,7 +474,60 @@ class SPARouter {
       menuToggle.classList.remove("active");
       mobileNav.classList.remove("active");
       menuToggle.setAttribute("aria-expanded", "false");
+      this.refreshMobilePageCues();
     }
+  }
+
+  getCurrentPageName() {
+    const statePage = window.history.state?.page;
+    return typeof statePage === "string"
+      ? statePage
+      : this.getInitialRoute(window.location.pathname, window.location.search)
+          .page;
+  }
+
+  refreshMobilePageCues() {
+    const previousCue = document.getElementById("mobile-page-cue-previous");
+    const nextCue = document.getElementById("mobile-page-cue-next");
+    const content = document.getElementById("app-content");
+    const mobileNav = document.getElementById("mobile-nav");
+    if (!previousCue || !nextCue || !content) {
+      return;
+    }
+
+    const hideCues = () => {
+      previousCue.classList.remove("visible");
+      nextCue.classList.remove("visible");
+    };
+    if (
+      this.previewRoute ||
+      !this.isMobileBreakpoint() ||
+      this.isNavigating ||
+      mobileNav?.classList.contains("active") ||
+      document.querySelector("dialog[open]")
+    ) {
+      hideCues();
+      return;
+    }
+
+    const cues = getMobilePageBoundaryCues(this.getCurrentPageName(), {
+      scrollTop: content.scrollTop,
+      scrollHeight: content.scrollHeight,
+      clientHeight: content.clientHeight,
+    });
+    const setCue = (element, pageName, direction) => {
+      if (!pageName) {
+        element.classList.remove("visible");
+        return;
+      }
+
+      const label = pageName[0].toUpperCase() + pageName.slice(1);
+      element.textContent = `Swipe ${direction} for ${label}`;
+      element.classList.add("visible");
+    };
+
+    setCue(previousCue, cues.previous, "down");
+    setCue(nextCue, cues.next, "up");
   }
 
   getPageFromPath(pathname) {
@@ -451,12 +535,15 @@ class SPARouter {
     return pathname.replace("/", "");
   }
 
-  async navigate(page, path) {
+  async navigate(page, path, transitionDirection = null) {
     if (this.isNavigating) {
       return;
     }
-    window.history.pushState({ page, pageNumber: 1 }, "", path);
-    await this.switchPage(page, 1);
+    const didSwitch = await this.switchPage(page, 1, transitionDirection);
+    if (didSwitch) {
+      window.history.pushState({ page, pageNumber: 1 }, "", path);
+      this.refreshMobilePageCues();
+    }
   }
 
   resetContentScroll() {
@@ -466,9 +553,18 @@ class SPARouter {
     }
   }
 
+  setNavigating(isNavigating) {
+    this.isNavigating = isNavigating;
+    this.refreshMobilePageCues();
+  }
+
   /** Revalidate database-backed pages; retain legacy navigation until cutover. */
-  async switchPage(pageName, pageNumber = 1) {
-    this.isNavigating = true;
+  async switchPage(pageName, pageNumber = 1, transitionDirection = null) {
+    this.setNavigating(true);
+    let pageCSS = {
+      activate: () => {},
+      cleanup: () => {},
+    };
     try {
       const pageContainer = document.getElementById(`${pageName}-page`);
       if (!pageContainer) {
@@ -488,13 +584,12 @@ class SPARouter {
           ? await this.loadPage(pageName, pageContainer, pageNumber)
           : cachedPage;
 
-      await this.updatePageCSS(pageData.pageCSS);
-
-      document.querySelectorAll(".page-container").forEach((container) => {
-        container.classList.remove("active");
-      });
-      pageContainer.classList.add("active");
-      this.resetContentScroll();
+      pageCSS = await this.preparePageCSS(pageData.pageCSS);
+      await this.activatePageContainer(
+        pageContainer,
+        transitionDirection,
+        pageCSS.activate
+      );
 
       if (pageData?.seo) {
         this.applySeoMetadata(pageData.seo);
@@ -503,34 +598,127 @@ class SPARouter {
       }
 
       this.updateActiveNav(pageName);
+      return true;
     } catch (error) {
       console.error("[SPA Router] Error switching page:", error);
+      return false;
     } finally {
-      this.isNavigating = false;
+      pageCSS.cleanup();
+      this.setNavigating(false);
     }
   }
-  async updatePageCSS(cssPath) {
+  shouldAnimateMobilePageTransition(direction) {
+    return (
+      Boolean(MOBILE_PAGE_TRANSITIONS[direction]) &&
+      this.isMobileBreakpoint() &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
+  }
+
+  async animateMobilePageContainer(element, className, duration) {
+    element.classList.add(className);
+    await new Promise((resolve) => {
+      let timeoutId;
+      const finish = () => {
+        clearTimeout(timeoutId);
+        element.removeEventListener("animationend", onAnimationEnd);
+        resolve();
+      };
+      const onAnimationEnd = (event) => {
+        if (event.target === element) {
+          finish();
+        }
+      };
+
+      element.addEventListener("animationend", onAnimationEnd);
+      timeoutId = setTimeout(finish, duration + 80);
+    });
+    element.classList.remove(className);
+  }
+
+  async activatePageContainer(pageContainer, direction, beforeSwap = () => {}) {
+    const currentContainer = document.querySelector(".page-container.active");
+    const transition =
+      currentContainer &&
+      currentContainer !== pageContainer &&
+      this.shouldAnimateMobilePageTransition(direction)
+        ? MOBILE_PAGE_TRANSITIONS[direction]
+        : null;
+
+    if (transition) {
+      await this.animateMobilePageContainer(
+        currentContainer,
+        transition.exitClass,
+        transition.exitDuration
+      );
+    }
+
+    beforeSwap();
+    document.querySelectorAll(".page-container").forEach((container) => {
+      container.classList.remove("active");
+    });
+    pageContainer.classList.add("active");
+    this.resetContentScroll();
+
+    if (transition) {
+      await this.animateMobilePageContainer(
+        pageContainer,
+        transition.enterClass,
+        transition.enterDuration
+      );
+    }
+  }
+
+  async preparePageCSS(cssPath) {
+    const noChange = {
+      activate: () => {},
+      cleanup: () => {},
+    };
     if (!cssPath) {
-      return;
+      return noChange;
     }
 
     const currentLink = document.getElementById("page-css");
     if (currentLink && new URL(currentLink.href).pathname === cssPath) {
-      return;
+      return noChange;
     }
 
     const nextLink = document.createElement("link");
     nextLink.rel = "stylesheet";
     nextLink.href = cssPath;
+    nextLink.media = "not all";
 
-    await new Promise((resolve, reject) => {
-      nextLink.addEventListener("load", resolve, { once: true });
-      nextLink.addEventListener("error", reject, { once: true });
-      document.head.appendChild(nextLink);
-    });
+    try {
+      await new Promise((resolve, reject) => {
+        nextLink.addEventListener("load", resolve, { once: true });
+        nextLink.addEventListener("error", reject, { once: true });
+        document.head.appendChild(nextLink);
+      });
+    } catch (error) {
+      nextLink.remove();
+      throw error;
+    }
 
-    currentLink?.remove();
-    nextLink.id = "page-css";
+    let activated = false;
+    return {
+      activate: () => {
+        nextLink.media = "all";
+        currentLink?.remove();
+        nextLink.id = "page-css";
+        activated = true;
+      },
+      cleanup: () => {
+        if (!activated) {
+          nextLink.remove();
+        }
+      },
+    };
+  }
+
+  async updatePageCSS(cssPath) {
+    const pageCSS = await this.preparePageCSS(cssPath);
+    pageCSS.activate();
+    return pageCSS.cleanup;
   }
   applySeoMetadata(metadata) {
     document.title = metadata.title;
@@ -688,7 +876,7 @@ class SPARouter {
   }
 
   async loadBlogPost(slug, addTransition, returnPage = 1) {
-    this.isNavigating = true;
+    this.setNavigating(true);
     try {
       const blogPostContainer = document.getElementById("blog-post-page");
 
@@ -762,12 +950,12 @@ class SPARouter {
           "<h1>Error loading post</h1><p>Please try again.</p>";
       }
     } finally {
-      this.isNavigating = false;
+      this.setNavigating(false);
     }
   }
 
   async loadProject(slug, addTransition, returnPage = 1) {
-    this.isNavigating = true;
+    this.setNavigating(true);
     try {
       const projectContainer = document.getElementById("project-page");
 
@@ -831,7 +1019,7 @@ class SPARouter {
           "<h1>Error loading project</h1><p>Please try again.</p>";
       }
     } finally {
-      this.isNavigating = false;
+      this.setNavigating(false);
     }
   }
 }

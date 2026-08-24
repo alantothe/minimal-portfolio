@@ -115,6 +115,29 @@ describe("SPA navigation", () => {
     );
   });
 
+  test("shows mobile-only boundary cues without replacing the menu", () => {
+    expect(shell).toMatch(
+      /class="mobile-page-cues" aria-hidden="true"[\s\S]*id="mobile-page-cue-previous"[\s\S]*id="mobile-page-cue-next"/
+    );
+    expect(shell).toContain('id="mobile-menu-toggle"');
+    expect(router).toContain("getMobilePageBoundaryCues");
+    expect(router).toContain("Swipe ${direction} for ${label}");
+    expect(globalStyles).toMatch(
+      /@media \(max-width: 480px\) \{[\s\S]*?\.mobile-page-cue \{[\s\S]*?position: fixed;/
+    );
+  });
+
+  test("scopes directional page animations to motion-safe phone styles", () => {
+    expect(globalStyles).toContain(
+      "@media (max-width: 480px) and (prefers-reduced-motion: no-preference)"
+    );
+    expect(globalStyles).toContain(".page-container.mobile-page-exit-next");
+    expect(globalStyles).toContain(
+      ".page-container.mobile-page-enter-previous"
+    );
+    expect(globalStyles).toContain("@media (prefers-reduced-motion: reduce)");
+  });
+
   test("supports pinning and dismissing the GitHub activity popover", () => {
     expect(imageLoader).toContain('import("/public/github-activity.js")');
     expect(githubActivity).toContain("attachGitHubActivityListener");

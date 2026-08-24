@@ -51,7 +51,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "ac7bc98c40da4b8528185efdb2f83eadfd6963bd84981703b4d52d89d2f20bd3",
+      "bodyHash": "23768c20f4f4aeacf97265e5ffa64ff583bb63bb639d596c83c26f35da42d1c2",
       "textHash": "c03825234a20eda8963b38ce9815de999a8e755a8aba6b413f84dcb71dafb989",
       "headings": ["h1:Alan Malpartida"],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
@@ -119,7 +119,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "aee456f8378722c964ef2d075d69a86a259d96388aa1211fbaff504ac7acebf1",
+      "bodyHash": "e373950f70d4c32ece5e5a73a07f3de0a83816834f53d1bbed6547d15cc98020",
       "textHash": "fa5103bb69b66b6a2d38c880344b495481d459614ed8fb9191165ee05287e035",
       "headings": ["h1:About", "h1:About Questurian"],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
@@ -169,7 +169,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "f156063df9a21d85cf60ccdfa3fea33266d957529fa62473bac14966e14bb9b4",
+      "bodyHash": "b882c0414bfc81be46f782811246c87dbb884a450a8f00c9693ddc17eb655067",
       "textHash": "b1954f16b62ba28d14781cbf994d43267cf12d93203b2f258a5740a6e5d63cbf",
       "headings": [
         "h1:Blog",
@@ -213,7 +213,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "ee8daad538d049a3c7f18b00b842d5f2e68d038746935a16698b50df0e26c448",
+      "bodyHash": "57e188eeeb97d58e31f7539abc45c9a5603e9fe29bae5077407d0fdc0feb7882",
       "textHash": "cf8375a50a563448c03f4b583bb95ffba222edd4ba5117231408f38cd121c5fe",
       "headings": ["h1:Projects", "h2:Questurian", "h2:Minimal Portfolio"],
       "internalLinks": [
@@ -263,7 +263,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "ab395b3be797a012d78e0917abfed25e2bc74daad90607f4cc2ab7f08355569a",
+      "bodyHash": "e5b1edcc6a2efb921fe1e0e60c2376e803daf01419cad4febd121bbe808bc96c",
       "textHash": "031964e52f85f679464438a7f45eb53752bfd684c75436cb591ad5dcabe350cd",
       "headings": [
         "h1:Who Is Alan Malpartida - Software Engineer, Founder, and Builder",
@@ -320,7 +320,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "f011d5a2745658c0d488f63634d1cfa610ce463edd85da3f51bb12d47b305f5b",
+      "bodyHash": "aa47f86556e44551b25e58e343f305f00e60cb33e30a1d0873263386b37e39de",
       "textHash": "0ca8dafba9c23c53cf44dec78c22fe21487fe07b66c103573cb58be87243e76f",
       "headings": [
         "h1:Minimal Portfolio",
@@ -362,7 +362,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "98767ce16d2a75d8208e1e872722c27d80d2a202eda2df1470c49ff2613d8fb8",
+      "bodyHash": "f237f7a29d30e5d6d718db4149c798df3887a83443138c15a240acbcfa5ace7e",
       "textHash": "f24db61cfcf1082d3389bcd1465af4240bd9a1cc222bf5c8ded47af2227544f5",
       "headings": [
         "h1:Questurian",
@@ -717,8 +717,8 @@
     },
     {
       "path": "src/pages/shell.html",
-      "bytes": 4226,
-      "sha256": "e69ceeac24ba6e998ff4655f852e1fca558b2e6b02a19ff2c6e2ee5dd977921c"
+      "bytes": 4549,
+      "sha256": "275780fe433758f7ace27779763fe4ae31093d2cb32b11e435ea512277199c38"
     }
   ],
   "media": [

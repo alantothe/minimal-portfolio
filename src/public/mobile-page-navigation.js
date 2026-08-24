@@ -1,7 +1,9 @@
 export const MOBILE_PAGE_ORDER = ["home", "about", "projects", "blog"];
 
-export const MOBILE_SWIPE_MIN_DISTANCE = 64;
-export const MOBILE_SCROLL_EDGE_TOLERANCE = 2;
+const MOBILE_SWIPE_MIN_DISTANCE = 64;
+const MOBILE_SCROLL_EDGE_TOLERANCE = 2;
+const MOBILE_SWIPE_COOLDOWN_MS = 650;
+const MOBILE_SWIPE_VERTICAL_DOMINANCE = 1.25;
 
 /**
  * Return which boundary the scroll container currently touches. Short pages
@@ -34,7 +36,7 @@ export function getBoundarySwipeIntent({
 
   if (
     verticalDistance < MOBILE_SWIPE_MIN_DISTANCE ||
-    verticalDistance <= Math.abs(deltaX)
+    verticalDistance <= Math.abs(deltaX) * MOBILE_SWIPE_VERTICAL_DOMINANCE
   ) {
     return null;
   }
@@ -63,4 +65,98 @@ export function getAdjacentMobilePage(pageName, intent) {
   }
 
   return MOBILE_PAGE_ORDER[currentIndex + offset] ?? null;
+}
+
+export function canStartMobilePageSwipe({
+  isMobile,
+  isNavigating,
+  touchCount,
+  menuOpen,
+  dialogOpen,
+  targetIsInteractive,
+}) {
+  return (
+    isMobile &&
+    !isNavigating &&
+    touchCount === 1 &&
+    !menuOpen &&
+    !dialogOpen &&
+    !targetIsInteractive
+  );
+}
+
+export function canFinishMobilePageSwipe({
+  isMobile,
+  isNavigating,
+  changedTouchCount,
+  remainingTouchCount,
+}) {
+  return (
+    isMobile &&
+    !isNavigating &&
+    changedTouchCount === 1 &&
+    remainingTouchCount === 0
+  );
+}
+
+/**
+ * Keep touch lifecycle, edge arming, and repeat protection behind one small
+ * stateful interface. Browser eligibility and target filtering stay with the
+ * router; gesture decisions stay here.
+ */
+export function createMobilePageSwipeRecognizer() {
+  let gestureStart = null;
+  let cooldownUntil = 0;
+
+  return {
+    start({ x, y, scrollTop, scrollHeight, clientHeight }) {
+      const boundaries = getScrollBoundaries({
+        scrollTop,
+        scrollHeight,
+        clientHeight,
+      });
+
+      gestureStart =
+        boundaries.atTop || boundaries.atBottom
+          ? {
+              x,
+              y,
+              startedAtTop: boundaries.atTop,
+              startedAtBottom: boundaries.atBottom,
+            }
+          : null;
+    },
+
+    cancel() {
+      gestureStart = null;
+    },
+
+    finish({ x, y, pageName, now }) {
+      const start = gestureStart;
+      gestureStart = null;
+
+      if (!start || now < cooldownUntil) {
+        return null;
+      }
+
+      const intent = getBoundarySwipeIntent({
+        startX: start.x,
+        startY: start.y,
+        endX: x,
+        endY: y,
+        startedAtTop: start.startedAtTop,
+        startedAtBottom: start.startedAtBottom,
+      });
+      const targetPage = intent
+        ? getAdjacentMobilePage(pageName, intent)
+        : null;
+
+      if (!intent || !targetPage) {
+        return null;
+      }
+
+      cooldownUntil = now + MOBILE_SWIPE_COOLDOWN_MS;
+      return targetPage;
+    },
+  };
 }

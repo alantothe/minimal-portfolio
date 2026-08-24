@@ -487,18 +487,13 @@ class SPARouter {
   }
 
   refreshMobilePageCues() {
-    const previousCue = document.getElementById("mobile-page-cue-previous");
     const nextCue = document.getElementById("mobile-page-cue-next");
     const content = document.getElementById("app-content");
     const mobileNav = document.getElementById("mobile-nav");
-    if (!previousCue || !nextCue || !content) {
+    if (!nextCue || !content) {
       return;
     }
 
-    const hideCues = () => {
-      previousCue.classList.remove("visible");
-      nextCue.classList.remove("visible");
-    };
     if (
       this.previewRoute ||
       !this.isMobileBreakpoint() ||
@@ -506,7 +501,7 @@ class SPARouter {
       mobileNav?.classList.contains("active") ||
       document.querySelector("dialog[open]")
     ) {
-      hideCues();
+      nextCue.classList.remove("visible");
       return;
     }
 
@@ -515,22 +510,21 @@ class SPARouter {
       scrollHeight: content.scrollHeight,
       clientHeight: content.clientHeight,
     });
-    const setCue = (element, pageName, direction) => {
+    const setNextCue = (pageName) => {
       if (!pageName) {
-        element.textContent = "";
-        delete element.dataset.destination;
-        element.classList.remove("visible");
+        nextCue.textContent = "";
+        delete nextCue.dataset.destination;
+        nextCue.classList.remove("visible");
         return;
       }
 
       const label = pageName[0].toUpperCase() + pageName.slice(1);
-      element.textContent = `Swipe ${direction}`;
-      element.dataset.destination = label;
-      element.classList.add("visible");
+      nextCue.textContent = "Swipe up";
+      nextCue.dataset.destination = label;
+      nextCue.classList.add("visible");
     };
 
-    setCue(previousCue, cues.previous, "down");
-    setCue(nextCue, cues.next, "up");
+    setNextCue(cues.next);
   }
 
   getPageFromPath(pathname) {

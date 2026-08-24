@@ -115,19 +115,21 @@ describe("SPA navigation", () => {
     );
   });
 
-  test("shows mobile-only boundary cues without replacing the menu", () => {
+  test("shows only a mobile next-page cue without replacing the menu", () => {
     expect(shell).toMatch(
-      /class="mobile-page-cues" aria-hidden="true"[\s\S]*id="mobile-page-cue-previous"[\s\S]*id="mobile-page-cue-next"/
+      /id="mobile-page-cue-next"[\s\S]*class="mobile-page-cue mobile-page-cue--next"[\s\S]*aria-hidden="true"/
     );
+    expect(shell).not.toContain('id="mobile-page-cue-previous"');
     expect(shell).toContain('id="mobile-menu-toggle"');
     expect(router).toContain("getMobilePageBoundaryCues");
-    expect(router).toContain("Swipe ${direction}");
-    expect(router).toContain("element.dataset.destination = label");
+    expect(router).toContain('nextCue.textContent = "Swipe up"');
+    expect(router).not.toContain("mobile-page-cue-previous");
     expect(globalStyles).toMatch(
       /@media \(max-width: 480px\) \{[\s\S]*?\.mobile-page-cue \{[\s\S]*?position: fixed;/
     );
     expect(globalStyles).toContain("content: attr(data-destination);");
     expect(globalStyles).toContain("@keyframes mobileCueNudgeNext");
+    expect(globalStyles).not.toContain("mobileCueNudgePrevious");
   });
 
   test("scopes directional page animations to motion-safe phone styles", () => {

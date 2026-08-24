@@ -414,7 +414,6 @@ h1 {
   opacity: 1 !important;
 }
 
-.mobile-page-cues,
 .mobile-page-cue {
   display: none;
 }
@@ -542,10 +541,6 @@ h1 {
     flex-direction: column !important;
   }
 
-  .mobile-page-cues {
-    display: contents;
-  }
-
   .mobile-page-cue {
     align-items: center;
     backdrop-filter: blur(10px);
@@ -601,17 +596,6 @@ h1 {
     text-transform: none;
   }
 
-  .mobile-page-cue--previous {
-    left: auto;
-    right: max(16px, env(safe-area-inset-right));
-    top: 78px;
-    transform: translateY(-4px);
-  }
-
-  .mobile-page-cue--previous::before {
-    content: "↓";
-  }
-
   .mobile-page-cue--next {
     bottom: max(12px, env(safe-area-inset-bottom));
   }
@@ -620,10 +604,6 @@ h1 {
     opacity: 1;
     transform: translate(-50%, 0);
     visibility: visible;
-  }
-
-  .mobile-page-cue--previous.visible {
-    transform: translateY(0);
   }
 }
 
@@ -634,18 +614,8 @@ h1 {
     }
   }
 
-  @keyframes mobileCueNudgePrevious {
-    50% {
-      transform: translateY(3px);
-    }
-  }
-
   .mobile-page-cue--next.visible::before {
     animation: mobileCueNudgeNext 900ms ease-in-out 2;
-  }
-
-  .mobile-page-cue--previous.visible::before {
-    animation: mobileCueNudgePrevious 900ms ease-in-out 2;
   }
 
   @keyframes mobilePageExit {

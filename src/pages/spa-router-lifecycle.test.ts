@@ -204,7 +204,6 @@ function createHarness(options: HarnessOptions = {}) {
   content.scrollHeight = 300;
   content.clientHeight = 400;
   const mobileNav = new FakeElement("mobile-nav");
-  const previousCue = new FakeElement("mobile-page-cue-previous");
   const nextCue = new FakeElement("mobile-page-cue-next");
 
   const currentStyle = new FakeElement("page-css");
@@ -218,7 +217,6 @@ function createHarness(options: HarnessOptions = {}) {
     [aboutPage.id, aboutPage],
     [content.id, content],
     [mobileNav.id, mobileNav],
-    [previousCue.id, previousCue],
     [nextCue.id, nextCue],
   ]);
 
@@ -455,7 +453,6 @@ function createHarness(options: HarnessOptions = {}) {
     homePage,
     links,
     nextCue,
-    previousCue,
     registerDialog,
     router,
   };

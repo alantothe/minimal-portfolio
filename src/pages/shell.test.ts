@@ -121,10 +121,13 @@ describe("SPA navigation", () => {
     );
     expect(shell).toContain('id="mobile-menu-toggle"');
     expect(router).toContain("getMobilePageBoundaryCues");
-    expect(router).toContain("Swipe ${direction} for ${label}");
+    expect(router).toContain("Swipe ${direction}");
+    expect(router).toContain("element.dataset.destination = label");
     expect(globalStyles).toMatch(
       /@media \(max-width: 480px\) \{[\s\S]*?\.mobile-page-cue \{[\s\S]*?position: fixed;/
     );
+    expect(globalStyles).toContain("content: attr(data-destination);");
+    expect(globalStyles).toContain("@keyframes mobileCueNudgeNext");
   });
 
   test("scopes directional page animations to motion-safe phone styles", () => {

@@ -67,6 +67,24 @@ export function getAdjacentMobilePage(pageName, intent) {
   return MOBILE_PAGE_ORDER[currentIndex + offset] ?? null;
 }
 
+export function getMobilePageBoundaryCues(
+  pageName,
+  { scrollTop, scrollHeight, clientHeight }
+) {
+  const boundaries = getScrollBoundaries({
+    scrollTop,
+    scrollHeight,
+    clientHeight,
+  });
+
+  return {
+    previous: boundaries.atTop
+      ? getAdjacentMobilePage(pageName, "previous")
+      : null,
+    next: boundaries.atBottom ? getAdjacentMobilePage(pageName, "next") : null,
+  };
+}
+
 export function canStartMobilePageSwipe({
   isMobile,
   isNavigating,
@@ -156,7 +174,7 @@ export function createMobilePageSwipeRecognizer() {
       }
 
       cooldownUntil = now + MOBILE_SWIPE_COOLDOWN_MS;
-      return targetPage;
+      return { intent, pageName: targetPage };
     },
   };
 }

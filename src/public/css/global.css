@@ -414,6 +414,11 @@ h1 {
   opacity: 1 !important;
 }
 
+.mobile-page-cues,
+.mobile-page-cue {
+  display: none;
+}
+
 /* PHONE: Small screens (480px and below) - collapsible menu */
 @media (max-width: 480px) {
   /* Container and sidebar */
@@ -535,5 +540,96 @@ h1 {
 
   .social-links {
     flex-direction: column !important;
+  }
+
+  .mobile-page-cues {
+    display: contents;
+  }
+
+  .mobile-page-cue {
+    background: rgba(10, 10, 10, 0.88);
+    border: 1px solid #333333;
+    border-radius: 999px;
+    color: #b3b3b3;
+    display: block;
+    font-size: 11px;
+    left: 50%;
+    letter-spacing: 0.04em;
+    max-width: calc(100vw - 40px);
+    opacity: 0;
+    padding: 6px 10px;
+    pointer-events: none;
+    position: fixed;
+    text-align: center;
+    transform: translate(-50%, 4px);
+    transition:
+      opacity 160ms ease,
+      transform 160ms ease;
+    visibility: hidden;
+    white-space: nowrap;
+    z-index: 90;
+  }
+
+  .mobile-page-cue--previous {
+    top: 78px;
+    transform: translate(-50%, -4px);
+  }
+
+  .mobile-page-cue--next {
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .mobile-page-cue.visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    visibility: visible;
+  }
+}
+
+@media (max-width: 480px) and (prefers-reduced-motion: no-preference) {
+  @keyframes mobilePageExit {
+    to {
+      opacity: 0;
+      transform: translateY(var(--mobile-page-transition-offset));
+    }
+  }
+
+  @keyframes mobilePageEnter {
+    from {
+      opacity: 0;
+      transform: translateY(var(--mobile-page-transition-offset));
+    }
+  }
+
+  .page-container.mobile-page-exit-next,
+  .page-container.mobile-page-exit-previous {
+    animation: mobilePageExit 140ms ease-in both;
+  }
+
+  .page-container.mobile-page-enter-next,
+  .page-container.mobile-page-enter-previous {
+    animation: mobilePageEnter 220ms cubic-bezier(0, 0, 0.2, 1) both;
+  }
+
+  .page-container.mobile-page-exit-next {
+    --mobile-page-transition-offset: -18px;
+  }
+
+  .page-container.mobile-page-enter-next {
+    --mobile-page-transition-offset: 22px;
+  }
+
+  .page-container.mobile-page-exit-previous {
+    --mobile-page-transition-offset: 18px;
+  }
+
+  .page-container.mobile-page-enter-previous {
+    --mobile-page-transition-offset: -22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-page-cue {
+    transition: none;
   }
 }

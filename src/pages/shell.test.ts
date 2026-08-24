@@ -168,10 +168,15 @@ describe("SPA navigation", () => {
     expect(githubActivity).toContain("aria-expanded");
   });
 
-  test("matches the GitHub activity popover height to the stats", () => {
+  test("keeps the GitHub activity popover inside the desktop content pane", () => {
+    expect(shell).toContain("/pages/home/styles.css?v=commits-panel");
     expect(homeStyles).toMatch(/\.stats \{[^}]*position: relative;/);
+    expect(homeStyles).toMatch(/\.github-activity \{[^}]*position: relative;/);
     expect(homeStyles).toMatch(
-      /\.github-activity__panel \{[^}]*height: 100%;[^}]*left: calc\(100% \+ 14px\);[^}]*width: min\(420px, calc\(100vw - 40px\)\);/
+      /\.github-activity__panel \{[^}]*height: 100px;[^}]*left: 0;[^}]*top: calc\(100% \+ 10px\);[^}]*width: min\(420px, calc\(100vw - 40px\)\);/
+    );
+    expect(homeStyles).toMatch(
+      /\.github-activity__panel::before \{[^}]*height: 10px;[^}]*left: 0;[^}]*top: -10px;[^}]*width: 100%;/
     );
     expect(homeStyles).toMatch(
       /\.github-activity__chevron \{[^}]*opacity: 0\.85;[^}]*transform: rotate\(-90deg\);[^}]*transition: opacity 140ms ease;/
@@ -207,7 +212,6 @@ describe("SPA navigation", () => {
     expect(homeStyles).toMatch(
       /#copy-email:hover,[^}]*color: var\(--home-accent\);[^}]*text-decoration-color: var\(--home-accent\);/
     );
-    expect(homeStyles).toContain("@media (max-width: 900px)");
   });
 
   test("shows the complete GitHub activity graph inline on phones", () => {

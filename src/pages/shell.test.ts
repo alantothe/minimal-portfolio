@@ -168,15 +168,18 @@ describe("SPA navigation", () => {
     expect(githubActivity).toContain("aria-expanded");
   });
 
-  test("keeps the GitHub activity popover inside the desktop content pane", () => {
-    expect(shell).toContain("/pages/home/styles.css?v=commits-panel");
+  test("keeps the GitHub activity popover beside the stats without clipping", () => {
+    expect(shell).toContain("/pages/home/styles.css?v=commits-side-panel-v2");
     expect(homeStyles).toMatch(/\.stats \{[^}]*position: relative;/);
-    expect(homeStyles).toMatch(/\.github-activity \{[^}]*position: relative;/);
+    expect(homeStyles).toMatch(/\.github-activity \{[^}]*position: static;/);
     expect(homeStyles).toMatch(
-      /\.github-activity__panel \{[^}]*height: 100px;[^}]*left: 0;[^}]*top: calc\(100% \+ 10px\);[^}]*width: min\(420px, calc\(100vw - 40px\)\);/
+      /\.github-activity__panel \{[^}]*height: 100%;[^}]*left: calc\(100% \+ 14px\);[^}]*top: 0;[^}]*width: min\(380px, calc\(100vw - 40px\)\);[^}]*z-index: 20;/
     );
     expect(homeStyles).toMatch(
-      /\.github-activity__panel::before \{[^}]*height: 10px;[^}]*left: 0;[^}]*top: -10px;[^}]*width: 100%;/
+      /\.github-activity__panel::before \{[^}]*height: 100%;[^}]*left: -14px;[^}]*top: 0;[^}]*width: 14px;/
+    );
+    expect(homeStyles).toMatch(
+      /@media \(max-width: 900px\) \{[\s\S]*?\.github-activity \{[^}]*position: relative;[\s\S]*?\.github-activity__panel \{[^}]*height: 100px;[^}]*left: 0;[^}]*top: calc\(100% \+ 10px\);/
     );
     expect(homeStyles).toMatch(
       /\.github-activity__chevron \{[^}]*opacity: 0\.85;[^}]*transform: rotate\(-90deg\);[^}]*transition: opacity 140ms ease;/

@@ -268,7 +268,7 @@ h3 {
   --github-accent: var(--home-accent);
   --github-text-rest: var(--home-accent-rest);
 
-  position: relative;
+  position: static;
   width: max-content;
 }
 
@@ -365,30 +365,30 @@ h3 {
   color: #cccccc;
   display: flex;
   flex-direction: column;
-  height: 100px;
-  left: 0;
+  height: 100%;
+  left: calc(100% + 14px);
   opacity: 0;
   padding: 7px;
   pointer-events: none;
   position: absolute;
-  top: calc(100% + 10px);
-  transform: translateY(-5px);
+  top: 0;
+  transform: translateX(-5px);
   transition:
     opacity 150ms ease,
     transform 150ms ease,
     visibility 150ms ease;
   visibility: hidden;
-  width: min(420px, calc(100vw - 40px));
+  width: min(380px, calc(100vw - 40px));
   z-index: 20;
 }
 
 .github-activity__panel::before {
   content: "";
-  height: 10px;
-  left: 0;
+  height: 100%;
+  left: -14px;
   position: absolute;
-  top: -10px;
-  width: 100%;
+  top: 0;
+  width: 14px;
 }
 
 .github-activity.is-open > .github-activity__panel,
@@ -398,7 +398,7 @@ h3 {
   > .github-activity__panel {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0);
+  transform: translateX(0);
   visibility: visible;
 }
 
@@ -406,7 +406,7 @@ h3 {
   .github-activity:hover > .github-activity__panel {
     opacity: 1;
     pointer-events: auto;
-    transform: translateY(0);
+    transform: translateX(0);
     visibility: visible;
   }
 }
@@ -552,6 +552,40 @@ h3 {
 #copy-tooltip.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 900px) {
+  .github-activity {
+    position: relative;
+  }
+
+  .github-activity__panel {
+    height: 100px;
+    left: 0;
+    top: calc(100% + 10px);
+    transform: translateY(-5px);
+  }
+
+  .github-activity__panel::before {
+    height: 10px;
+    left: 0;
+    top: -10px;
+    width: 100%;
+  }
+
+  .github-activity.is-open > .github-activity__panel,
+  .github-activity:focus-within > .github-activity__panel,
+  .profile-section:has(.profile-image-trigger:is(:focus-visible, :active))
+    .github-activity
+    > .github-activity__panel {
+    transform: translateY(0);
+  }
+}
+
+@media (hover: hover) and (max-width: 900px) {
+  .github-activity:hover > .github-activity__panel {
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 640px) {

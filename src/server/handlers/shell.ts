@@ -50,7 +50,7 @@ export function createShellHandler(
       let pageContent = "";
       let containerId: ContainerId = "home-page";
       let seoInput: SeoPageInput = { kind: "home" };
-      let pageCss = "/pages/home/styles.css?v=commits-panel";
+      let pageCss = "/pages/home/styles.css?v=commits-side-panel-v2";
 
       if (params?.slug && pathname.startsWith("/blog/")) {
         // Blog post route

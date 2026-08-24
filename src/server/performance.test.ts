@@ -47,7 +47,7 @@ describe("production response performance", () => {
     expect(home).toContain('src="/avatar.webp"');
     expect(home).toContain('width="512"');
     expect(home).toContain('height="510"');
-    expect(home).toContain("/pages/home/styles.css?v=commits-panel");
+    expect(home).toContain("/pages/home/styles.css?v=commits-side-panel-v2");
   });
 
   test("SSR loads only the current route stylesheet", async () => {

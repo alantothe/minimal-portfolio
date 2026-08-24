@@ -81,7 +81,7 @@ const TEMPLATES: Record<string, string> = {
 };
 
 const PAGE_CSS: Record<string, string> = {
-  home: "/pages/home/styles.css?v=commits-panel",
+  home: "/pages/home/styles.css?v=commits-side-panel-v2",
   about: "/pages/about/styles.css",
   blog: "/pages/blog/styles.css",
   projects: "/pages/projects/styles.css?v=mobile-no-hover",

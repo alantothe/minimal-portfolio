@@ -111,7 +111,7 @@ describe("Content editor", () => {
     expect(html).not.toContain('name="seo.title"');
   });
 
-  test("renders every Project field including ordered technologies and address", () => {
+  test("renders the minimal Project editor in article order", () => {
     const html = renderEditorPanel({
       status: "ready",
       media: [asset],
@@ -120,15 +120,10 @@ describe("Content editor", () => {
         {
           title: "Questurian",
           summary: "A concise summary",
+          technologies: ["TypeScript", "Bun"],
           card: { mediaAssetId: asset.id, alt: "Questurian screen" },
-          kicker: "Selected work",
-          role: "Founder",
-          status: "Live",
-          period: "2025–present",
-          technologies: ["TypeScript", "SQLite"],
-          liveUrl: "https://example.com",
-          repositoryUrl: "https://github.com/example/project",
-          accentColor: "#0b4fd4",
+          gallery: [],
+          videoUrl: null,
           bodyMarkdown: "## Context\n\nLong form copy.",
           seo: { title: null, description: null, sharingImage: null },
         },
@@ -136,18 +131,12 @@ describe("Content editor", () => {
       ),
     });
 
-    expect(html.match(/<fieldset>/g)).toHaveLength(3);
+    expect(html.match(/<fieldset>/g)).toHaveLength(4);
     for (const name of [
       "title",
       "summary",
+      "technologies[0]",
       "card.mediaAssetId",
-      "kicker",
-      "role",
-      "status",
-      "period",
-      "liveUrl",
-      "repositoryUrl",
-      "accentColor",
       "bodyMarkdown",
       "slug",
       "displayOrder",
@@ -155,12 +144,19 @@ describe("Content editor", () => {
     ]) {
       expect(html).toContain(`name="${name}"`);
     }
-    expect(html).toContain('data-field="technologies[0]"');
-    expect(html).toContain('data-list-action="up"');
-    expect(html).toContain('data-list-action="down"');
-    expect(html).toContain('id="add-technology"');
+    expect(html.indexOf('name="title"')).toBeLessThan(
+      html.indexOf('name="card.mediaAssetId"')
+    );
+    expect(html.indexOf('name="card.mediaAssetId"')).toBeLessThan(
+      html.indexOf('name="summary"')
+    );
     expect(html).toContain('value="questurian"');
     expect(html).toContain('value="4"');
+    expect(html).toContain('id="add-technology"');
+    expect(html).toContain('data-technology-action="remove"');
+    expect(html).toContain(
+      "Brand logos are matched automatically and shown in this order."
+    );
     expect(html).toContain('data-display-order="4"');
     expect(html).toContain("<h3>Questurian</h3>");
     expect(html).toContain('id="delete-content-dialog"');

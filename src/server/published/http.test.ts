@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { publishedResponse } from "./http";
 
 describe("database-backed public response caching", () => {
-  test("emits a generation-derived ETag and answers a matching request with 304", async () => {
+  test("emits a rendered-body ETag and answers an unchanged body with 304", async () => {
     const request = new Request("https://portfolio.test/api/page?name=home");
     const first = publishedResponse(request, {
       body: JSON.stringify({ content: "Home" }),
@@ -38,6 +38,20 @@ describe("database-backed public response caching", () => {
 
     expect(response("generation-1").headers.get("ETag")).not.toBe(
       response("generation-2").headers.get("ETag")
+    );
+  });
+
+  test("changes the validator when enrichment changes within one generation", () => {
+    const request = new Request("https://portfolio.test/");
+    const response = (commits: number) =>
+      publishedResponse(request, {
+        body: `${commits} commits this month`,
+        contentType: "text/html; charset=utf-8",
+        etagSeed: "generation-1:/",
+      });
+
+    expect(response(468).headers.get("ETag")).not.toBe(
+      response(572).headers.get("ETag")
     );
   });
 });

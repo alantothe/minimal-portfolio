@@ -70,15 +70,10 @@ function initialData(
     return {
       title,
       summary: "",
-      card: null,
-      kicker: "",
-      role: "",
-      status: "",
-      period: "",
       technologies: [],
-      liveUrl: null,
-      repositoryUrl: null,
-      accentColor: "",
+      card: null,
+      gallery: [],
+      videoUrl: null,
       bodyMarkdown: "",
       seo: { ...EMPTY_SEO },
     };

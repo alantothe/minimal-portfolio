@@ -186,6 +186,25 @@ describe("what the renderer restores", () => {
     expect(rendered.content).not.toContain('width="512"');
   });
 
+  test("Project collection and article render technology badges", async () => {
+    const db = database();
+    seedPublishedSite(db);
+    const { site, snapshot } = siteFor(db);
+
+    const collection = await renderPublishedPage(
+      found(site, "/projects").view,
+      snapshot
+    );
+    const article = await renderPublishedPage(
+      found(site, "/projects/questurian").view,
+      snapshot
+    );
+
+    expect(collection.content).not.toContain("project-technologies");
+    expect(article.content).toContain("project-technologies--article");
+    expect(article.content).toContain("TypeScript");
+  });
+
   test("a blog post's published time is an instant, not a calendar date", () => {
     const db = database();
     seedPublishedSite(db);

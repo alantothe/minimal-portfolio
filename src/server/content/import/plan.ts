@@ -117,25 +117,37 @@ function isoDate(value: unknown): string {
   return text(value);
 }
 
-/**
- * Reads a display period out of frontmatter.
- *
- * The two live Projects disagree about the type: Questurian quotes
- * `"2025–present"` so YAML yields a string, while Minimal Portfolio writes a
- * bare `2026` and YAML yields a number. Both are the same editorial value — a
- * period a reader sees — so both become text.
- */
-function periodText(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return String(value.getUTCFullYear());
-  }
-  return "";
+function projectGallery(
+  value: unknown,
+  fallbackAlt: string
+): Array<{ src: string; alt: string }> {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((entry) => {
+    if (typeof entry === "string") {
+      return [{ src: entry, alt: fallbackAlt }];
+    }
+    if (entry === null || typeof entry !== "object" || Array.isArray(entry)) {
+      return [];
+    }
+
+    const item = entry as Record<string, unknown>;
+    const src = text(item.src ?? item.url);
+    return src ? [{ src, alt: text(item.alt) || fallbackAlt }] : [];
+  });
 }
 
-function stringList(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((v) => typeof v === "string") : [];
+function projectVideoUrl(value: unknown): string | null {
+  if (typeof value === "string") return value || null;
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return text((value as Record<string, unknown>).src) || null;
+}
+
+function projectTechnologies(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === "string");
 }
 
 /** Legacy image references the importer knows how to adopt. */
@@ -372,21 +384,26 @@ async function planProject(
     derived.push(`project.${source.key}.card.alt`);
   }
 
+  const gallery: Array<{ mediaAssetId: string; alt: string }> = [];
+  for (const [index, item] of projectGallery(front.gallery, title).entries()) {
+    const galleryId = await requestMedia(
+      context,
+      `project.${source.key}.gallery[${index}]`,
+      item.src
+    );
+    const reference = mediaReference(galleryId, item.alt);
+    if (reference) gallery.push(reference);
+  }
+
   const order = front.order;
 
   const data = {
     title,
     summary: text(front.description),
+    technologies: projectTechnologies(front.technologies ?? front.stack),
     card: mediaReference(cardId, title),
-    kicker: text(front.kicker),
-    role: text(front.role),
-    status: text(front.status),
-    // Legacy calls it `year`; the model calls it `period`.
-    period: periodText(front.year),
-    technologies: stringList(front.stack),
-    liveUrl: null,
-    repositoryUrl: text(front.repository) || null,
-    accentColor: text(front.accent),
+    gallery,
+    videoUrl: projectVideoUrl(front.video),
     bodyMarkdown: source.body.trim(),
     seo: NO_SEO,
   };

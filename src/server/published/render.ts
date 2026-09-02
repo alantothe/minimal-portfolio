@@ -84,7 +84,7 @@ const PAGE_CSS: Record<string, string> = {
   home: "/pages/home/styles.css?v=commits-side-panel-v2",
   about: "/pages/about/styles.css",
   blog: "/pages/blog/styles.css",
-  projects: "/pages/projects/styles.css?v=mobile-no-hover",
+  projects: "/pages/projects/styles.css?v=project-redesign-no-touch",
 };
 
 const PAGE_TITLES: Record<string, string> = {
@@ -251,15 +251,13 @@ export function toProjectDetail(project: PublishedProject): ProjectDetail {
     metadata: {
       title: project.title,
       description: project.summary,
-      image: project.card?.url,
-      kicker: project.kicker,
-      role: project.role,
-      status: project.status,
-      year: project.period,
-      stack: project.technologies,
-      accent: project.accentColor,
-      live: project.liveUrl,
-      repository: project.repositoryUrl,
+      technologies: project.technologies,
+      image: project.lead?.url,
+      gallery: project.gallery.map((image) => ({
+        src: image.url,
+        alt: image.alt,
+      })),
+      videoUrl: project.videoUrl,
     },
     html: project.bodyHtml,
   };
@@ -344,10 +342,8 @@ export async function renderPublishedPage(
           slug: project.slug,
           title: project.title,
           description: project.summary,
+          technologies: project.technologies,
           image: project.card?.url,
-          kicker: project.kicker,
-          stack: project.technologies,
-          accent: project.accentColor,
         })),
         1
       );

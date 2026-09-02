@@ -68,6 +68,8 @@ export const ROLE_VARIANTS = {
   logo: "portfolio_wide",
   sharing: "portfolio_wide",
   card: "portfolio_card",
+  project: "portfolio_wide",
+  gallery: "portfolio_wide",
 } as const satisfies Record<string, MediaVariant>;
 
 export type MediaRole = keyof typeof ROLE_VARIANTS;
@@ -132,15 +134,11 @@ export interface PublishedProject {
   route: string;
   title: string;
   summary: string;
-  card: PublishedImage | null;
-  kicker: string;
-  role: string;
-  status: string;
-  period: string;
   technologies: string[];
-  liveUrl: string | null;
-  repositoryUrl: string | null;
-  accentColor: string;
+  card: PublishedImage | null;
+  lead: PublishedImage | null;
+  gallery: PublishedImage[];
+  videoUrl: string | null;
   bodyHtml: string;
   seo: PublishedSeo;
 }
@@ -284,6 +282,7 @@ interface BuildContext {
   cloudName: string;
   findings: Finding[];
   markdown: MarkdownContext;
+  projectMarkdown: MarkdownContext;
   validationMode: ValidationMode;
 }
 
@@ -389,7 +388,7 @@ function buildProject(
   context: BuildContext
 ): PublishedProject {
   const data = parsed<ProjectContent>(item, "project", context);
-  const { assets, cloudName, findings, markdown } = context;
+  const { assets, cloudName, findings } = context;
   const slug = item.slug!;
   const route = slug ? `/projects/${encodeURIComponent(slug)}` : "/projects";
 
@@ -399,20 +398,19 @@ function buildProject(
     route,
     title: data.title,
     summary: data.summary,
+    technologies: data.technologies,
     card: resolveImage(data.card, "card", assets, cloudName),
-    kicker: data.kicker,
-    role: data.role,
-    status: data.status,
-    period: data.period,
-    technologies: [...data.technologies],
-    liveUrl: data.liveUrl,
-    repositoryUrl: data.repositoryUrl,
-    accentColor: data.accentColor,
+    lead: resolveImage(data.card, "project", assets, cloudName),
+    gallery: data.gallery.flatMap((reference) => {
+      const image = resolveImage(reference, "gallery", assets, cloudName);
+      return image ? [image] : [];
+    }),
+    videoUrl: data.videoUrl,
     bodyHtml: renderField(
       `project.${slug}.body`,
       data.bodyMarkdown,
       "body",
-      markdown,
+      context.projectMarkdown,
       findings
     ),
     seo: resolveSeo(data.seo, assets, cloudName),
@@ -658,6 +656,13 @@ function buildSnapshot(
     findings,
     validationMode,
     markdown: {
+      resolveMedia: (mediaAssetId) => {
+        const asset = assets.get(mediaAssetId);
+        if (!asset) return null;
+        return renderMedia(asset, "portfolio_wide", cloudName);
+      },
+    },
+    projectMarkdown: {
       resolveMedia: (mediaAssetId) => {
         const asset = assets.get(mediaAssetId);
         if (!asset) return null;

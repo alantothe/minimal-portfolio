@@ -57,7 +57,7 @@ describe("production response performance", () => {
     const html = await response.text();
 
     expect(html).toContain(
-      '<link id="page-css" rel="stylesheet" href="/pages/projects/styles.css?v=mobile-no-hover">'
+      '<link id="page-css" rel="stylesheet" href="/pages/projects/styles.css?v=project-redesign-no-touch">'
     );
     expect(html).not.toContain("/pages/home/styles.css");
     expect(html).not.toContain("/pages/about/styles.css");

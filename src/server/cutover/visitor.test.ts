@@ -70,6 +70,27 @@ describe("published Visitor responses", () => {
     expect(await second!.text()).toBe("");
   });
 
+  test("changes the ETag when live enrichment changes within one generation", async () => {
+    const site = fixtureSite();
+    const first = await servePublishedVisitor(
+      new Request("https://example.test/"),
+      site,
+      { ...NO_ENRICHMENT, githubCommits: 468 }
+    );
+    const etag = first!.headers.get("ETag");
+    const current = await servePublishedVisitor(
+      new Request("https://example.test/", {
+        headers: { "If-None-Match": etag! },
+      }),
+      site,
+      { ...NO_ENRICHMENT, githubCommits: 572 }
+    );
+
+    expect(current!.status).toBe(200);
+    expect(current!.headers.get("ETag")).not.toBe(etag);
+    expect(await current!.text()).toContain("572 commits this month");
+  });
+
   test("leaves liveness and Owner routes to the existing router", async () => {
     const site = fixtureSite();
 

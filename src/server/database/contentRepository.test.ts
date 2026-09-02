@@ -75,7 +75,7 @@ describe("writing content", () => {
 
   test("stamps every row with the current schema version", () => {
     const { repo } = repository();
-    expect(project(repo, "questurian", 1).schemaVersion).toBe(1);
+    expect(project(repo, "questurian", 1).schemaVersion).toBe(2);
   });
 
   test("refuses a second row for a singleton", () => {
@@ -462,6 +462,28 @@ describe("ordering", () => {
 });
 
 describe("schema versioning", () => {
+  test("upgrades version one Project data when it is read", () => {
+    const { repo, database } = repository();
+    project(repo, "questurian", 1);
+    database
+      .query(
+        "UPDATE content_items SET schema_version = 1, data = ? WHERE id = ?"
+      )
+      .run(
+        JSON.stringify({
+          title: "Questurian",
+          role: "Engineer",
+          technologies: [],
+        }),
+        QUESTURIAN_ID
+      );
+
+    expect(repo.findById(QUESTURIAN_ID)).toMatchObject({
+      schemaVersion: 2,
+      data: { title: "Questurian", technologies: [] },
+    });
+  });
+
   test("a row written by a newer release is refused rather than guessed at", () => {
     const { repo, database } = repository();
     project(repo, "questurian", 1);

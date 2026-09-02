@@ -117,6 +117,10 @@ describe("public HTTP behavior", () => {
 
     expect(firstHtml).not.toContain("Loading projects...");
     expect(firstHtml).toContain('class="project-image"');
+    expect(firstHtml).toContain('data-previewable="true"');
+    expect(firstHtml).toContain('class="project-image__tooltip"');
+    expect(firstHtml).toContain('role="tooltip"');
+    expect(firstHtml).toContain('aria-describedby="project-image-tooltip-');
     expect(firstHtml).toContain('class="project-card__arrow"');
     expect(firstHtml).toContain('class="project-arrow-ring-progress"');
     expect(firstHtml).not.toContain('href="/projects?page=2"');

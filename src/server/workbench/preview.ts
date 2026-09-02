@@ -10,7 +10,7 @@
 import { jsonForScript } from "./scriptValue";
 
 const ROUTER_SCRIPT =
-  '<script src="/public/spa-router.js?v=no-touch" type="module"></script>';
+  '<script src="/public/spa-router.js?v=media" type="module"></script>';
 
 export function configurePreviewDocument(
   document: string,

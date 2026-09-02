@@ -76,7 +76,7 @@ export function createShellHandler(
         if (project) {
           pageContent = `<div class="project-page-shell"><a href="/projects" class="back-to-projects back-link">&larr; All projects</a>${renderProjectArticle(project)}</div>`;
           containerId = "project-page";
-          pageCss = "/pages/projects/styles.css?v=mobile-no-hover";
+          pageCss = "/pages/projects/styles.css?v=project-redesign-no-touch";
           seoInput = {
             kind: "project",
             slug: project.slug,

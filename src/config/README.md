@@ -34,7 +34,24 @@ Follow this checklist to get your portfolio ready:
 
 - Upload to Cloudinary or similar CDN
 - Use the CDN URL in the `image` field when creating projects
-- Recommended size for project covers: 300×180px
+- Project screenshots display at 1440×900px (8:5). Other source shapes are center-cropped.
+
+Project Markdown can use a lead image carousel in its frontmatter:
+
+```yaml
+gallery:
+  - src: /public/project-overview.webp
+    alt: Project overview
+  - src: /public/project-detail.webp
+    alt: Project detail view
+```
+
+Add an optional self-hosted or Cloudinary video with `video`. Use MP4 or WebM;
+the article display is capped at 1920×1080.
+
+```yaml
+video: /public/project-demo.mp4
+```
 
 ## Creating Content
 
@@ -66,6 +83,7 @@ It will prompt you for:
 
 - Project title
 - Description
+- Technologies (comma-separated, optional)
 - Cloudinary image URL
 - Date (defaults to today)
 

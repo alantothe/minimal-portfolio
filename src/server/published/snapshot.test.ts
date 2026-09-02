@@ -67,6 +67,7 @@ describe("building a generation", () => {
     expect(snapshot.home.displayName).toBe("Ada Lovelace");
     expect(snapshot.about.featuredTitle).toBe("Example");
     expect(snapshot.projects).toHaveLength(2);
+    expect(snapshot.projects[0]?.technologies).toEqual(["Bun", "TypeScript"]);
     expect(snapshot.blogPosts).toHaveLength(1);
   });
 
@@ -182,12 +183,16 @@ describe("media", () => {
     seedPublishedSite(db);
     const snapshot = built(db);
 
-    // Portrait fills a square; the card fills the 5:3 box; sharing images are a
-    // limit and keep their own proportions.
+    // Article media uses a wider source than collection cards; Project CSS
+    // applies the shared 1440x900 display crop without enlarging card downloads.
     expect(snapshot.home.portrait).toMatchObject({ width: 800, height: 800 });
     expect(snapshot.projects[0]!.card).toMatchObject({
       width: 600,
       height: 360,
+    });
+    expect(snapshot.projects[0]!.lead).toMatchObject({
+      width: 1200,
+      height: 720,
     });
     expect(snapshot.branding.defaultSharingImage).toMatchObject({
       width: 1200,

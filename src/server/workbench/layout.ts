@@ -232,7 +232,8 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   padding: 0;
   line-height: 1;
 }
-.library-order-note { color: var(--muted); font-size: 0.76rem; margin: 0.35rem 0 0; }
+.library-order-publish { margin: 0.45rem 0 0; }
+.library-order-note { color: var(--muted); font-size: 0.76rem; margin: 0 0 0.35rem; }
 .library-section-heading {
   display: flex;
   align-items: baseline;
@@ -308,7 +309,7 @@ textarea { min-height: 7rem; resize: vertical; }
 .media-upload button { margin-top: 0.65rem; }
 .media-upload-status { display: inline-block; margin-left: 0.55rem; color: var(--muted); font-size: 0.78rem; }
 .media-field label + .field-finding + label { display: block; margin-top: 0.7rem; }
-.social-link-row, .technology-row {
+.social-link-row, .gallery-row, .technology-row {
   display: grid;
   grid-template-columns: minmax(7rem, 0.7fr) minmax(10rem, 1.3fr) auto;
   align-items: end;
@@ -316,7 +317,9 @@ textarea { min-height: 7rem; resize: vertical; }
   padding: 0.65rem 0;
   border-bottom: 1px solid var(--border);
 }
+.gallery-row { grid-template-columns: minmax(9rem, 0.9fr) minmax(12rem, 1.1fr) auto; }
 .technology-row { grid-template-columns: minmax(10rem, 1fr) auto; }
+.gallery-field { margin-top: 1rem; padding-top: 0.25rem; }
 .social-link-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .social-link-actions button { padding-inline: 0.55rem; }
 .list-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; }
@@ -394,7 +397,7 @@ dialog p { color: var(--muted); }
 @media (max-width: 35rem) {
   .rail dl, .editor-intro { display: block; }
   .rail dl > div { margin-top: 0.2rem; }
-  .social-link-row, .technology-row { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .social-link-row, .gallery-row, .technology-row { grid-template-columns: minmax(0, 1fr); align-items: start; }
   .editor-actions { flex-wrap: wrap; }
 }
 `;
@@ -466,15 +469,23 @@ const SCRIPT = `
     });
   });
 
-  let reorderingProject = false;
+  let updatingProjectOrder = false;
   document.getElementById("library").addEventListener("click", async (event) => {
     const button = event.target.closest("[data-project-order]");
-    if (!button || reorderingProject) return;
-    reorderingProject = true;
+    const publishButton = event.target.closest("[data-publish-project-order]");
+    if ((!button && !publishButton) || updatingProjectOrder) return;
+    updatingProjectOrder = true;
     const orderButtons = Array.from(document.querySelectorAll("[data-project-order]"));
     orderButtons.forEach((candidate) => { candidate.disabled = true; });
+    if (publishButton) publishButton.disabled = true;
     const status = document.getElementById("workbench-status");
-    status.textContent = "Saving Project order";
+    status.textContent = publishButton ? "Publishing Project order" : "Saving Project order";
+    const payload = publishButton
+      ? { action: "publish" }
+      : {
+          id: button.dataset.projectId,
+          direction: button.dataset.projectOrder,
+        };
 
     try {
       const response = await fetch("/admin/api/projects/order", {
@@ -484,10 +495,7 @@ const SCRIPT = `
           "Content-Type": "application/json",
           "X-CSRF-Token": csrf,
         },
-        body: JSON.stringify({
-          id: button.dataset.projectId,
-          direction: button.dataset.projectOrder,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error("Project order was refused");
 
@@ -496,11 +504,14 @@ const SCRIPT = `
       workspaceUrl.searchParams.set("preview", "/projects");
       window.location.assign(workspaceUrl.toString());
     } catch {
-      reorderingProject = false;
+      updatingProjectOrder = false;
       orderButtons.forEach((candidate) => {
         candidate.disabled = candidate.dataset.orderBoundary === "true";
       });
-      status.textContent = "Project order could not be saved. Try again.";
+      if (publishButton) publishButton.disabled = false;
+      status.textContent = publishButton
+        ? "Project order could not be published. Try again."
+        : "Project order could not be saved. Try again.";
     }
   });
 
@@ -551,7 +562,7 @@ function librarySection(
 
   const orderNote =
     section.collectionType === "project" && section.entries.length > 1
-      ? '<p class="library-order-note">Use arrows to reorder the Project drafts. Publish affected Projects when ready.</p>'
+      ? '<div class="library-order-publish"><p class="library-order-note">Arrange with arrows, then publish current order.</p><button type="button" data-publish-project-order>Publish order</button></div>'
       : "";
 
   return `${heading}\n<ul aria-labelledby="lib-${escapeHtml(section.id)}">\n${items}\n</ul>${orderNote}`;

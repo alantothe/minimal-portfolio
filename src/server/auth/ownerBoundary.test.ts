@@ -19,7 +19,8 @@ import { closeDatabase, getDatabase, initializeDatabase } from "../database";
 import { OwnerAuthRepository } from "../database/authRepository";
 import { SESSION_COOKIE } from "./policy";
 import { createToken, digestToken } from "./tokens";
-import { seedSite } from "../published/fixtures";
+import { seedPublishedSite, seedSite } from "../published/fixtures";
+import { buildSiteSnapshot } from "../published/snapshot";
 import { SINGLETON_IDS, importedContentId } from "../content/identity";
 import { ContentRepository } from "../database/contentRepository";
 import { PublicationRepository } from "../database/publicationRepository";
@@ -235,7 +236,9 @@ describe("the signed-in owner", () => {
     expect(response.status).toBe(200);
     expect(body).toContain(`data-content-id="${projectId}"`);
     expect(body).toContain('data-content-type="project"');
-    expect(body).toContain('data-field="technologies[0]"');
+    expect(body).toContain('name="card.mediaAssetId"');
+    expect(body).toContain('name="summary"');
+    expect(body).not.toContain('name="role"');
     expect(body).toContain('name="slug"');
     expect(body).toContain('name="displayOrder"');
   });
@@ -929,8 +932,9 @@ describe("the public site", () => {
 });
 
 describe("Project ordering API", () => {
-  test("moves a Project draft through the protected mutation boundary", async () => {
-    seedSite(getDatabase());
+  test("publishes current Project order through the protected mutation boundary", async () => {
+    seedPublishedSite(getDatabase());
+    new SystemStateRepository(getDatabase()).setCutoverPhase("sealed");
     const content = new ContentRepository(getDatabase());
     const moved = content.findBySlug("project", "minimal-portfolio")!;
 
@@ -945,7 +949,7 @@ describe("Project ordering API", () => {
     ).toBe(401);
 
     const { cookie, csrfToken } = establishSession();
-    const response = await send("/admin/api/projects/order", {
+    const moveResponse = await send("/admin/api/projects/order", {
       method: "POST",
       cookie,
       headers: {
@@ -956,12 +960,33 @@ describe("Project ordering API", () => {
       body: JSON.stringify({ id: moved.id, direction: "up" }),
     });
 
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ status: "moved" });
+    expect(moveResponse.status).toBe(200);
+    expect(await moveResponse.json()).toMatchObject({ status: "moved" });
     expect(content.list("project").map((item) => item.slug)).toEqual([
       "minimal-portfolio",
       "questurian",
     ]);
+    const publishResponse = await send("/admin/api/projects/order", {
+      method: "POST",
+      cookie,
+      headers: {
+        Origin: ORIGIN,
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "publish" }),
+    });
+    expect(publishResponse.status).toBe(200);
+    expect(await publishResponse.json()).toMatchObject({ status: "published" });
+    const published = buildSiteSnapshot(getDatabase(), {
+      cloudName: "fixture-cloud",
+    });
+    expect(published.status).toBe("built");
+    if (published.status === "built") {
+      expect(
+        published.snapshot.projects.map((project) => project.slug)
+      ).toEqual(["minimal-portfolio", "questurian"]);
+    }
   });
 
   test("strictly rejects malformed ordering actions", async () => {

@@ -35,6 +35,7 @@ export const LIMITS = {
   seoTitle: { max: 100, warnAfter: 60 },
   seoDescription: { max: 500, warnPreferred: { min: 70, max: 160 } },
   socialLinks: { max: 8 },
+  projectGallery: { max: 8 },
   technologies: { max: 20 },
   slug: { min: 3, max: 80 },
 } as const;
@@ -390,27 +391,6 @@ export function validateEmail(field: string, value: string): Finding[] {
   }
 
   return EMAIL_PATTERN.test(normalized) ? [] : [error(field, "invalid_email")];
-}
-
-const ACCENT_PATTERN = /^#[0-9a-fA-F]{6}$/;
-
-/** Lowercased so two spellings of one colour compare equal. */
-export function normalizeAccentColor(value: string): string {
-  return normalizeText(value).toLowerCase();
-}
-
-export function validateAccentColor(field: string, value: string): Finding[] {
-  const normalized = normalizeText(value);
-
-  if (normalized.length === 0) {
-    return [error(field, "required")];
-  }
-
-  // Six digits only: shorthand and alpha channels are extra shapes to render,
-  // compare, and migrate for no editorial gain.
-  return ACCENT_PATTERN.test(normalized)
-    ? []
-    : [error(field, "invalid_accent_color")];
 }
 
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;

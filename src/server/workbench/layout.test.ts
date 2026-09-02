@@ -249,9 +249,17 @@ describe("the library", () => {
     expect(markup).toContain(
       'data-project-order="down" data-project-id="project:minimal-portfolio" data-order-boundary="true" aria-label="Move Minimal Portfolio down" title="Move down" disabled'
     );
-    expect(markup).toContain("Publish affected Projects when ready.");
+    expect(markup).toContain(
+      "Arrange with arrows, then publish current order."
+    );
+    expect(markup).toContain(
+      'type="button" data-publish-project-order>Publish order</button>'
+    );
     expect(markup).toContain('fetch("/admin/api/projects/order"');
     expect(markup).toContain('"X-CSRF-Token": csrf');
+    expect(markup).toContain('"Publishing Project order"');
+    expect(markup).toContain('? { action: "publish" }');
+    expect(markup).toContain("body: JSON.stringify(payload)");
     const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
     expect(script).toBeString();
     expect(() => new Function(script!)).not.toThrow();

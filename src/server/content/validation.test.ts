@@ -13,11 +13,9 @@ import {
   LIMITS,
   characterLength,
   hasBlockingError,
-  normalizeAccentColor,
   normalizeText,
   slugFromTitle,
   suggestAvailableSlug,
-  validateAccentColor,
   validateCount,
   validateEmail,
   validateHttpsUrl,
@@ -54,12 +52,6 @@ describe("the content that exists today", () => {
     }
   });
 
-  test("both live accent colours are valid", () => {
-    for (const accent of ["#67A8A3", "#8AA0B2"]) {
-      expect(validateAccentColor("accent", accent)).toEqual([]);
-    }
-  });
-
   test("the live email is valid", () => {
     expect(validateEmail("email", "alanmalpartida@gmail.com")).toEqual([]);
   });
@@ -72,11 +64,6 @@ describe("the content that exists today", () => {
 
   test("the live view count is valid", () => {
     expect(validateViewCount("views", 4)).toEqual([]);
-  });
-
-  test("the live technology lists are within the limit", () => {
-    // Questurian has six, Minimal Portfolio five.
-    expect(validateCount("stack", 6, LIMITS.technologies.max)).toEqual([]);
   });
 
   test("the one live social link is within the limit", () => {
@@ -315,23 +302,6 @@ describe("email", () => {
     ]) {
       expect(codes(validateEmail("email", email))).toEqual(["invalid_email"]);
     }
-  });
-});
-
-describe("accent colours", () => {
-  test("requires six hex digits", () => {
-    expect(validateAccentColor("accent", "#67A8A3")).toEqual([]);
-    for (const value of ["#fff", "67A8A3", "#67A8A3FF", "rgb(1,2,3)"]) {
-      expect(codes(validateAccentColor("accent", value))).toEqual([
-        "invalid_accent_color",
-      ]);
-    }
-  });
-
-  test("normalises case so two spellings compare equal", () => {
-    expect(normalizeAccentColor("#67A8A3")).toBe(
-      normalizeAccentColor("#67a8a3")
-    );
   });
 });
 

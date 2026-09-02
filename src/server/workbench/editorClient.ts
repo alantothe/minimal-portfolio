@@ -57,14 +57,39 @@ export const EDITOR_SCRIPT = `
       .filter((link) => link.label.trim() || link.url.trim());
   }
 
+  function gallery() {
+    return Array.from(form.querySelectorAll("[data-gallery-row]"))
+      .filter((row) => row.querySelector("[data-gallery-asset]").value)
+      .map((row, index) => {
+        const asset = row.querySelector("[data-gallery-asset]");
+        const alt = row.querySelector("[data-gallery-alt]");
+        const assetFinding = row.querySelector("[data-gallery-asset-finding]");
+        const altFinding = row.querySelector("[data-gallery-alt-finding]");
+        const prefix = "gallery[" + index + "]";
+        asset.name = prefix + ".mediaAssetId";
+        asset.dataset.field = prefix + ".mediaAssetId";
+        alt.name = prefix + ".alt";
+        alt.dataset.field = prefix + ".alt";
+        assetFinding.id = "finding-gallery-asset-" + index;
+        assetFinding.dataset.findingFor = prefix + ".mediaAssetId";
+        altFinding.id = "finding-gallery-alt-" + index;
+        altFinding.dataset.findingFor = prefix + ".alt";
+        asset.setAttribute("aria-describedby", assetFinding.id);
+        alt.setAttribute("aria-describedby", altFinding.id);
+        return { mediaAssetId: asset.value, alt: alt.value };
+      });
+  }
+
   function technologies() {
-    return Array.from(form.querySelectorAll(".technology-row"))
+    return Array.from(form.querySelectorAll("[data-technology-row]"))
       .map((row, index) => {
         const input = row.querySelector("[data-technology]");
         const finding = row.querySelector("[data-technology-finding]");
-        input.dataset.field = "technologies[" + index + "]";
-        finding.dataset.findingFor = "technologies[" + index + "]";
+        const field = "technologies[" + index + "]";
+        input.name = field;
+        input.dataset.field = field;
         finding.id = "finding-technology-" + index;
+        finding.dataset.findingFor = field;
         input.setAttribute("aria-describedby", finding.id);
         return input.value;
       })
@@ -116,15 +141,10 @@ export const EDITOR_SCRIPT = `
         return {
           title: value("title"),
           summary: value("summary"),
-          card: media("card"),
-          kicker: value("kicker"),
-          role: value("role"),
-          status: value("status"),
-          period: value("period"),
           technologies: technologies(),
-          liveUrl: optional("liveUrl"),
-          repositoryUrl: optional("repositoryUrl"),
-          accentColor: value("accentColor"),
+          card: media("card"),
+          gallery: gallery(),
+          videoUrl: optional("videoUrl"),
           bodyMarkdown: value("bodyMarkdown"),
           seo: seo(),
         };
@@ -181,9 +201,9 @@ export const EDITOR_SCRIPT = `
     invalid_display_order: "Enter a whole number of zero or greater.",
     invalid_date: "Enter a real date in YYYY-MM-DD form.",
     future_publication_date: "Future publication dates are not scheduled.",
-    invalid_accent_color: "Enter a six-digit colour such as #0b4fd4.",
     unknown_field: "Unknown field.",
     media_unavailable: "Choose an available Media asset.",
+    unsupported_video_reference: "Use a /public MP4 or WebM path, or a Cloudinary video URL.",
     alt_text_required: "Describe the image before publication.",
     raw_html_not_allowed: "Raw HTML is not allowed.",
     markdown_not_allowed: "This Markdown construct is not allowed.",
@@ -449,9 +469,24 @@ export const EDITOR_SCRIPT = `
           select.add(new Option(assetLabel, result.id));
         }
       });
-      const target = form.elements.namedItem(button.dataset.mediaTarget);
-      target.value = result.id;
-      target.dispatchEvent(new Event("change", { bubbles: true }));
+      if (button.hasAttribute("data-gallery-upload-button")) {
+        const template = document.getElementById("gallery-image-template");
+        const galleryList = document.getElementById("project-gallery");
+        galleryList.append(template.content.cloneNode(true));
+        const row = galleryList.lastElementChild;
+        const select = row.querySelector("[data-gallery-asset]");
+        if (!Array.from(select.options).some((option) => option.value === result.id)) {
+          select.add(new Option(assetLabel, result.id));
+        }
+        select.value = result.id;
+        row.querySelector("[data-gallery-alt]").focus();
+        schedule();
+      } else {
+        const target = form.elements.namedItem(button.dataset.mediaTarget);
+        if (!target) return;
+        target.value = result.id;
+        target.dispatchEvent(new Event("change", { bubbles: true }));
+      }
       fileInput.value = "";
       uploadStatus.textContent = "Uploaded and selected. Saving draft…";
       setStatus("Image uploaded · saving", "Image uploaded and selected; saving draft");
@@ -613,23 +648,46 @@ export const EDITOR_SCRIPT = `
     schedule();
   });
 
+  const galleryList = document.getElementById("project-gallery");
+  document.getElementById("add-gallery-image")?.addEventListener("click", () => {
+    const template = document.getElementById("gallery-image-template");
+    galleryList.append(template.content.cloneNode(true));
+    galleryList.lastElementChild.querySelector("[data-gallery-asset]").focus();
+    schedule();
+  });
+  galleryList?.addEventListener("click", (event) => {
+    const action = event.target.closest("[data-gallery-action]");
+    if (!action) return;
+    const row = action.closest("[data-gallery-row]");
+    if (action.dataset.galleryAction === "remove") {
+      row.remove();
+    } else if (action.dataset.galleryAction === "up") {
+      const previous = row.previousElementSibling;
+      if (previous) row.parentElement.insertBefore(row, previous);
+    } else if (action.dataset.galleryAction === "down") {
+      const next = row.nextElementSibling;
+      if (next) row.parentElement.insertBefore(next, row);
+    }
+    schedule();
+  });
+
   const technologyList = document.getElementById("technologies");
   document.getElementById("add-technology")?.addEventListener("click", () => {
     const template = document.getElementById("technology-template");
     technologyList.append(template.content.cloneNode(true));
-    technologyList.lastElementChild.querySelector("input").focus();
+    technologyList.lastElementChild.querySelector("[data-technology]").focus();
     schedule();
   });
   technologyList?.addEventListener("click", (event) => {
-    const action = event.target.closest("[data-list-action]");
+    const action = event.target.closest("[data-technology-action]");
     if (!action) return;
-    const row = action.closest("[data-list-row]");
-    if (action.dataset.listAction === "remove") {
+    const row = action.closest("[data-technology-row]");
+    if (action.dataset.technologyAction === "remove") {
       row.remove();
-    } else if (action.dataset.listAction === "up") {
+    } else if (action.dataset.technologyAction === "up") {
       const previous = row.previousElementSibling;
       if (previous) row.parentElement.insertBefore(row, previous);
-    } else if (action.dataset.listAction === "down") {
+    } else if (action.dataset.technologyAction === "down") {
       const next = row.nextElementSibling;
       if (next) row.parentElement.insertBefore(next, row);
     }

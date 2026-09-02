@@ -16,7 +16,7 @@
  */
 
 import { Repository } from "./repository";
-import { CONTENT_SCHEMA_VERSION } from "../content/schema";
+import { CONTENT_SCHEMA_VERSION, migrateContentData } from "../content/schema";
 import {
   isSingletonType,
   type ContentType,
@@ -83,12 +83,18 @@ function toItem(row: ContentRow): ContentItem {
     throw new UnsupportedSchemaVersionError(row.id, row.schema_version);
   }
 
+  const data = migrateContentData(
+    row.type,
+    JSON.parse(row.data),
+    row.schema_version
+  );
+
   return {
     id: row.id,
     type: row.type,
     slug: row.slug,
-    schemaVersion: row.schema_version,
-    data: JSON.parse(row.data),
+    schemaVersion: CONTENT_SCHEMA_VERSION,
+    data,
     displayOrder: row.display_order,
     publishedAt: row.published_at,
     origin: row.origin,

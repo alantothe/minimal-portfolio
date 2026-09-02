@@ -146,7 +146,7 @@ describe("SPA navigation", () => {
     expect(shell).toMatch(
       /id="mobile-page-cue-previous"[\s\S]*?hidden[\s\S]*?style="display: none !important"/
     );
-    expect(shell).toContain('src="/public/spa-router.js?v=no-touch"');
+    expect(shell).toContain('src="/public/spa-router.js?v=media"');
   });
 
   test("scopes directional page animations to motion-safe phone styles", () => {

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { configurePreviewDocument } from "./preview";
 
 const router =
-  '<script src="/public/spa-router.js?v=no-touch" type="module"></script>';
+  '<script src="/public/spa-router.js?v=media" type="module"></script>';
 
 describe("the exact public preview", () => {
   test("gives the public router the route hidden by the owner boundary", () => {

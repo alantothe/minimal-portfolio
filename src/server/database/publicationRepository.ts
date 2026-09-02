@@ -2,10 +2,15 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import { Repository } from "./repository";
-import { ContentRepository, type ContentItem } from "./contentRepository";
+import {
+  ContentRepository,
+  UnsupportedSchemaVersionError,
+  type ContentItem,
+} from "./contentRepository";
 import type { ContentType } from "../content/identity";
 import { stableStringify } from "../content/stableJson";
 import { publicRouteFor } from "../content/address";
+import { CONTENT_SCHEMA_VERSION, migrateContentData } from "../content/schema";
 
 export type PublicationSource = "publish" | "restore-publish" | "migration";
 
@@ -154,8 +159,20 @@ export class PublicationRepository extends Repository {
 
     return rows.map((row) => {
       const snapshot = JSON.parse(row.snapshot) as RevisionSnapshot;
+      if (snapshot.schemaVersion > CONTENT_SCHEMA_VERSION) {
+        throw new UnsupportedSchemaVersionError(
+          snapshot.id,
+          snapshot.schemaVersion
+        );
+      }
       return {
         ...snapshot,
+        schemaVersion: CONTENT_SCHEMA_VERSION,
+        data: migrateContentData(
+          snapshot.type,
+          snapshot.data,
+          snapshot.schemaVersion
+        ),
         origin: "owner",
         ownerEditedAt: null,
         deletedAt: null,
@@ -284,6 +301,113 @@ export class PublicationRepository extends Repository {
       .run(at);
 
     return toRevision(row);
+  }
+
+  /**
+   * Publishes Project positions as one collection change.
+   *
+   * Each new revision copies the current public snapshot and changes only its
+   * position. Unrelated Content draft edits therefore remain private. Callers
+   * wrap the complete collection publication in one transaction.
+   */
+  publishProjectOrder(input: {
+    orderedIds: string[];
+    actorGithubUserId: number;
+    now: Date;
+  }): PublishedRevision[] {
+    const at = input.now.toISOString();
+    const revisions: PublishedRevision[] = [];
+
+    for (const [displayOrder, contentId] of input.orderedIds.entries()) {
+      const current = this.currentRevision(contentId);
+      if (!current) continue;
+      if (current.snapshot.type !== "project") {
+        throw new Error("Project order contains non-Project content");
+      }
+      if (current.snapshot.schemaVersion > CONTENT_SCHEMA_VERSION) {
+        throw new UnsupportedSchemaVersionError(
+          current.snapshot.id,
+          current.snapshot.schemaVersion
+        );
+      }
+      if (current.snapshot.displayOrder === displayOrder) continue;
+
+      const id = randomUUID();
+      const snapshot: RevisionSnapshot = {
+        ...current.snapshot,
+        schemaVersion: CONTENT_SCHEMA_VERSION,
+        data: migrateContentData(
+          current.snapshot.type,
+          current.snapshot.data,
+          current.snapshot.schemaVersion
+        ),
+        displayOrder,
+      };
+      const row = this.database
+        .query(
+          `INSERT INTO published_revisions (
+             id, content_id, revision_number, schema_version, snapshot, source,
+             actor_github_user_id, published_at, note, checksum,
+             restored_from_revision_id
+           ) VALUES (?, ?, ?, ?, ?, 'publish', ?, ?, ?, ?, NULL)
+           RETURNING *`
+        )
+        .get(
+          id,
+          contentId,
+          this.nextRevisionNumber(contentId),
+          snapshot.schemaVersion,
+          JSON.stringify(snapshot),
+          input.actorGithubUserId,
+          at,
+          "Published Project order",
+          revisionChecksum(snapshot)
+        ) as RevisionRow;
+
+      const updated = this.database
+        .query(
+          `UPDATE content_items
+              SET current_published_revision_id = ?,
+                  base_published_revision_id = ?,
+                  updated_at = ?,
+                  draft_version = draft_version + 1
+            WHERE id = ? AND current_published_revision_id = ?
+              AND type = 'project' AND deleted_at IS NULL`
+        )
+        .run(id, id, at, contentId, current.id);
+      if (updated.changes !== 1) {
+        throw new Error("Project publication changed during ordering");
+      }
+
+      const route = publicRouteFor(snapshot);
+      if (route) this.activateRoute(contentId, route, id);
+      this.database
+        .query(
+          `INSERT INTO publication_audit
+             (id, event, content_id, revision_id, actor_github_user_id, occurred_at, detail)
+           VALUES (?, 'publish', ?, ?, ?, ?, ?)`
+        )
+        .run(
+          randomUUID(),
+          contentId,
+          id,
+          input.actorGithubUserId,
+          at,
+          "Published Project order"
+        );
+      revisions.push(toRevision(row));
+    }
+
+    if (revisions.length > 0) {
+      this.database
+        .query(
+          `UPDATE publication_state
+              SET site_generation = site_generation + 1, updated_at = ? WHERE id = 1`
+        )
+        .run(at);
+    }
+
+    return revisions;
   }
 
   /** Establishes or advances the accepted baseline during a controlled import. */
@@ -424,6 +548,17 @@ export class PublicationRepository extends Repository {
     now: Date;
   }): number | null {
     const snapshot = input.revision.snapshot;
+    if (snapshot.schemaVersion > CONTENT_SCHEMA_VERSION) {
+      throw new UnsupportedSchemaVersionError(
+        snapshot.id,
+        snapshot.schemaVersion
+      );
+    }
+    const restoredData = migrateContentData(
+      snapshot.type,
+      snapshot.data,
+      snapshot.schemaVersion
+    );
     const at = input.now.toISOString();
     const result = this.database
       .query(
@@ -437,8 +572,8 @@ export class PublicationRepository extends Repository {
       )
       .get(
         input.currentPublicSlug,
-        JSON.stringify(snapshot.data),
-        snapshot.schemaVersion,
+        JSON.stringify(restoredData),
+        CONTENT_SCHEMA_VERSION,
         snapshot.displayOrder,
         snapshot.publishedAt,
         input.revision.id,

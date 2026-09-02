@@ -59,10 +59,19 @@ async function main() {
     process.exit(1);
   }
 
-  const dateInput = await prompt(
-    `Date (YYYY-MM-DD) [${getTodayDate()}]: `
-  );
+  const dateInput = await prompt(`Date (YYYY-MM-DD) [${getTodayDate()}]: `);
   const date = dateInput || getTodayDate();
+  const technologyInput = await prompt(
+    "Technologies (comma-separated, optional): "
+  );
+  const technologies = technologyInput
+    .split(",")
+    .map((technology) => technology.trim())
+    .filter(Boolean)
+    .slice(0, 20);
+  const technologyFrontmatter = technologies.length
+    ? `technologies:\n${technologies.map((technology) => `  - ${JSON.stringify(technology)}`).join("\n")}`
+    : "technologies: []";
 
   const slug = generateSlug(title);
   const projectDir = join(process.cwd(), "src/content/projects", slug);
@@ -75,11 +84,15 @@ async function main() {
   const content = `---
 title: ${title}
 description: ${description}
+${technologyFrontmatter}
 image: ${image}
+gallery:
+  - src: ${image}
+    alt: ${title}
+# Optional lead video (shown with native controls, max 1920×1080):
+# video: /public/${slug}-demo.mp4
 date: ${date}
 ---
-
-# ${title}
 
 Start describing your project here...
 

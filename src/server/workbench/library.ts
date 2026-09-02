@@ -83,7 +83,7 @@ export function contentLibrary(
         id: project.id,
         label: project.title,
         route: project.route,
-        supportingText: project.status,
+        supportingText: project.summary,
       })),
     },
     {

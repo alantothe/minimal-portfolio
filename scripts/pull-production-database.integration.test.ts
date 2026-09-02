@@ -73,6 +73,7 @@ describe("production database export command", () => {
     const fakeBin = await mkdtemp(join(tmpdir(), "fake-railway-"));
     directories.push(fakeBin);
     const railway = join(fakeBin, "railway");
+    const lsof = join(fakeBin, "lsof");
     await writeFile(
       railway,
       `#!/usr/bin/env bun
@@ -88,7 +89,8 @@ if (args[0] === "volume" && args.includes("list")) {
 }
 `
     );
-    await chmod(railway, 0o700);
+    await writeFile(lsof, "#!/bin/sh\nexit 1\n");
+    await Promise.all([chmod(railway, 0o700), chmod(lsof, 0o700)]);
 
     const result = Bun.spawnSync([process.execPath, script], {
       env: {

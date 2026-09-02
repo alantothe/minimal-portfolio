@@ -99,6 +99,10 @@ function mediaReferences(
       const project = data as ProjectContent;
       return [
         { field: "card", reference: project.card },
+        ...project.gallery.map((reference, index) => ({
+          field: `gallery[${index}]`,
+          reference,
+        })),
         { field: "seo.sharingImage", reference: project.seo.sharingImage },
       ];
     }

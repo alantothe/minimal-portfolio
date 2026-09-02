@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
 import { ContentRepository } from "../database/contentRepository";
+import { SystemStateRepository } from "../database/repository";
 import { importedContentId } from "../content/identity";
-import { migratedDatabase } from "../published/fixtures";
+import { buildSiteSnapshot } from "../published/snapshot";
+import { migratedDatabase, seedPublishedSite } from "../published/fixtures";
 import {
   moveProject,
+  publishProjectOrder,
   type ProjectOrderingDependencies,
 } from "./projectOrdering";
 
@@ -16,7 +19,7 @@ function context() {
   const content = new ContentRepository(migrated.database);
   let refreshes = 0;
   const dependencies: ProjectOrderingDependencies = {
-    content,
+    database: migrated.database,
     refreshPreview: () => {
       refreshes += 1;
       return { status: "activated", generation: `generation-${refreshes}` };
@@ -48,6 +51,142 @@ afterEach(() => {
 });
 
 describe("changing Project order", () => {
+  test("publishes current Project card order with one collection action", () => {
+    const migrated = migratedDatabase();
+    directories.push(migrated.directory);
+    seedPublishedSite(migrated.database, {
+      projects: [
+        { slug: "first", order: 0 },
+        { slug: "second", order: 1 },
+        { slug: "third", order: 2 },
+      ],
+    });
+    new SystemStateRepository(migrated.database).setCutoverPhase("sealed");
+    const content = new ContentRepository(migrated.database);
+    const second = content.findBySlug("project", "second")!;
+    const edited = content.updateIfDraftVersion(
+      second.id,
+      {
+        data: { ...(second.data as object), title: "Private second title" },
+      },
+      "owner",
+      second.draftVersion
+    );
+    expect(edited.status).toBe("updated");
+
+    expect(
+      moveProject(
+        { id: second.id, direction: "up" },
+        {
+          database: migrated.database,
+          refreshPreview: () => null,
+        }
+      ).status
+    ).toBe("moved");
+
+    const beforePublication = buildSiteSnapshot(migrated.database, {
+      cloudName: "fixture-cloud",
+    });
+    expect(beforePublication.status).toBe("built");
+    if (beforePublication.status === "built") {
+      expect(
+        beforePublication.snapshot.projects.map((project) => project.slug)
+      ).toEqual(["first", "second", "third"]);
+    }
+
+    expect(
+      publishProjectOrder(
+        {},
+        {
+          database: migrated.database,
+          actorGithubUserId: 42,
+          refreshPublished: () => null,
+        }
+      ).status
+    ).toBe("published");
+
+    const afterPublication = buildSiteSnapshot(migrated.database, {
+      cloudName: "fixture-cloud",
+    });
+    expect(afterPublication.status).toBe("built");
+    if (afterPublication.status === "built") {
+      expect(
+        afterPublication.snapshot.projects.map((project) => project.slug)
+      ).toEqual(["second", "first", "third"]);
+      expect(afterPublication.snapshot.projects[0]?.title).toBe(
+        "Project second"
+      );
+    }
+    expect(
+      (content.findBySlug("project", "second")?.data as { title: string }).title
+    ).toBe("Private second title");
+  });
+
+  test("rolls back draft and public order when publication fails", () => {
+    const migrated = migratedDatabase();
+    directories.push(migrated.directory);
+    seedPublishedSite(migrated.database, {
+      projects: [
+        { slug: "first", order: 0 },
+        { slug: "second", order: 1 },
+      ],
+    });
+    new SystemStateRepository(migrated.database).setCutoverPhase("sealed");
+    const content = new ContentRepository(migrated.database);
+    const second = content.findBySlug("project", "second")!;
+    expect(
+      moveProject(
+        { id: second.id, direction: "up" },
+        { database: migrated.database, refreshPreview: () => null }
+      ).status
+    ).toBe("moved");
+    migrated.database.exec(`CREATE TRIGGER refuse_project_order_publication
+      BEFORE INSERT ON published_revisions
+      WHEN NEW.note = 'Published Project order'
+      BEGIN SELECT RAISE(ABORT, 'forced order publication failure'); END`);
+
+    expect(() =>
+      publishProjectOrder(
+        {},
+        {
+          database: migrated.database,
+          actorGithubUserId: 42,
+          refreshPublished: () => null,
+        }
+      )
+    ).toThrow("forced order publication failure");
+    expect(content.list("project").map((project) => project.slug)).toEqual([
+      "second",
+      "first",
+    ]);
+    const published = buildSiteSnapshot(migrated.database, {
+      cloudName: "fixture-cloud",
+    });
+    expect(published.status).toBe("built");
+    if (published.status === "built") {
+      expect(
+        published.snapshot.projects.map((project) => project.slug)
+      ).toEqual(["first", "second"]);
+    }
+  });
+
+  test("refuses Project order publication before publication is enabled", () => {
+    const migrated = migratedDatabase();
+    directories.push(migrated.directory);
+    seedPublishedSite(migrated.database);
+
+    expect(
+      publishProjectOrder(
+        {},
+        {
+          database: migrated.database,
+          actorGithubUserId: 42,
+          refreshPublished: () => null,
+        }
+      )
+    ).toEqual({ status: "disabled" });
+  });
+
   test("moves a Project one position and normalizes every position atomically", () => {
     const { content, dependencies, refreshes } = context();
     const second = content.findBySlug("project", "second")!;

@@ -125,15 +125,10 @@ describe("creating a collection draft", () => {
     expect(outcome.item.data).toEqual({
       title: "New Project",
       summary: "",
-      card: null,
-      kicker: "",
-      role: "",
-      status: "",
-      period: "",
       technologies: [],
-      liveUrl: null,
-      repositoryUrl: null,
-      accentColor: "",
+      card: null,
+      gallery: [],
+      videoUrl: null,
       bodyMarkdown: "",
       seo: { title: null, description: null, sharingImage: null },
     });

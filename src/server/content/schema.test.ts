@@ -15,6 +15,7 @@ import { describe, expect, test } from "bun:test";
 import {
   CONTENT_SCHEMA_VERSION,
   isPublishable,
+  migrateContentData,
   parseContentData,
 } from "./schema";
 import { hasBlockingError } from "./validation";
@@ -42,22 +43,10 @@ const PROJECT = {
   title: "Questurian",
   summary:
     "A full-stack travel publishing platform connecting structured destination data, editorial tooling, media pipelines, and location-first discovery.",
+  technologies: ["TypeScript", "Bun"],
   card: { mediaAssetId: "media-2", alt: "Questurian" },
-  kicker: "Travel publishing platform",
-  role: "Founding Engineer",
-  status: "Active product",
-  period: "2025–present",
-  technologies: [
-    "Next.js",
-    "TypeScript",
-    "Payload CMS",
-    "PostgreSQL",
-    "FastAPI",
-    "Vertex AI",
-  ],
-  liveUrl: null,
-  repositoryUrl: "https://github.com/Questurian/questurian",
-  accentColor: "#67A8A3",
+  gallery: [],
+  videoUrl: null,
   bodyMarkdown: "## Context\n\nQuesturian is a travel publishing product.",
   seo: { title: null, description: null, sharingImage: null },
 };
@@ -101,13 +90,6 @@ describe("today's content is publishable", () => {
         },
       })
     ).toBe(true);
-  });
-
-  test("the em dash in the Questurian period survives", () => {
-    // "2025–present" uses an en dash. Any normalisation that mangles it is a
-    // visible content change.
-    const parsed = parseContentData("project", PROJECT, "publish");
-    expect((parsed.data as { period: string }).period).toBe("2025–present");
   });
 });
 
@@ -169,11 +151,10 @@ describe("unknown fields", () => {
   });
 
   test("a field belonging to another type is still unknown", () => {
-    // `accentColor` is a Project field. On a Blog post it is noise.
+    // `card` is a Project field. On a Blog post it is noise.
     expect(
       codes(
-        parseContentData("blog_post", { ...BLOG_POST, accentColor: "#ffffff" })
-          .findings
+        parseContentData("blog_post", { ...BLOG_POST, card: null }).findings
       )
     ).toContain("unknown_field");
   });
@@ -268,26 +249,59 @@ describe("draft versus publish", () => {
 });
 
 describe("field-level refusals", () => {
-  test("a non-HTTPS repository URL blocks", () => {
+  test("Project technologies accept twenty labels and reject malformed entries", () => {
     expect(
       isPublishable("project", {
         ...PROJECT,
-        repositoryUrl: "http://github.com/x/y",
+        technologies: Array.from({ length: 20 }, (_, index) => `Tool ${index}`),
       })
-    ).toBe(false);
+    ).toBe(true);
+    expect(
+      codes(
+        parseContentData("project", {
+          ...PROJECT,
+          technologies: Array.from(
+            { length: 21 },
+            (_, index) => `Tool ${index}`
+          ),
+        }).findings
+      )
+    ).toContain("too_many");
+    expect(
+      codes(
+        parseContentData("project", {
+          ...PROJECT,
+          technologies: ["TypeScript", 42],
+        }).findings
+      )
+    ).toContain("expected_string_entries");
   });
 
-  test("an invalid accent colour blocks", () => {
-    expect(isPublishable("project", { ...PROJECT, accentColor: "#fff" })).toBe(
-      false
-    );
+  test("Project gallery accepts eight images and refuses a ninth", () => {
+    const gallery = Array.from({ length: 8 }, (_, index) => ({
+      mediaAssetId: `media-${index}`,
+      alt: `Screenshot ${index + 1}`,
+    }));
+
+    expect(isPublishable("project", { ...PROJECT, gallery })).toBe(true);
+    expect(
+      codes(
+        parseContentData("project", {
+          ...PROJECT,
+          gallery: [...gallery, gallery[0]],
+        }).findings
+      )
+    ).toContain("too_many");
   });
 
-  test("more than twenty technologies blocks", () => {
+  test("Project video accepts local 1080p-friendly formats and rejects arbitrary hosts", () => {
+    expect(
+      isPublishable("project", { ...PROJECT, videoUrl: "/public/demo.mp4" })
+    ).toBe(true);
     expect(
       isPublishable("project", {
         ...PROJECT,
-        technologies: Array.from({ length: 21 }, (_, i) => `tech-${i}`),
+        videoUrl: "https://evil.test/demo.mp4",
       })
     ).toBe(false);
   });
@@ -302,15 +316,6 @@ describe("field-level refusals", () => {
         })),
       })
     ).toBe(false);
-  });
-
-  test("technologies must be strings", () => {
-    expect(
-      codes(
-        parseContentData("project", { ...PROJECT, technologies: [1, 2] })
-          .findings
-      )
-    ).toContain("expected_string_entries");
   });
 
   test("a non-object payload is refused outright", () => {
@@ -398,24 +403,18 @@ describe("the Markdown boundary is wired in, not just the size limit", () => {
 });
 
 describe("normalisation", () => {
-  test("accent colours are stored lowercase", () => {
-    const parsed = parseContentData("project", PROJECT, "publish");
-    expect((parsed.data as { accentColor: string }).accentColor).toBe(
-      "#67a8a3"
-    );
-  });
-
-  test("empty optional URLs become null rather than empty strings", () => {
-    const parsed = parseContentData(
-      "project",
-      { ...PROJECT, liveUrl: "   " },
-      "publish"
-    );
-
-    expect((parsed.data as { liveUrl: string | null }).liveUrl).toBeNull();
-  });
-
   test("the schema version is a single exported constant", () => {
-    expect(CONTENT_SCHEMA_VERSION).toBe(1);
+    expect(CONTENT_SCHEMA_VERSION).toBe(2);
+  });
+
+  test("version one Projects lose retired fields but keep technologies", () => {
+    const migrated = migrateContentData(
+      "project",
+      { ...PROJECT, role: "Engineer" },
+      1
+    );
+
+    expect(migrated).toEqual(PROJECT);
+    expect(isPublishable("project", migrated)).toBe(true);
   });
 });

@@ -51,7 +51,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "4df89f50aae0abb2a03bd38ff978d27681c0a442e97c2fc0c37eea5e1de2bbcb",
+      "bodyHash": "6489252531da0df5c24efb254c8ca3ebe4e79946c46104786b036721ce493245",
       "textHash": "c03825234a20eda8963b38ce9815de999a8e755a8aba6b413f84dcb71dafb989",
       "headings": ["h1:Alan Malpartida"],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
@@ -119,7 +119,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "bbc84a21dea0a6921db5ba41ad713299c78e729b16f2d7b6300ea3143741394f",
+      "bodyHash": "a5e63d320dc9402d10b92e110e0af031cea391aaf21c6b6bf83f5f9abad46199",
       "textHash": "fa5103bb69b66b6a2d38c880344b495481d459614ed8fb9191165ee05287e035",
       "headings": ["h1:About", "h1:About Questurian"],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
@@ -169,7 +169,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "ddf84af5fd99e0b783178fa964bdb8db207a49a3e2ab4f28e7549f8ae9943e07",
+      "bodyHash": "d93ef1822dd9b81b7080017fa5b1e32cb5bc5447f97e10ca89773f0f4c8afdd4",
       "textHash": "b1954f16b62ba28d14781cbf994d43267cf12d93203b2f258a5740a6e5d63cbf",
       "headings": [
         "h1:Blog",
@@ -213,9 +213,13 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "a92e8d93edb445b7b658868d915d8b3c2e7497a78e9034b8034d0a714a0377c7",
-      "textHash": "cf8375a50a563448c03f4b583bb95ffba222edd4ba5117231408f38cd121c5fe",
-      "headings": ["h1:Projects", "h2:Questurian", "h2:Minimal Portfolio"],
+      "bodyHash": "d5bb47c8cbb95a1e08f47ed75ba9cda2ad598d4b78627db976ffe83bb2d7cfbe",
+      "textHash": "31a21d9f765f725606f8a1b9211ae103ac5bb13f7481582001ab72d405e07627",
+      "headings": [
+        "h1:Projects",
+        "h2:Questurian Frontend",
+        "h2:Minimal Portfolio"
+      ],
       "internalLinks": [
         "/",
         "/about",
@@ -263,7 +267,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "92c414259c2ab2adc84bd3fbe15580196943a4fd4dc5fdf460b28d5b6cebe1ab",
+      "bodyHash": "c0f549fde0ef86cf8d61f27abeae949681a0e39f64f1cb8ef6291ba08d6fb7bf",
       "textHash": "031964e52f85f679464438a7f45eb53752bfd684c75436cb591ad5dcabe350cd",
       "headings": [
         "h1:Who Is Alan Malpartida - Software Engineer, Founder, and Builder",
@@ -320,8 +324,8 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "8d9e572bde2cef7028b526e28582e1ac52f92c1d94ad0c573b1f38426b3cd020",
-      "textHash": "0ca8dafba9c23c53cf44dec78c22fe21487fe07b66c103573cb58be87243e76f",
+      "bodyHash": "2c6537661eeaceb00a24cfe9f4718756788b646c3f989a4349a5dd064eadb526",
+      "textHash": "0009caa9ff3635501d95ec2c7c183e26f4189dc9340116244d644ff4b339f1d0",
       "headings": [
         "h1:Minimal Portfolio",
         "h2:Context",
@@ -335,6 +339,10 @@
         {
           "src": "/public/logo.png",
           "alt": "Alan Malpartida"
+        },
+        {
+          "src": "/public/og.png",
+          "alt": "Minimal Portfolio"
         }
       ],
       "seo": {
@@ -362,10 +370,10 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "253c6c58a9b90afce2ad0ef43969a228b97004f3b669c8a883d68df9e1bdf493",
-      "textHash": "f24db61cfcf1082d3389bcd1465af4240bd9a1cc222bf5c8ded47af2227544f5",
+      "bodyHash": "a24901af7e2acbc7dc434970567105d182f05cdc924258530f05590783487eca",
+      "textHash": "24fb59d45d66ab9716d08525f119e5c4d5f9f2cafb1d213592db4082d2253720",
       "headings": [
-        "h1:Questurian",
+        "h1:Questurian Frontend",
         "h2:Context",
         "h2:What I built",
         "h2:How it works",
@@ -377,21 +385,25 @@
         {
           "src": "/public/logo.png",
           "alt": "Alan Malpartida"
+        },
+        {
+          "src": "https://res.cloudinary.com/dz18m79a1/image/upload/c_fill,w_300,h_180/v1761780791/questura_rbayjx.png",
+          "alt": "Questurian Frontend"
         }
       ],
       "seo": {
-        "title": "Questurian | Alan Malpartida",
-        "description": "A full-stack travel publishing platform connecting structured destination data, editorial tooling, media pipelines, and location-first discovery.",
+        "title": "Questurian Frontend | Alan Malpartida",
+        "description": "The public frontend for Questurian, built with TypeScript and CSS to turn structured travel content into location-first discovery.",
         "canonical": "https://baseline.test/projects/questurian",
         "ogSiteName": "Alan Malpartida",
         "ogType": "website",
-        "ogTitle": "Questurian | Alan Malpartida",
-        "ogDescription": "A full-stack travel publishing platform connecting structured destination data, editorial tooling, media pipelines, and location-first discovery.",
+        "ogTitle": "Questurian Frontend | Alan Malpartida",
+        "ogDescription": "The public frontend for Questurian, built with TypeScript and CSS to turn structured travel content into location-first discovery.",
         "ogUrl": "https://baseline.test/projects/questurian",
         "ogImage": "https://baseline.test/public/og.png",
         "twitterCard": "summary_large_image",
-        "twitterTitle": "Questurian | Alan Malpartida",
-        "twitterDescription": "A full-stack travel publishing platform connecting structured destination data, editorial tooling, media pipelines, and location-first discovery.",
+        "twitterTitle": "Questurian Frontend | Alan Malpartida",
+        "twitterDescription": "The public frontend for Questurian, built with TypeScript and CSS to turn structured travel content into location-first discovery.",
         "twitterImage": "https://baseline.test/public/og.png",
         "articlePublishedTime": null,
         "structuredData": []
@@ -446,7 +458,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "e6265bf34fc4b2f8498d583f0c19b41a66f0003e7790ec6870d4ee4146ee0870",
+      "bodyHash": "b74ab1c96dced7a88be9094a0af4ba0ea6c8afaf67fd89677ec6b94542c4eb58",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -474,7 +486,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "e97c12e610674413a33b405fbf64e0493213464c7e4a3837895f7ff53ae1483e",
+      "bodyHash": "ffc33a89d1b2d21b89bff6b6c35ca76e7e4f19a3b88803337715132fe2237823",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -502,7 +514,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "7e14a85b8e257832f52cc032fa73f16289c7a4d94c271441a764d7cf65e91bda",
+      "bodyHash": "f9a2efc5593219ef35739078ab39eb43eded1bbc366e948d1fb9490b7712017a",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -516,7 +528,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "aaa9690a908900958034070439c37215890d7f17355280d0f47e9e27a1638988",
+      "bodyHash": "0138152729cb83b23108ecf38495825ee5a463557b68611ce3d0cc1a58c5eea9",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -692,8 +704,8 @@
     },
     {
       "path": "src/content/projects/questurian/content.md",
-      "bytes": 4717,
-      "sha256": "fcfb416f35093d1dd62c269f0031e0fb38cfef36bea5140932624c0c96e6e5f0"
+      "bytes": 3529,
+      "sha256": "8f296a937b03a85aabc58529bbd0373e02f676cc6b6a1da68bcb8ce17d58ee8f"
     },
     {
       "path": "src/pages/about/content.html",
@@ -717,8 +729,8 @@
     },
     {
       "path": "src/pages/shell.html",
-      "bytes": 4657,
-      "sha256": "6f64777ab376ebd7cf2f47f4c035153b4e2e02407a9340de7fe459a84b5094ec"
+      "bytes": 4654,
+      "sha256": "9e65c622965537f6b2ea1fb3692e3769313c7067f5c05b2dad79e92444d8b412"
     }
   ],
   "media": [

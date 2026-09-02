@@ -1,8 +1,8 @@
 ---
-title: Questurian
-description: "A full-stack travel publishing platform connecting structured destination data, editorial tooling, media pipelines, and location-first discovery."
+title: Questurian Frontend
+description: "The public frontend for Questurian, built with TypeScript and CSS to turn structured travel content into location-first discovery."
 image: "https://res.cloudinary.com/dz18m79a1/image/upload/c_fill,w_300,h_180/v1761780791/questura_rbayjx.png"
-kicker: "Travel publishing platform"
+kicker: "Public travel frontend"
 role: "Founding Engineer"
 status: "Active product"
 year: "2025–present"
@@ -10,58 +10,50 @@ order: 1
 date: 2026-07-27
 repository: "https://github.com/Questurian/questurian"
 stack:
-  - Next.js
   - TypeScript
-  - Payload CMS
-  - PostgreSQL
-  - FastAPI
-  - Vertex AI
+  - CSS
 accent: "#67A8A3"
 ---
 
 ## Context
 
-Questurian is a travel publishing and discovery product built around structured places rather than a flat stream of articles. Country, city, and neighborhood pages combine editorial content with dining, accommodation, attraction, nightlife, tour, map, and currency data.
+Questurian Frontend is the public travel discovery experience. It organizes content around structured places rather than a flat stream of articles, with country, city, and neighborhood pages connecting editorial stories to dining, accommodation, attractions, nightlife, tours, maps, and currency information.
 
-As a founding engineer, I worked across the public product and the internal systems that feed it. The central challenge was keeping those systems coordinated without letting CMS records, AI generation, or media-processing details leak into the visitor experience.
+This case study covers the frontend only. Questurian's CMS, data services, location manager, and AI tooling are separate projects. The frontend receives reviewed, page-ready data and focuses on turning it into a clear visitor experience.
 
 ## What I built
 
-- A Next.js public application with hierarchical location routes, internationalization, search and discovery surfaces, maps, accounts, and paid-content flows.
-- A Payload CMS and PostgreSQL backend that owns the public content model, editorial records, location taxonomy, media, access rules, and server-side integrations.
-- Operator workflows that turn researched location data and generated drafts into reviewable CMS entities instead of publishing model output directly.
-- A media pipeline built around reusable `MediaSet` records, focal points, placement-specific readiness, and generated image variants.
-- Curated location homepages with draft and published states, ordered content blocks, and validation that keeps incomplete references from replacing a valid live page.
+- Hierarchical country, city, and neighborhood routes that make location the primary navigation model.
+- Responsive TypeScript components for editorial content, discovery surfaces, maps, visitor accounts, and paid-content entry points.
+- A CSS system that keeps dense travel pages readable across phones and larger screens without losing visual hierarchy.
+- Reusable page sections that render stable frontend view models instead of exposing internal content records to components.
+- Clear loading, empty, error, and incomplete-content states so the interface remains useful when optional travel data is unavailable.
 
 ## How it works
 
 ```text
-Location research ──┐
-                    ├─> operator tools ─> reviewed draft ─> Payload + PostgreSQL
-AI editorial runs ──┘                                  │
-                                                       ├─> public view models
-source image ─> crop/variant pipeline ─> MediaSet ─────┤
-                                                       v
-                                              Next.js SSR pages
-                                                       │
-                                                       v
-                                          country / city / neighborhood
+reviewed content
+       │
+       v
+public view models ─> TypeScript frontend ─> country / city / neighborhood
+                              │
+                              └─────────────> responsive CSS presentation
 ```
 
-Internal tools own enrichment and article generation. Questurian's backend remains the source of truth: it validates writes, stores editorial state, resolves media for each placement, and exposes public view models. The Next.js client renders those stable contracts rather than reading raw Payload documents or choosing image variants itself.
+The frontend consumes stable public view models. Components do not read raw CMS records, coordinate editorial workflows, or run AI pipelines. That boundary keeps frontend code focused on navigation, presentation, interaction, and accessibility.
 
 ## Engineering decisions
 
-**Separate production from production tooling.** The public site, CMS, location manager, and AI writer are distinct bounded contexts inside one pnpm/Turborepo workspace. Each owns its vocabulary and persistence while integration happens through explicit APIs and sync operations.
+**Keep frontend scope explicit.** The public site is separate from CMS and production tooling. Integration happens through page-ready contracts, so frontend components do not need to understand how content was authored or enriched.
 
-**Resolve presentation at the server boundary.** Public view models turn CMS documents into page-ready data. This keeps collection schema changes and media internals away from SSR components, while giving each card, hero, or social placement a predictable image shape.
+**Organize navigation around places.** Route and page structure follow the way travelers explore: broad country context narrows into cities and neighborhoods, while discovery modules preserve that location context.
 
-**Treat images as systems, not attachments.** A retained source image and focal point can produce multiple required crops. Readiness is evaluated per placement, so a square card may be usable even when a hero crop still needs editorial attention.
+**Render stable contracts.** Page-ready view models keep content schema and media-processing details outside UI components. Each card, hero, and content section receives a predictable shape.
 
-**Publish complete page snapshots.** Editors work on a private homepage draft. Before publication, references, slot requirements, content status, and media placement readiness are checked together; the existing published snapshot stays available when a candidate has blockers.
+**Use CSS to preserve hierarchy.** Layout, spacing, typography, and responsive rules make long travel pages scannable without flattening every content type into the same card.
 
-**Keep identities and entitlements explicit.** Staff access, visitor accounts, and paid-content membership serve different trust boundaries. Keeping them separate avoids turning a CMS role or an internal operator session into a public customer entitlement.
+**Design for partial data.** Travel content grows over time. Frontend states distinguish unavailable optional information from broken required content, allowing useful pages without pretending every destination is complete.
 
 ## What this demonstrates
 
-Questurian shows my ability to work across product UI, domain modeling, content systems, media infrastructure, authentication, payments, and AI-assisted operations. More importantly, it demonstrates how I turn a broad product into clear service boundaries and contracts that can evolve without making the public experience depend on internal implementation details.
+Questurian Frontend demonstrates frontend architecture in TypeScript, maintainable CSS, responsive information design, and clear boundaries between public UI and production systems.

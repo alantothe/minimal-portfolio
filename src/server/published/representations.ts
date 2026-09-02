@@ -71,14 +71,8 @@ export function publishedProjectList(
       slug: project.slug,
       title: project.title,
       description: project.summary,
+      technologies: project.technologies,
       image: project.card?.url,
-      kicker: project.kicker,
-      // The editorial period, under the name the payload has always used.
-      // Unlike `order` and `date`, this is public copy rather than a storage
-      // column, so dropping it would be a narrowing nobody asked for.
-      year: project.period,
-      stack: project.technologies,
-      accent: project.accentColor,
     })),
   };
 }
@@ -134,15 +128,13 @@ export async function publishedProjectPayload(
     metadata: {
       title: project.title,
       description: project.summary,
-      image: project.card?.url,
-      kicker: project.kicker,
-      role: project.role,
-      status: project.status,
-      year: project.period,
-      stack: project.technologies,
-      accent: project.accentColor,
-      live: project.liveUrl,
-      repository: project.repositoryUrl,
+      technologies: project.technologies,
+      image: project.lead?.url,
+      gallery: project.gallery.map((image) => ({
+        src: image.url,
+        alt: image.alt,
+      })),
+      videoUrl: project.videoUrl,
     },
     // The legacy payload carries the case-study article rather than the page
     // shell, so the SPA can drop it straight into the container. Rendered from

@@ -21,9 +21,7 @@
 import {
   LIMITS,
   hasBlockingError,
-  normalizeAccentColor,
   normalizeText,
-  validateAccentColor,
   validateCount,
   validateEmail,
   validateHttpsUrl,
@@ -41,7 +39,7 @@ import type { ContentType } from "./identity";
  * Adding an optional field does not need a bump; removing one, renaming one, or
  * changing what a value means does.
  */
-export const CONTENT_SCHEMA_VERSION = 1;
+export const CONTENT_SCHEMA_VERSION = 2;
 
 /**
  * A reference to an image.
@@ -95,15 +93,10 @@ export interface BrandingContent {
 export interface ProjectContent {
   title: string;
   summary: string;
-  card: MediaReference | null;
-  kicker: string;
-  role: string;
-  status: string;
-  period: string;
   technologies: string[];
-  liveUrl: string | null;
-  repositoryUrl: string | null;
-  accentColor: string;
+  card: MediaReference | null;
+  gallery: MediaReference[];
+  videoUrl: string | null;
   bodyMarkdown: string;
   seo: SeoOverrides;
 }
@@ -122,6 +115,35 @@ export type ContentData =
   | BrandingContent
   | ProjectContent
   | BlogPostContent;
+
+const REMOVED_PROJECT_FIELDS = [
+  "kicker",
+  "role",
+  "status",
+  "period",
+  "liveUrl",
+  "repositoryUrl",
+  "accentColor",
+] as const;
+
+/** Upgrade stored snapshots before the current strict schema validates them. */
+export function migrateContentData(
+  type: ContentType,
+  data: unknown,
+  schemaVersion: number
+): unknown {
+  if (
+    schemaVersion >= CONTENT_SCHEMA_VERSION ||
+    type !== "project" ||
+    !isPlainObject(data)
+  ) {
+    return data;
+  }
+
+  const migrated = { ...data };
+  for (const field of REMOVED_PROJECT_FIELDS) delete migrated[field];
+  return migrated;
+}
 
 /** The fields each type may carry. Anything else is refused. */
 const ALLOWED_FIELDS: Record<ContentType, readonly string[]> = {
@@ -147,15 +169,10 @@ const ALLOWED_FIELDS: Record<ContentType, readonly string[]> = {
   project: [
     "title",
     "summary",
-    "card",
-    "kicker",
-    "role",
-    "status",
-    "period",
     "technologies",
-    "liveUrl",
-    "repositoryUrl",
-    "accentColor",
+    "card",
+    "gallery",
+    "videoUrl",
     "bodyMarkdown",
     "seo",
   ],
@@ -238,17 +255,15 @@ function readStringArray(
   const value = raw[field];
 
   if (value === undefined) return { values: [], findings: [] };
-
   if (!Array.isArray(value)) {
     return { values: [], findings: [error(field, "expected_array")] };
   }
-
   if (!value.every((entry) => typeof entry === "string")) {
     return { values: [], findings: [error(field, "expected_string_entries")] };
   }
 
   return {
-    values: (value as string[]).map(normalizeText).filter((v) => v !== ""),
+    values: (value as string[]).map(normalizeText).filter(Boolean),
     findings: [],
   };
 }
@@ -291,6 +306,64 @@ function parseMediaReference(
   );
 
   return { reference: { mediaAssetId, alt }, findings };
+}
+
+function parseMediaReferenceList(
+  field: string,
+  value: unknown,
+  mode: ValidationMode
+): { references: MediaReference[]; findings: Finding[] } {
+  if (value === undefined) return { references: [], findings: [] };
+  if (!Array.isArray(value)) {
+    return { references: [], findings: [error(field, "expected_array")] };
+  }
+
+  const references: MediaReference[] = [];
+  const findings = validateCount(
+    field,
+    value.length,
+    LIMITS.projectGallery.max
+  );
+  value.forEach((entry, index) => {
+    const parsed = parseMediaReference(`${field}[${index}]`, entry, mode);
+    if (parsed.reference) references.push(parsed.reference);
+    findings.push(...parsed.findings);
+  });
+
+  return { references, findings };
+}
+
+function validateProjectVideoReference(
+  field: string,
+  value: string
+): Finding[] {
+  const findings = validateText(field, value, LIMITS.url);
+  if (findings.length > 0) return findings;
+
+  const local =
+    value.startsWith("/public/") &&
+    !value.startsWith("//") &&
+    !value.includes("..") &&
+    !value.includes("?") &&
+    !value.includes("#") &&
+    /\.(?:mp4|webm)$/i.test(value);
+  if (local) return [];
+
+  try {
+    const url = new URL(value);
+    if (
+      url.protocol === "https:" &&
+      url.hostname === "res.cloudinary.com" &&
+      url.pathname.includes("/video/upload/") &&
+      /\.(?:mp4|webm)$/i.test(url.pathname)
+    ) {
+      return [];
+    }
+  } catch {
+    // One stable finding covers malformed and unsupported video references.
+  }
+
+  return [error(field, "unsupported_video_reference")];
 }
 
 function parseSeo(
@@ -566,27 +639,24 @@ function parseProject(
 ): ParsedContent {
   const title = normalizeText(readString(raw, "title"));
   const summary = normalizeText(readString(raw, "summary"));
-  const kicker = normalizeText(readString(raw, "kicker"));
-  const role = normalizeText(readString(raw, "role"));
-  const status = normalizeText(readString(raw, "status"));
-  const period = normalizeText(readString(raw, "period"));
   const bodyMarkdown = normalizeText(readString(raw, "bodyMarkdown"));
-  const accentColor = normalizeAccentColor(readString(raw, "accentColor"));
-
   const technologies = readStringArray(raw, "technologies");
+
   const card = parseMediaReference("card", raw.card, mode);
+  const gallery = parseMediaReferenceList("gallery", raw.gallery, mode);
   const seo = parseSeo(raw.seo, mode);
 
-  const liveUrl = readOptionalString(raw, "liveUrl");
-  const repositoryUrl = readOptionalString(raw, "repositoryUrl");
+  const videoUrl = readOptionalString(raw, "videoUrl");
 
   findings.push(
     ...validateText("title", title, LIMITS.title, { required }),
     ...validateText("summary", summary, LIMITS.summary, { required }),
-    ...validateText("kicker", kicker, LIMITS.label, { required }),
-    ...validateText("role", role, LIMITS.label, { required }),
-    ...validateText("status", status, LIMITS.label, { required }),
-    ...validateText("period", period, LIMITS.label, { required }),
+    ...technologies.findings,
+    ...validateCount(
+      "technologies",
+      technologies.values.length,
+      LIMITS.technologies.max
+    ),
     ...validateMarkdownField(
       "bodyMarkdown",
       bodyMarkdown,
@@ -594,49 +664,31 @@ function parseProject(
       LIMITS.bodyMarkdown.max,
       required
     ),
-    ...technologies.findings,
-    ...validateCount(
-      "technologies",
-      technologies.values.length,
-      LIMITS.technologies.max
-    ),
     ...card.findings,
+    ...gallery.findings,
     ...seo.findings
   );
 
-  technologies.values.forEach((entry, index) => {
+  technologies.values.forEach((technology, index) => {
     findings.push(
-      ...validateText(`technologies[${index}]`, entry, LIMITS.label, {
+      ...validateText(`technologies[${index}]`, technology, LIMITS.label, {
         required: true,
       })
     );
   });
 
-  if (accentColor !== "" || required) {
-    findings.push(...validateAccentColor("accentColor", accentColor));
-  }
-
-  if (liveUrl !== null) {
-    findings.push(...validateHttpsUrl("liveUrl", liveUrl));
-  }
-
-  if (repositoryUrl !== null) {
-    findings.push(...validateHttpsUrl("repositoryUrl", repositoryUrl));
+  if (videoUrl !== null) {
+    findings.push(...validateProjectVideoReference("videoUrl", videoUrl));
   }
 
   return {
     data: {
       title,
       summary,
-      card: card.reference,
-      kicker,
-      role,
-      status,
-      period,
       technologies: technologies.values,
-      liveUrl,
-      repositoryUrl,
-      accentColor,
+      card: card.reference,
+      gallery: gallery.references,
+      videoUrl,
       bodyMarkdown,
       seo: seo.seo,
     },

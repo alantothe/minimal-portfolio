@@ -128,9 +128,113 @@ class SPARouter {
       this.recordInitialBlogView(initialRoute.slug);
     }
 
+    this.setupProjectMedia(document);
+
     // SSR content is already complete. Reveal it without client fetches.
     document.querySelector(".container")?.classList.add("ready");
     requestAnimationFrame(() => this.refreshMobilePageCues());
+  }
+
+  setupProjectMedia(root) {
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    root.querySelectorAll("[data-project-media]").forEach((carousel) => {
+      if (carousel.dataset.projectMediaReady === "true") return;
+      carousel.dataset.projectMediaReady = "true";
+
+      const slides = Array.from(
+        carousel.querySelectorAll("[data-project-media-slide]")
+      );
+      const dots = Array.from(
+        carousel.querySelectorAll("[data-project-media-dot]")
+      );
+      if (slides.length < 2) return;
+
+      let current = Math.max(
+        0,
+        slides.findIndex((slide) => slide.dataset.active === "true")
+      );
+      let timer = null;
+      let paused = false;
+
+      const show = (index) => {
+        current = (index + slides.length) % slides.length;
+        slides.forEach((slide, slideIndex) => {
+          if (slideIndex === current) slide.dataset.active = "true";
+          else delete slide.dataset.active;
+        });
+        dots.forEach((dot, dotIndex) => {
+          if (dotIndex === current) dot.setAttribute("aria-current", "true");
+          else dot.removeAttribute("aria-current");
+        });
+      };
+
+      const stop = () => {
+        if (timer !== null) window.clearInterval(timer);
+        timer = null;
+      };
+
+      const start = () => {
+        stop();
+        if (
+          reducedMotion ||
+          paused ||
+          carousel.dataset.autoplay !== "true" ||
+          !carousel.isConnected
+        ) {
+          return;
+        }
+        timer = window.setInterval(() => {
+          if (!carousel.isConnected) {
+            stop();
+            return;
+          }
+          show(current + 1);
+        }, 6000);
+      };
+
+      carousel
+        .querySelector("[data-project-media-previous]")
+        ?.addEventListener("click", () => {
+          show(current - 1);
+          start();
+        });
+      carousel
+        .querySelector("[data-project-media-next]")
+        ?.addEventListener("click", () => {
+          show(current + 1);
+          start();
+        });
+      dots.forEach((dot) => {
+        dot.addEventListener("click", () => {
+          show(Number(dot.dataset.projectMediaDot));
+          start();
+        });
+      });
+
+      carousel.addEventListener("pointerenter", () => {
+        paused = true;
+        stop();
+      });
+      carousel.addEventListener("pointerleave", () => {
+        paused = false;
+        start();
+      });
+      carousel.addEventListener("focusin", () => {
+        paused = true;
+        stop();
+      });
+      carousel.addEventListener("focusout", (event) => {
+        if (carousel.contains(event.relatedTarget)) return;
+        paused = false;
+        start();
+      });
+      carousel.querySelector("video")?.addEventListener("play", stop);
+
+      start();
+    });
   }
 
   /**
@@ -970,7 +1074,9 @@ class SPARouter {
         throw new Error(`Failed to load project: ${response.statusText}`);
       }
       const data = await response.json();
-      await this.updatePageCSS("/pages/projects/styles.css?v=mobile-no-hover");
+      await this.updatePageCSS(
+        "/pages/projects/styles.css?v=project-redesign-no-touch"
+      );
 
       // Hide all pages and show project-page
       document.querySelectorAll(".page-container").forEach((container) => {
@@ -986,6 +1092,7 @@ class SPARouter {
         `;
         projectContainer.classList.add("active");
         this.resetContentScroll();
+        this.setupProjectMedia(projectContainer);
 
         const backLink = projectContainer.querySelector(".back-to-projects");
         if (backLink) {

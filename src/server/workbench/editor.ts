@@ -123,6 +123,72 @@ function mediaField(
 </div>`;
 }
 
+function galleryRow(
+  reference: MediaReference | null,
+  assets: MediaAsset[],
+  index?: number
+): string {
+  const prefix = index === undefined ? "" : `gallery[${index}]`;
+  const assetFinding =
+    index === undefined ? "" : `finding-gallery-asset-${index}`;
+  const altFinding = index === undefined ? "" : `finding-gallery-alt-${index}`;
+  const options = assets
+    .map((asset) => {
+      const selected = asset.id === reference?.mediaAssetId ? " selected" : "";
+      const label = asset.originalFilename || asset.providerPublicId;
+      return `<option value="${escapeHtml(asset.id)}"${selected}>${escapeHtml(label)}</option>`;
+    })
+    .join("");
+
+  return `<div class="gallery-row" data-gallery-row>
+  <label>
+    <span class="field-label">Image</span>
+    <select data-gallery-asset${prefix ? ` name="${prefix}.mediaAssetId" data-field="${prefix}.mediaAssetId" aria-describedby="${assetFinding}"` : ""}>
+      <option value="">Choose image</option>
+      ${options}
+    </select>
+  </label>
+  <label>
+    <span class="field-label">Alt text</span>
+    <input value="${escapeHtml(reference?.alt ?? "")}" data-gallery-alt${prefix ? ` name="${prefix}.alt" data-field="${prefix}.alt" aria-describedby="${altFinding}"` : ""}>
+  </label>
+  <div class="list-actions">
+    <button type="button" data-gallery-action="up">Move up</button>
+    <button type="button" data-gallery-action="down">Move down</button>
+    <button type="button" data-gallery-action="remove">Remove</button>
+  </div>
+  <p class="field-finding" data-gallery-asset-finding${prefix ? ` id="${assetFinding}" data-finding-for="${prefix}.mediaAssetId"` : ""} hidden></p>
+  <p class="field-finding" data-gallery-alt-finding${prefix ? ` id="${altFinding}" data-finding-for="${prefix}.alt"` : ""} hidden></p>
+</div>`;
+}
+
+function projectGalleryField(
+  gallery: MediaReference[],
+  assets: MediaAsset[]
+): string {
+  const rows = gallery
+    .map((reference, index) => galleryRow(reference, assets, index))
+    .join("");
+
+  return `<div class="field gallery-field">
+  <span class="field-label">Lead gallery</span>
+  <span class="field-hint">Up to eight images. Multiple images become an automatic carousel.</span>
+  <div id="project-gallery">${rows}</div>
+  <button type="button" class="quiet" id="add-gallery-image">Add existing image</button>
+  <div class="media-upload" data-media-upload>
+    <label>
+      <span class="field-label">Upload gallery image</span>
+      <span class="field-hint">JPEG, PNG, or WebP. Upload adds a new gallery row.</span>
+      <input type="file" accept="image/jpeg,image/png,image/webp" data-media-file>
+    </label>
+    <button type="button" class="quiet" data-media-upload-button data-gallery-upload-button>Upload and add</button>
+    <span class="media-upload-status" data-media-upload-status></span>
+  </div>
+  ${finding("gallery")}
+  <template id="gallery-image-template">${galleryRow(null, assets)}</template>
+</div>`;
+}
+
 function seoFields(seo: SeoOverrides, assets: MediaAsset[]): string {
   return `${input("seo.title", "Search title", seo.title ?? "", {
     hint: "Optional. Leave empty to use the page title.",
@@ -230,18 +296,33 @@ function brandingFields(data: BrandingContent, assets: MediaAsset[]): string {
 
 function technologyRow(value: string, index?: number): string {
   const field = index === undefined ? "" : `technologies[${index}]`;
-  const finding = index === undefined ? "" : `finding-technology-${index}`;
-  return `<div class="technology-row" data-list-row>
+  const findingId = index === undefined ? "" : `finding-technology-${index}`;
+  return `<div class="technology-row" data-technology-row>
   <label>
     <span class="field-label">Technology</span>
-    <input value="${escapeHtml(value)}" data-technology${field ? ` data-field="${field}" aria-describedby="${finding}"` : ""}>
+    <input value="${escapeHtml(value)}" data-technology${field ? ` name="${field}" data-field="${field}" aria-describedby="${findingId}"` : ""}>
   </label>
   <div class="list-actions">
-    <button type="button" data-list-action="up">Move up</button>
-    <button type="button" data-list-action="down">Move down</button>
-    <button type="button" data-list-action="remove">Remove</button>
+    <button type="button" data-technology-action="up">Move up</button>
+    <button type="button" data-technology-action="down">Move down</button>
+    <button type="button" data-technology-action="remove">Remove</button>
   </div>
-  <p class="field-finding" data-technology-finding${field ? ` id="${finding}" data-finding-for="${field}"` : ""} hidden></p>
+  <p class="field-finding" data-technology-finding${field ? ` id="${findingId}" data-finding-for="${field}"` : ""} hidden></p>
+</div>`;
+}
+
+function technologyField(technologies: string[]): string {
+  const rows = technologies
+    .map((technology, index) => technologyRow(technology, index))
+    .join("");
+
+  return `<div class="field">
+  <span class="field-label">Technologies</span>
+  <span class="field-hint">Up to twenty. Brand logos are matched automatically and shown in this order.</span>
+  <div id="technologies">${rows}</div>
+  <button type="button" class="quiet" id="add-technology">Add technology</button>
+  ${finding("technologies")}
+  <template id="technology-template">${technologyRow("")}</template>
 </div>`;
 }
 
@@ -251,33 +332,22 @@ function projectFields(
   assets: MediaAsset[],
   published: boolean
 ): string {
-  const technologies = data.technologies
-    .map((technology, index) => technologyRow(technology, index))
-    .join("");
   return `<fieldset>
   <legend>Content</legend>
   ${input("title", "Title", data.title)}
-  ${textarea("summary", "Card summary", data.summary, "Plain text. Warning after 320 characters.", 4)}
-  ${input("kicker", "Kicker", data.kicker)}
-  ${input("role", "Your role", data.role)}
-  ${input("status", "Project status", data.status)}
-  ${input("period", "Display period", data.period)}
-  ${input("liveUrl", "Live site", data.liveUrl ?? "", { type: "url", hint: "Optional absolute HTTPS address." })}
-  ${input("repositoryUrl", "Repository", data.repositoryUrl ?? "", { type: "url", hint: "Optional absolute HTTPS address." })}
-  ${input("accentColor", "Accent colour", data.accentColor, { hint: "Six-digit colour, for example #0b4fd4." })}
-  <div class="field">
-    <span class="field-label">Technologies</span>
-    <span class="field-hint">Up to twenty, displayed in this order.</span>
-    <div id="technologies">${technologies}</div>
-    <button type="button" class="quiet" id="add-technology">Add technology</button>
-    ${finding("technologies")}
-  </div>
-  <template id="technology-template">${technologyRow("")}</template>
-  ${textarea("bodyMarkdown", "Project body", data.bodyMarkdown, "Controlled Markdown: H2–H4, lists, tables, code, links, and Media tokens. Raw HTML is not allowed.", 16)}
 </fieldset>
 <fieldset>
   <legend>Media</legend>
-  ${mediaField("card", "Project card", data.card, assets)}
+  <p class="fieldset-note">All Project images are center-cropped to 1440×900 (8:5). Upload at that size when crop position matters.</p>
+  ${mediaField("card", "Main image", data.card, assets)}
+  ${projectGalleryField(data.gallery, assets)}
+  ${input("videoUrl", "Lead video", data.videoUrl ?? "", { hint: "Optional /public/*.mp4 or *.webm path, or Cloudinary video URL. Display is capped at 1920×1080." })}
+</fieldset>
+<fieldset>
+  <legend>Description</legend>
+  ${textarea("summary", "Description", data.summary, "Plain text shown below the main media. Warning after 320 characters.", 4)}
+  ${technologyField(data.technologies)}
+  ${textarea("bodyMarkdown", "Article", data.bodyMarkdown, "Controlled Markdown: H2–H4, lists, tables, code, links, and Media tokens. Raw HTML is not allowed.", 16)}
 </fieldset>
 <fieldset>
   <legend>Metadata</legend>

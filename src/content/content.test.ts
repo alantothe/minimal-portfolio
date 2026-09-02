@@ -1,14 +1,15 @@
 import { describe, expect, test } from "bun:test";
+import matter from "gray-matter";
 import { aboutConfig } from "../config";
 
 const questurianProject = Bun.file(
-  "./src/content/projects/questurian/content.md",
+  "./src/content/projects/questurian/content.md"
 );
 const minimalPortfolioProject = Bun.file(
-  "./src/content/projects/minimal-portfolio/content.md",
+  "./src/content/projects/minimal-portfolio/content.md"
 );
 const profilePost = Bun.file(
-  "./src/content/blog/who-is-alan-malpartida-software-engineer-and-founder.md",
+  "./src/content/blog/who-is-alan-malpartida-software-engineer-and-founder.md"
 );
 
 describe("published portfolio content", () => {
@@ -24,10 +25,23 @@ describe("published portfolio content", () => {
 
   test("does not present unsupported performance or impact numbers", async () => {
     expect(await questurianProject.text()).not.toMatch(
-      /50,000|10,000|95% user satisfaction/,
+      /50,000|10,000|95% user satisfaction/
     );
     expect(await minimalPortfolioProject.text()).not.toMatch(
-      /200ms server startup|5ms navigation/,
+      /200ms server startup|5ms navigation/
     );
+  });
+
+  test("keeps the Questurian Frontend case study frontend-only", async () => {
+    const source = await questurianProject.text();
+    const project = matter(source);
+
+    expect(project.data.title).toBe("Questurian Frontend");
+    expect(project.data.stack).toEqual(["TypeScript", "CSS"]);
+    expect(project.data.description).toContain("public frontend");
+    expect(project.content).toContain(
+      "This case study covers the frontend only."
+    );
+    expect(project.content).not.toMatch(/Payload CMS|PostgreSQL|Vertex AI/);
   });
 });

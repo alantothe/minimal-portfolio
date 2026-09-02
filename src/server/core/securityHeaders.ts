@@ -7,11 +7,9 @@
  * content-rendering bug into an outbound request carrying the visitor's IP and
  * referrer.
  *
- * Scope is deliberately narrow. This is `img-src` and nothing else: a full
- * policy covering scripts and styles is a larger change with real breakage risk
- * for the existing pages, and it is not what delivering media requires. The
- * directive is additive — every image the site serves today is already covered,
- * so no visitor sees a difference.
+ * Scope is deliberately narrow. This covers images and Project video, without
+ * changing script or style policy. Both directives are additive: existing
+ * local assets and application-owned Cloudinary delivery remain permitted.
  *
  * What this does *not* do is pin the account. Cloudinary serves every customer
  * from one hostname and separates them by path, and CSP cannot express a path
@@ -24,8 +22,9 @@
 import { DELIVERY_HOST } from "../media/config";
 
 const IMAGE_SOURCES = ["'self'", `https://${DELIVERY_HOST}`] as const;
+const VIDEO_SOURCES = ["'self'", `https://${DELIVERY_HOST}`] as const;
 
-export const IMAGE_POLICY = `img-src ${IMAGE_SOURCES.join(" ")}`;
+export const IMAGE_POLICY = `img-src ${IMAGE_SOURCES.join(" ")}; media-src ${VIDEO_SOURCES.join(" ")}`;
 
 /**
  * Reports whether a source would be permitted, using the same list the header
@@ -48,6 +47,10 @@ export function isAllowedImageSource(src: string, origin: string): boolean {
   }
 
   return url.protocol === "https:" && url.hostname === DELIVERY_HOST;
+}
+
+export function isAllowedVideoSource(src: string, origin: string): boolean {
+  return isAllowedImageSource(src, origin);
 }
 
 /**

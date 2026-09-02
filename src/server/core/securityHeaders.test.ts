@@ -12,6 +12,7 @@ import {
   IMAGE_POLICY,
   applyImagePolicy,
   isAllowedImageSource,
+  isAllowedVideoSource,
 } from "./securityHeaders";
 
 const ORIGIN = "https://alanmalpartida.com";
@@ -66,10 +67,14 @@ describe("the image policy", () => {
     expect(isAllowedImageSource("not a url", ORIGIN)).toBe(true);
   });
 
-  test("names only img-src, so scripts and styles are untouched", () => {
-    // A wider policy is a separate, riskier change; this slice must not make it
-    // by accident.
-    expect(IMAGE_POLICY).toBe("img-src 'self' https://res.cloudinary.com");
+  test("limits image and video media without changing scripts or styles", () => {
+    expect(IMAGE_POLICY).toBe(
+      "img-src 'self' https://res.cloudinary.com; media-src 'self' https://res.cloudinary.com"
+    );
+    expect(isAllowedVideoSource("/public/demo.mp4", ORIGIN)).toBe(true);
+    expect(isAllowedVideoSource("https://evil.test/demo.mp4", ORIGIN)).toBe(
+      false
+    );
   });
 });
 

@@ -26,15 +26,15 @@ describe("Content editor browser script", () => {
     expect(EDITOR_SCRIPT).toContain("URL change pending");
   });
 
-  test("serializes collection metadata and keyboard ordering controls", () => {
+  test("serializes collection metadata and gallery ordering controls", () => {
     expect(EDITOR_SCRIPT).toContain('case "project"');
     expect(EDITOR_SCRIPT).toContain('case "blog_post"');
     expect(EDITOR_SCRIPT).toContain("displayOrder:");
     expect(EDITOR_SCRIPT).toContain("publishedAt:");
     expect(EDITOR_SCRIPT).toContain("attributes: attributes()");
-    expect(EDITOR_SCRIPT).toContain('getElementById("technologies")');
-    expect(EDITOR_SCRIPT).toContain('dataset.listAction === "up"');
-    expect(EDITOR_SCRIPT).toContain('dataset.listAction === "down"');
+    expect(EDITOR_SCRIPT).toContain('getElementById("project-gallery")');
+    expect(EDITOR_SCRIPT).toContain('dataset.galleryAction === "up"');
+    expect(EDITOR_SCRIPT).toContain('dataset.galleryAction === "down"');
     expect(EDITOR_SCRIPT).toContain("orderingChanged");
     expect(EDITOR_SCRIPT).toContain("workspaceUrl.searchParams.set(");
     expect(EDITOR_SCRIPT).toContain('"preview",');

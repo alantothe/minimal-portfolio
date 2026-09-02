@@ -24,15 +24,10 @@ describe("recovering a pre-publication import baseline", () => {
     const original: ProjectContent = {
       title: "Imported Project",
       summary: "The accepted source summary.",
+      technologies: [],
       card: null,
-      kicker: "Selected work",
-      role: "Engineer",
-      status: "Live",
-      period: "2026",
-      technologies: ["TypeScript"],
-      liveUrl: null,
-      repositoryUrl: null,
-      accentColor: "#8aa0b2",
+      gallery: [],
+      videoUrl: null,
       bodyMarkdown: "## Context\n\nImported body.",
       seo: { title: null, description: null, sharingImage: null },
     };

@@ -63,6 +63,7 @@ export interface PublishedSiteState {
 export interface DiscoveryManifest {
   generation: string;
   routes: readonly string[];
+  homeImageUrl: string | null;
 }
 
 export type RefreshOutcome =
@@ -233,6 +234,7 @@ export class PublishedSite {
     return {
       generation: this.active.generation,
       routes: this.active.routes,
+      homeImageUrl: this.active.home.portrait?.url ?? null,
     };
   }
 

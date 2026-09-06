@@ -37,8 +37,8 @@
       "contentType": "application/xml; charset=utf-8",
       "cacheControl": "public, max-age=3600",
       "location": null,
-      "bodyHash": "8deff1eebede7e7ad7283c184f62c1a106cad2916276091b8aa8a6b401e20b6c",
-      "textHash": "d6d52c4ecd1cb9ffb09cbfa42c356a84ea7d26c8bcda06195eef38b6c5e0e455",
+      "bodyHash": "e060128f29e92ecc17a75246320da9d890851eafb6f94a8a589fe8e20f535557",
+      "textHash": "bf26a6b6512ee0bfd1bdc959ec183bd1cab728dad16eab329b69809be058f0d8",
       "headings": [],
       "internalLinks": [],
       "images": [],
@@ -51,18 +51,18 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "6489252531da0df5c24efb254c8ca3ebe4e79946c46104786b036721ce493245",
+      "bodyHash": "b80f63726b39698db82dd9d77dc745f7b36b8fbb241641f145d36ae61c50599e",
       "textHash": "c03825234a20eda8963b38ce9815de999a8e755a8aba6b413f84dcb71dafb989",
       "headings": ["h1:Alan Malpartida"],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
       "images": [
         {
           "src": "/avatar.webp",
-          "alt": "Alan Malpartida"
+          "alt": "Portrait of Alan Malpartida"
         },
         {
           "src": "/avatar.webp",
-          "alt": "Alan Malpartida"
+          "alt": "Portrait of Alan Malpartida"
         },
         {
           "src": "/public/logo.png",
@@ -87,13 +87,18 @@
         "structuredData": [
           {
             "@context": "https://schema.org",
-            "@type": "Person",
-            "@id": "https://baseline.test/#alan-malpartida",
-            "name": "Alan Malpartida",
-            "url": "https://baseline.test/",
-            "image": "https://baseline.test/avatar.webp",
-            "jobTitle": "Founding Engineer at Questurian",
-            "sameAs": ["https://github.com/alantothe"]
+            "@type": "ProfilePage",
+            "primaryImageOfPage": "https://baseline.test/avatar.webp",
+            "mainEntity": {
+              "@context": "https://schema.org",
+              "@type": "Person",
+              "@id": "https://baseline.test/#alan-malpartida",
+              "name": "Alan Malpartida",
+              "url": "https://baseline.test/",
+              "image": "https://baseline.test/avatar.webp",
+              "jobTitle": "Founding Engineer at Questurian",
+              "sameAs": ["https://github.com/alantothe"]
+            }
           }
         ]
       }
@@ -119,7 +124,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "a5e63d320dc9402d10b92e110e0af031cea391aaf21c6b6bf83f5f9abad46199",
+      "bodyHash": "e5c01c27dfc482e1f935b1f9a5ce7bad3f8b95c95643819ff3b72206d3371230",
       "textHash": "fa5103bb69b66b6a2d38c880344b495481d459614ed8fb9191165ee05287e035",
       "headings": ["h1:About", "h1:About Questurian"],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
@@ -148,6 +153,7 @@
           {
             "@context": "https://schema.org",
             "@type": "ProfilePage",
+            "primaryImageOfPage": "https://baseline.test/avatar.webp",
             "mainEntity": {
               "@context": "https://schema.org",
               "@type": "Person",
@@ -169,7 +175,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "d93ef1822dd9b81b7080017fa5b1e32cb5bc5447f97e10ca89773f0f4c8afdd4",
+      "bodyHash": "18135369bf4c2114633816ea98372d1fad97ab9e2c6cafd42d2d8c31cd864cc2",
       "textHash": "b1954f16b62ba28d14781cbf994d43267cf12d93203b2f258a5740a6e5d63cbf",
       "headings": [
         "h1:Blog",
@@ -213,7 +219,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "2cb860d76527ce298b23134d1c4121724621995c3343d78950302fc4a0ada130",
+      "bodyHash": "856f70b06e2a18c7b07158accaf455994ba89220f0ab207950f46198f6944112",
       "textHash": "7334099d065af61acc1169925d758622fca676bc62c21df4ee1ff9e36517f9e4",
       "headings": [
         "h1:Projects",
@@ -267,7 +273,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "c0f549fde0ef86cf8d61f27abeae949681a0e39f64f1cb8ef6291ba08d6fb7bf",
+      "bodyHash": "609c2b18897be0aadcb658d1ea6824609812b520b11e1cddad459d25dce44d0c",
       "textHash": "031964e52f85f679464438a7f45eb53752bfd684c75436cb591ad5dcabe350cd",
       "headings": [
         "h1:Who Is Alan Malpartida - Software Engineer, Founder, and Builder",
@@ -324,7 +330,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "93c2f4637b13b98137f9b9d634675ad9e9f5c63147489caa4056ae588957278c",
+      "bodyHash": "bbc9cfdea6782d989b674f7f8d1c71b53b20f56ec4448c2e5cb1b6f9d1b1ef34",
       "textHash": "0009caa9ff3635501d95ec2c7c183e26f4189dc9340116244d644ff4b339f1d0",
       "headings": [
         "h1:Minimal Portfolio",
@@ -370,7 +376,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "bb840f419eb1cafa7f058bce606ca5ea10afc311e7362c816e610a229fa18fdb",
+      "bodyHash": "c48bec7c851908a339c967d19e0883ae73b5e53da409546436a0aef85b0edc8f",
       "textHash": "76e78a6492330b140d8a2fb5175b0ed5a441c4ae3396b70cef8868f0cb845c30",
       "headings": [
         "h1:Questurian Frontend",
@@ -421,7 +427,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "67279b057b967f22002d51f2a7a835041fcddfa6509907cb28f1b57ea7392125",
+      "bodyHash": "8ee4e0dbb30f0a73766c5b1f81bdf080cad4a0b12dccbce7d44fb4a4ccaf402f",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -435,7 +441,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "4ba1b273cd4e8f8d97e27ed706e4d40c68172fca5be900c705adbfb3f7c05a3a",
+      "bodyHash": "6bad1cea2b4ad4bc7b7887a1ff25c31273aa8d895cfa7be2d6e395aa5c23f3ac",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -449,7 +455,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "57297c32e9a558b55d5d26bca481011f17abcb2898b320582cfe4ad90fb85e94",
+      "bodyHash": "2b7a115591c7134ddcac9c3d430eda0a2e6420d1b361963de7351dcfcbe06c0f",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -463,7 +469,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "295064c6e066d069a6f908be0cb3cacc5aca25074178e4687dc7c929c7609800",
+      "bodyHash": "f1715305c6d011dcd92af38503ff860e5d64bde9821d41b7282f98ed55a1aaea",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -505,7 +511,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "2b9456b5a32a37c364c591c3b4f037092e3fd9bd85cf185616629821724ef998",
+      "bodyHash": "81d3298fdee6ba663576787e27bda3a13ce9610c42b95bb10aced4b741acdea1",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -519,7 +525,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "50af986833d2c08bbbc1aac031248c5ff4713f07e1720ec89482973a9f1dd381",
+      "bodyHash": "e49feb2382f6045b1292dd821f85585a7c5a46f1736177eecd9730f3b64a4e9d",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -533,7 +539,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "912e5ec6ab01cc478ed3c1e675586fb72f9b7a472b75e4e46d8172a551d82944",
+      "bodyHash": "3f8e08ada5cf82df3aba419b824f33dddf7425a1db0c51f33afb0a4104c9474a",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -724,8 +730,8 @@
     },
     {
       "path": "src/pages/home/content.html",
-      "bytes": 6146,
-      "sha256": "f30a8a8227ca6d07d235b0714bda477e2608b692ae3927a093da386992414eb2"
+      "bytes": 6170,
+      "sha256": "70ed5307c59fe1a644771abe5666f650caabc5490024bc1ac8ef85cb48783de1"
     },
     {
       "path": "src/pages/projects/content.html",
@@ -734,8 +740,8 @@
     },
     {
       "path": "src/pages/shell.html",
-      "bytes": 4654,
-      "sha256": "9e65c622965537f6b2ea1fb3692e3769313c7067f5c05b2dad79e92444d8b412"
+      "bytes": 4582,
+      "sha256": "841becc1834c7837f0b77e43c024296a761abeb1d6a53e5da98163b1a805afea"
     }
   ],
   "media": [

@@ -52,6 +52,20 @@ function encodeSegments(publicId: string): string | null {
   return segments.map(encodeURIComponent).join("/");
 }
 
+/** A short, safe filename hint for Cloudinary's dynamic SEO suffix URL. */
+function seoSlug(value: string): string | null {
+  const slug = value
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80)
+    .replace(/-+$/g, "");
+
+  return slug || null;
+}
+
 /**
  * The size the browser will receive.
  *
@@ -94,7 +108,8 @@ export function variantDimensions(
 export function renderMedia(
   asset: MediaAsset,
   variant: MediaVariant,
-  cloudName: string
+  cloudName: string,
+  seoSuffix?: string
 ): RenderedImage | null {
   // Only `ready` assets have been confirmed by the provider. An `uploading` row
   // may describe an asset that never arrived, and a tombstoned or deleted one
@@ -137,10 +152,14 @@ export function renderMedia(
   // The version segment is what makes this URL safe to cache forever: a
   // replacement is a new asset with a new public ID, so a given URL's bytes
   // never change.
-  const url =
-    `https://${DELIVERY_HOST}/${encodeURIComponent(cloudName)}` +
-    `/image/upload/t_${variant}/v${encodeURIComponent(asset.providerVersion)}` +
-    `/${publicId}.${asset.format}`;
+  const suffix = seoSuffix ? seoSlug(seoSuffix) : null;
+  const base = `https://${DELIVERY_HOST}/${encodeURIComponent(cloudName)}`;
+  const versionedAsset =
+    `/t_${variant}/v${encodeURIComponent(asset.providerVersion)}` +
+    `/${publicId}`;
+  const url = suffix
+    ? `${base}/images${versionedAsset}/${suffix}.${asset.format}`
+    : `${base}/image/upload${versionedAsset}.${asset.format}`;
 
   return { url, width, height };
 }

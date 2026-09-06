@@ -1075,7 +1075,7 @@ class SPARouter {
       }
       const data = await response.json();
       await this.updatePageCSS(
-        "/pages/projects/styles.css?v=project-redesign-no-touch"
+        "/pages/projects/styles.css?v=project-card-border-v2"
       );
 
       // Hide all pages and show project-page

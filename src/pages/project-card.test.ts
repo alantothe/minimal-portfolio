@@ -16,17 +16,24 @@ describe("project cards", () => {
     expect(projectStyles).not.toContain("width: clamp(360px, 58%, 420px)");
   });
 
-  test("enlarges image previews on hover and keyboard focus", () => {
-    expect(projectStyles).toContain(
-      ".project-image[data-previewable]:hover img"
+  test("keeps card thumbnails fixed while using the avatar-ring hover border", () => {
+    expect(projectStyles).not.toContain("width 260ms");
+    expect(projectStyles).not.toContain("width: clamp(220px, 38%, 300px)");
+    expect(projectStyles).not.toContain("data-previewable");
+    expect(projectStyles).not.toContain("project-image__tooltip");
+    expect(projectStyles).toMatch(
+      /\.project-card::before \{[^}]*padding: 1px;/
     );
-    expect(projectStyles).toContain(
-      ".project-link:focus-visible .project-image[data-previewable] img"
-    );
-    expect(projectStyles).toContain(
-      ".project-image[data-previewable]:hover .project-image__tooltip"
-    );
-    expect(projectStyles).toContain("transform: scale(2.35)");
+    for (const stop of [
+      "#6675e8 0deg",
+      "#d98bcf 68deg",
+      "#b9dfce 132deg",
+      "#f1c33a 205deg",
+      "#ff6b3f 286deg",
+      "#6675e8 360deg",
+    ]) {
+      expect(projectStyles).toContain(stop);
+    }
   });
 
   test("locks every Project image surface to the 1440x900 ratio", () => {
@@ -38,13 +45,35 @@ describe("project cards", () => {
     );
   });
 
+  test("stacks every article surface on one narrow-window reading edge", () => {
+    expect(projectStyles).toMatch(
+      /\.project-page-shell > \.back-link \{[^}]*width: min\(100%, 680px\);[^}]*margin-right: auto;[^}]*margin-left: auto;/
+    );
+    expect(projectStyles).toMatch(
+      /\.project-article-header \{[^}]*var\(--project-article-measure\)/
+    );
+    expect(projectStyles).toMatch(
+      /\.project-media \{[^}]*var\(--project-article-measure\)/
+    );
+    expect(projectStyles).toMatch(
+      /\.project-case-study__body \{[^}]*var\(--project-article-measure\)/
+    );
+    expect(projectStyles).not.toContain("calc(100% + 24px)");
+  });
+
   test("keeps technology badges exclusive to project articles", () => {
     expect(projectStyles).not.toContain(".project-technologies--card");
     expect(projectStyles).toContain(".project-technologies--article");
     expect(projectStyles).toMatch(
-      /\.project-technologies li \{[^}]*border-radius: 4px;/
+      /\.project-technologies li \{[^}]*border-radius: 999px;/
     );
     expect(projectStyles).toContain(".technology-badge__logo");
+    expect(projectStyles).toMatch(
+      /\.technology-badge__logo-frame \{[^}]*width: 16px;[^}]*height: 16px;/
+    );
+    expect(projectStyles).toMatch(
+      /\.technology-badge__logo \{[^}]*width: 10px;[^}]*height: 10px;/
+    );
     expect(projectStyles).toContain("var(--technology-icon)");
   });
 });

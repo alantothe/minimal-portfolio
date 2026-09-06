@@ -31,12 +31,13 @@ describe("Project article media", () => {
     expect(html).toContain('data-brand="HTML5"');
     expect(html).toContain('data-brand="CSS"');
     expect(html).toContain('data-brand="Google Cloud"');
+    expect(html).toContain('class="technology-badge__logo-frame"');
     expect(html).toContain("technology-badge--unbranded");
     expect(html).toContain("Private tool");
     expect(html).not.toContain("cdn.simpleicons.org");
   });
 
-  test("renders title, image, description, then article body", () => {
+  test("groups title, description, and technologies before media and body", () => {
     const html = renderProjectArticle(
       project({
         role: "Founding Engineer",
@@ -61,12 +62,14 @@ describe("Project article media", () => {
     expect(html).not.toContain("View repository");
 
     const title = html.indexOf("Example project");
-    const media = html.indexOf('aria-label="Project media"');
     const description = html.indexOf("A concise project description.");
+    const technologies = html.indexOf('aria-label="Technologies used"');
+    const media = html.indexOf('aria-label="Project media"');
     const body = html.indexOf('class="project-case-study__body');
-    expect(title).toBeLessThan(media);
-    expect(media).toBeLessThan(description);
-    expect(description).toBeLessThan(body);
+    expect(title).toBeLessThan(description);
+    expect(description).toBeLessThan(technologies);
+    expect(technologies).toBeLessThan(media);
+    expect(media).toBeLessThan(body);
   });
 
   test("renders an automatic image carousel and a bounded native video", () => {

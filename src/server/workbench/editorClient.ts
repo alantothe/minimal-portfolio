@@ -379,7 +379,10 @@ export const EDITOR_SCRIPT = `
     timer = window.setTimeout(save, 650);
   }
 
-  form.addEventListener("input", schedule);
+  form.addEventListener("input", (event) => {
+    if (event.target.matches("[data-technology-search]")) return;
+    schedule();
+  });
   form.addEventListener("change", schedule);
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -672,12 +675,79 @@ export const EDITOR_SCRIPT = `
   });
 
   const technologyList = document.getElementById("technologies");
-  document.getElementById("add-technology")?.addEventListener("click", () => {
+  const technologySearch = document.querySelector("[data-technology-search]");
+  const technologyOptions = Array.from(
+    document.querySelectorAll("[data-technology-option]")
+  );
+  const technologyCount = document.querySelector("[data-technology-count]");
+  const technologyEmpty = document.querySelector("[data-technology-empty]");
+
+  function normalizedTechnology(value) {
+    return value.trim().toLocaleLowerCase();
+  }
+
+  function technologyRows() {
+    return Array.from(technologyList?.querySelectorAll("[data-technology-row]") || []);
+  }
+
+  function syncTechnologyPicker() {
+    const selected = new Set(
+      technologyRows()
+        .map((row) => normalizedTechnology(row.querySelector("[data-technology]").value))
+        .filter(Boolean)
+    );
+    technologyOptions.forEach((option) => {
+      option.setAttribute(
+        "aria-pressed",
+        String(selected.has(normalizedTechnology(option.dataset.technologyOption)))
+      );
+    });
+    if (technologyCount) technologyCount.textContent = selected.size + " / 20";
+  }
+
+  function appendTechnology(value = "") {
+    if (!technologyList || technologyRows().length >= 20) {
+      setStatus("Maximum 20 technologies", "Remove a technology before adding another");
+      return null;
+    }
     const template = document.getElementById("technology-template");
     technologyList.append(template.content.cloneNode(true));
-    technologyList.lastElementChild.querySelector("[data-technology]").focus();
+    const input = technologyList.lastElementChild.querySelector("[data-technology]");
+    input.value = value;
+    syncTechnologyPicker();
     schedule();
+    return input;
+  }
+
+  document.getElementById("add-technology")?.addEventListener("click", () => {
+    appendTechnology()?.focus();
   });
+  technologySearch?.addEventListener("input", () => {
+    const query = normalizedTechnology(technologySearch.value);
+    let visible = 0;
+    technologyOptions.forEach((option) => {
+      const matches = option.dataset.technologySearchValue.includes(query);
+      option.hidden = !matches;
+      if (matches) visible += 1;
+    });
+    technologyEmpty.hidden = visible !== 0;
+  });
+  document.getElementById("technology-options")?.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-technology-option]");
+    if (!option) return;
+    const label = option.dataset.technologyOption;
+    const existing = technologyRows().find(
+      (row) => normalizedTechnology(row.querySelector("[data-technology]").value) === normalizedTechnology(label)
+    );
+    if (existing) {
+      existing.remove();
+      syncTechnologyPicker();
+      schedule();
+      return;
+    }
+    appendTechnology(label);
+  });
+  technologyList?.addEventListener("input", syncTechnologyPicker);
   technologyList?.addEventListener("click", (event) => {
     const action = event.target.closest("[data-technology-action]");
     if (!action) return;
@@ -691,8 +761,10 @@ export const EDITOR_SCRIPT = `
       const next = row.nextElementSibling;
       if (next) row.parentElement.insertBefore(next, row);
     }
+    syncTechnologyPicker();
     schedule();
   });
+  syncTechnologyPicker();
 
   const initialFindings = JSON.parse(form.dataset.publishFindings || "[]");
   showFindings(initialFindings);

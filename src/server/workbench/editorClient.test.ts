@@ -42,4 +42,14 @@ describe("Content editor browser script", () => {
       "window.location.assign(workspaceUrl.toString())"
     );
   });
+
+  test("filters and toggles the curated technology picker", () => {
+    expect(EDITOR_SCRIPT).toContain(
+      'querySelector("[data-technology-search]")'
+    );
+    expect(EDITOR_SCRIPT).toContain("dataset.technologySearchValue.includes");
+    expect(EDITOR_SCRIPT).toContain("technologyRows().length >= 20");
+    expect(EDITOR_SCRIPT).toContain("syncTechnologyPicker()");
+    expect(EDITOR_SCRIPT).toContain('setAttribute(\n        "aria-pressed"');
+  });
 });

@@ -37,10 +37,17 @@ describe("published portfolio content", () => {
     const project = matter(source);
 
     expect(project.data.title).toBe("Questurian Frontend");
-    expect(project.data.stack).toEqual(["TypeScript", "CSS"]);
+    expect(project.data.stack).toEqual([
+      "Next.js",
+      "React",
+      "TypeScript",
+      "Tailwind CSS",
+      "Google Maps",
+      "Stripe",
+    ]);
     expect(project.data.description).toContain("public frontend");
     expect(project.content).toContain(
-      "This case study covers the frontend only."
+      "My work here focuses on frontend architecture and implementation."
     );
     expect(project.content).not.toMatch(/Payload CMS|PostgreSQL|Vertex AI/);
   });

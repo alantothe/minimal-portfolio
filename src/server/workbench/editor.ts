@@ -13,6 +13,10 @@ import type {
 import type { DraftRecord } from "./contentDraft";
 import { escapeHtml } from "./html";
 import { isSingletonType, type CollectionType } from "../content/identity";
+import {
+  TECHNOLOGY_LIBRARY,
+  technologyIcons,
+} from "../services/technologyIcons";
 
 export type EditorPanel =
   | {
@@ -311,16 +315,50 @@ function technologyRow(value: string, index?: number): string {
 </div>`;
 }
 
+function technologyLibraryOption(
+  technology: (typeof TECHNOLOGY_LIBRARY)[number],
+  selected: ReadonlySet<string>
+): string {
+  const icons = technologyIcons(technology);
+  const icon = icons[0];
+  const pressed = selected.has(technology.toLowerCase());
+  const logo = icon
+    ? `<span class="technology-option__icon-frame" style="--technology-option-color: #${icon.hex}"><svg class="technology-option__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="${icon.path}"></path></svg></span>`
+    : '<span class="technology-option__fallback" aria-hidden="true">&lt;&gt;</span>';
+
+  return `<button type="button" class="technology-option" data-technology-option="${escapeHtml(technology)}" data-technology-search-value="${escapeHtml(technology.toLowerCase())}" aria-pressed="${pressed}">${logo}<span>${escapeHtml(technology)}</span></button>`;
+}
+
 function technologyField(technologies: string[]): string {
   const rows = technologies
     .map((technology, index) => technologyRow(technology, index))
     .join("");
+  const selected = new Set(
+    technologies.map((technology) => technology.trim().toLowerCase())
+  );
+  const options = TECHNOLOGY_LIBRARY.map((technology) =>
+    technologyLibraryOption(technology, selected)
+  ).join("");
 
-  return `<div class="field">
+  return `<div class="field technology-field" data-technology-picker>
   <span class="field-label">Technologies</span>
-  <span class="field-hint">Up to twenty. Brand logos are matched automatically and shown in this order.</span>
-  <div id="technologies">${rows}</div>
-  <button type="button" class="quiet" id="add-technology">Add technology</button>
+  <span class="field-hint">Choose from ${TECHNOLOGY_LIBRARY.length} common tools or add a custom label. Up to twenty appear in the order below.</span>
+  <div class="technology-picker">
+    <label class="technology-search">
+      <span class="visually-hidden">Search technology badges</span>
+      <input type="search" placeholder="Search badges" autocomplete="off" data-technology-search>
+    </label>
+    <div class="technology-options" id="technology-options" aria-label="Technology badge library">
+      ${options}
+    </div>
+    <p class="technology-empty" data-technology-empty hidden>No matching badges. Add a custom technology below.</p>
+  </div>
+  <div class="technology-selected-heading">
+    <span>Selected</span>
+    <span data-technology-count>${technologies.length} / 20</span>
+  </div>
+  <div id="technologies" class="technology-selected-list">${rows}</div>
+  <button type="button" class="quiet" id="add-technology">Add custom technology</button>
   ${finding("technologies")}
   <template id="technology-template">${technologyRow("")}</template>
 </div>`;

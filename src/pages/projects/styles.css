@@ -47,16 +47,15 @@
   position: absolute;
   z-index: 3;
   inset: 0;
-  padding: 2px;
+  padding: 1px;
   background: conic-gradient(
     from var(--project-border-angle),
-    #4c78ed 0deg,
-    #3b9eea 60deg,
-    #2bc0d8 120deg,
-    #27c9aa 180deg,
-    #45c982 240deg,
-    #35b7bd 300deg,
-    #4c78ed 360deg
+    #6675e8 0deg,
+    #d98bcf 68deg,
+    #b9dfce 132deg,
+    #f1c33a 205deg,
+    #ff6b3f 286deg,
+    #6675e8 360deg
   );
   content: "";
   opacity: 0;
@@ -99,7 +98,7 @@
   width: 100px;
   aspect-ratio: 8 / 5;
   flex-shrink: 0;
-  overflow: visible;
+  overflow: hidden;
   border-radius: 0;
   background: #0a0a0a;
 }
@@ -110,62 +109,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.project-image[data-previewable] img {
-  position: relative;
-  z-index: 2;
-  transform-origin: left center;
-  transition:
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 220ms ease;
-}
-
-.project-image__tooltip {
-  position: absolute;
-  z-index: 4;
-  top: calc(100% + 48px);
-  left: 8px;
-  width: max-content;
-  max-width: 220px;
-  border: 1px solid color-mix(in srgb, var(--project-accent) 58%, #353535);
-  background: #0a0a0a;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.42);
-  color: #e8e8e5;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  line-height: 1;
-  opacity: 0;
-  padding: 7px 9px;
-  pointer-events: none;
-  text-transform: uppercase;
-  transform: translateY(-4px);
-  transition:
-    opacity 140ms ease,
-    transform 180ms ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .project-image[data-previewable]:hover img {
-    box-shadow: 0 16px 40px rgb(0 0 0 / 0.62);
-    transform: scale(2.35);
-  }
-
-  .project-image[data-previewable]:hover .project-image__tooltip {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.project-link:focus-visible .project-image[data-previewable] img {
-  box-shadow: 0 16px 40px rgb(0 0 0 / 0.62);
-  transform: scale(2.35);
-}
-
-.project-link:focus-visible .project-image__tooltip {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .project-image-placeholder {
@@ -216,42 +159,57 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #30363d;
-  border-radius: 4px;
-  background: linear-gradient(
-    100deg,
-    color-mix(in srgb, var(--technology-brand, #596873) 15%, #11161a),
-    #11161a 72%
-  );
-  box-shadow: inset 2px 0 0
-    color-mix(in srgb, var(--technology-brand, #596873) 56%, #dce4e8);
-  color: #c7d0d6;
+  border: 1px solid #2b2d2f;
+  border-radius: 999px;
+  background: #111214;
+  color: #c8ccce;
   font-family: "IBM Plex Mono", monospace;
   font-size: 9px;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.01em;
   line-height: 1;
-  padding: 5px 8px;
+  padding: 4px 8px 4px 5px;
   white-space: nowrap;
 }
 
 .technology-badge__logos {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
+}
+
+.technology-badge__logo-frame {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--technology-icon) 28%, #303236);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--technology-icon) 12%, #17181a);
+  color: color-mix(in srgb, var(--technology-icon) 48%, #f2f2ef);
 }
 
 .technology-badge__logo {
   display: block;
-  width: 13px;
-  height: 13px;
-  flex: 0 0 13px;
-  color: color-mix(in srgb, var(--technology-icon) 56%, #ffffff);
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
 }
 
 .technology-badge--unbranded::before {
-  color: #71808a;
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #303236;
+  border-radius: 4px;
+  background: #17181a;
+  color: #8b949a;
   content: "<>";
-  font-size: 8px;
+  font-size: 7px;
   letter-spacing: -0.15em;
 }
 
@@ -337,59 +295,63 @@
   outline-offset: 3px;
 }
 
+.project-page-shell > .back-link {
+  display: block;
+  width: min(100%, 680px);
+  margin-right: auto;
+  margin-left: auto;
+}
+
 .project-case-study {
   --project-accent: #8aa0b2;
+  --project-article-measure: 680px;
+
+  padding-bottom: 24px;
 }
 
 .project-article-header {
-  max-width: 720px;
+  width: min(100%, var(--project-article-measure));
   margin: 0 auto;
 }
 
 .project-article-header h1 {
   margin: 0;
   color: #f5f5f2;
-  font-size: clamp(36px, 6vw, 54px);
+  font-size: clamp(32px, 5vw, 48px);
   font-weight: 500;
-  letter-spacing: -0.045em;
-  line-height: 1.02;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-wrap: balance;
 }
 
 .project-dek {
-  max-width: 680px;
-  margin: 24px auto 0;
-  color: #ababab;
+  max-width: 62ch;
+  margin: 20px 0 0;
+  color: #a9aaa8;
   font-family: "Inter", sans-serif;
-  font-size: 16px;
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.72;
 }
 
 .project-technologies--article {
-  max-width: 680px;
-  margin: 18px auto 0;
+  margin: 20px 0 0;
 }
 
 .project-technologies--article li {
-  color: #c5d0d7;
+  color: #c6c9ca;
   font-size: 10px;
-  padding: 7px 10px;
-}
-
-.project-technologies--article .technology-badge__logo {
-  width: 15px;
-  height: 15px;
-  flex-basis: 15px;
+  padding: 6px 9px;
 }
 
 .project-media {
-  width: min(100%, 1440px);
-  margin: clamp(34px, 7vw, 64px) auto 0;
+  width: min(100%, var(--project-article-measure));
+  margin: clamp(28px, 5vw, 38px) auto 0;
 }
 
 .project-media__viewport {
   position: relative;
   overflow: hidden;
-  border: 1px solid #272727;
+  border: 1px solid #292929;
   background: #080808;
 }
 
@@ -446,7 +408,7 @@
   font-family: "IBM Plex Mono", monospace;
   font-size: 10px;
   line-height: 1.5;
-  padding: 9px 12px;
+  padding: 10px 12px;
 }
 
 .project-media__controls {
@@ -500,11 +462,12 @@
 }
 
 .project-case-study__body {
-  max-width: 680px;
-  margin: 46px auto 0;
-  color: #b0b0b0;
+  width: min(100%, var(--project-article-measure));
+  margin: clamp(36px, 6vw, 48px) auto 0;
+  color: #b4b4b1;
   font-family: "Inter", sans-serif;
-  line-height: 1.8;
+  font-size: 15px;
+  line-height: 1.82;
 }
 
 .project-case-study__body > h2:first-child {
@@ -512,24 +475,14 @@
 }
 
 .project-case-study__body h2 {
-  position: relative;
-  margin: 58px 0 20px;
-  border-top: 1px solid #242424;
-  padding-top: 26px;
+  margin: 56px 0 18px;
+  border-top: 1px solid #292929;
+  padding-top: 24px;
   color: #f1f1ee;
-  font-size: 23px;
+  font-size: 22px;
   font-weight: 500;
   letter-spacing: -0.025em;
-}
-
-.project-case-study__body h2::before {
-  position: absolute;
-  top: -2px;
-  left: 0;
-  width: 32px;
-  height: 3px;
-  background: var(--project-accent);
-  content: "";
+  line-height: 1.35;
 }
 
 .project-case-study__body h3 {
@@ -540,8 +493,8 @@
 }
 
 .project-case-study__body p {
-  margin-bottom: 20px;
-  color: #adadad;
+  margin-bottom: 21px;
+  color: #b4b4b1;
   font-family: "Inter", sans-serif;
 }
 
@@ -549,7 +502,7 @@
 .project-case-study__body ol {
   margin: 0 0 24px;
   padding-left: 21px;
-  color: #adadad;
+  color: #b4b4b1;
 }
 
 .project-case-study__body li {
@@ -580,7 +533,7 @@
   margin: 28px 0;
   overflow-x: auto;
   border: 1px solid #292929;
-  border-radius: 8px;
+  border-radius: 4px;
   background: #0d0d0d;
   padding: 20px;
 }
@@ -607,9 +560,9 @@
 .project-case-study__body blockquote {
   margin: 30px 0;
   border: 0;
-  border-left: 3px solid var(--project-accent);
-  background: color-mix(in srgb, var(--project-accent) 5%, #111111);
-  padding: 18px 20px;
+  border-left: 2px solid var(--project-accent);
+  background: #0e0f10;
+  padding: 16px 20px;
   color: #b6b6b2;
   font-style: normal;
 }
@@ -626,7 +579,7 @@
   object-fit: cover;
   margin: 30px 0;
   border: 1px solid #292929;
-  border-radius: 8px;
+  border-radius: 4px;
 }
 
 .loading,
@@ -653,10 +606,6 @@
 
   .project-image {
     width: 80px;
-  }
-
-  .project-image__tooltip {
-    top: calc(100% + 40px);
   }
 
   .project-title {
@@ -699,7 +648,7 @@
   }
 
   .project-article-header h1 {
-    font-size: 36px;
+    font-size: 32px;
   }
 
   .project-dek {
@@ -711,8 +660,8 @@
   }
 
   .project-media {
-    width: calc(100% + 24px);
-    margin-left: -12px;
+    width: 100%;
+    margin-left: 0;
   }
 
   .project-case-study__body h2 {
@@ -730,8 +679,6 @@
 @media (prefers-reduced-motion: reduce) {
   .project-card,
   .project-card::before,
-  .project-image[data-previewable] img,
-  .project-image__tooltip,
   .project-media__slide[data-active="true"] {
     animation: none;
     transition: none;

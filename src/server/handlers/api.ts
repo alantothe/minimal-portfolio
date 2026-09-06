@@ -133,7 +133,7 @@ export async function loadPageContent(
   const cssMap: Record<string, string> = {
     home: "/pages/home/styles.css?v=commits-side-panel-v2",
     about: "/pages/about/styles.css",
-    projects: "/pages/projects/styles.css?v=project-redesign-no-touch",
+    projects: "/pages/projects/styles.css?v=project-card-border-v2",
     blog: "/pages/blog/styles.css",
   };
 

@@ -1,6 +1,66 @@
 import * as simpleIcons from "simple-icons";
 import type { SimpleIcon } from "simple-icons";
 
+/**
+ * Deliberately small owner-facing catalogue. Simple Icons contains thousands
+ * of brands; this list keeps the Project editor useful without turning it into
+ * an icon directory. Free-form labels remain available for uncommon tools.
+ */
+export const TECHNOLOGY_LIBRARY = [
+  "Angular",
+  "Astro",
+  "GitHub",
+  "Bun",
+  "GitLab",
+  "Cloudflare",
+  "CSS",
+  "Deno",
+  "Django",
+  "Docker",
+  ".NET",
+  "Drizzle",
+  "FastAPI",
+  "Firebase",
+  "Flask",
+  "Git",
+  "GitHub Actions",
+  "Go",
+  "Google Cloud",
+  "GraphQL",
+  "HTML5",
+  "Vite",
+  "JavaScript",
+  "Kotlin",
+  "Kubernetes",
+  "Laravel",
+  "MongoDB",
+  "MySQL",
+  "Next.js",
+  "Node.js",
+  "Payload CMS",
+  "PayPal",
+  "PHP",
+  "PostgreSQL",
+  "Prisma",
+  "Python",
+  "Railway",
+  "React",
+  "Redis",
+  "Ruby",
+  "Ruby on Rails",
+  "Rust",
+  "SQLite",
+  "Stripe",
+  "Supabase",
+  "Svelte",
+  "Swift",
+  "Tailwind CSS",
+  "TypeScript",
+  "Vercel",
+  "Vue.js",
+  "WordPress",
+] as const;
+
 function key(value: string): string {
   return value.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
 }
@@ -26,6 +86,8 @@ for (const value of Object.values(simpleIcons)) {
 }
 
 const technologyAliases = new Map<string, readonly string[]>([
+  ["net", ["dotnet"]],
+  ["azure", ["microsoftazure"]],
   ["ts", ["typescript"]],
   ["next", ["nextdotjs"]],
   ["nextjs", ["nextdotjs"]],

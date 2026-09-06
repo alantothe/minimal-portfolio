@@ -462,7 +462,7 @@ function createHarness(options: HarnessOptions = {}) {
 
 describe("mobile SPA navigation lifecycle", () => {
   test("recognizes an already-loaded versioned stylesheet", async () => {
-    const stylesheet = "/pages/projects/styles.css?v=project-redesign-no-touch";
+    const stylesheet = "/pages/projects/styles.css?v=project-card-border-v2";
     const harness = createHarness({
       currentStyleHref: `https://portfolio.test${stylesheet}`,
     });

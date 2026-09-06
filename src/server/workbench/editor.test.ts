@@ -153,9 +153,18 @@ describe("Content editor", () => {
     expect(html).toContain('value="questurian"');
     expect(html).toContain('value="4"');
     expect(html).toContain('id="add-technology"');
+    expect(html).toContain("data-technology-search");
+    expect(html.match(/data-technology-option=/g)).toHaveLength(52);
+    expect(html).toContain('data-technology-option="TypeScript"');
+    expect(html).toContain('data-technology-option="Bun"');
+    expect(html).toContain('data-technology-option="Stripe"');
+    expect(html).toContain('data-technology-option="PayPal"');
+    expect(html).toContain('class="technology-option__icon-frame"');
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain("data-technology-count>2 / 20");
     expect(html).toContain('data-technology-action="remove"');
     expect(html).toContain(
-      "Brand logos are matched automatically and shown in this order."
+      "Choose from 52 common tools or add a custom label."
     );
     expect(html).toContain('data-display-order="4"');
     expect(html).toContain("<h3>Questurian</h3>");

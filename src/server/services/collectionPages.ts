@@ -90,19 +90,12 @@ export function renderProjectCollection(
             const image = project.image
               ? `<img src="${escapeHtml(project.image)}" alt="" width="600" height="375" loading="lazy">`
               : '<div class="project-image-placeholder" aria-hidden="true"></div>';
-            const tooltipId = project.image
-              ? `project-image-tooltip-${encodeURIComponent(project.slug)}`
-              : "";
-            const imageTooltip = tooltipId
-              ? `<span class="project-image__tooltip" id="${escapeHtml(tooltipId)}" role="tooltip">Preview enlarged · open project</span>`
-              : "";
 
             return `
         <article class="project-card">
-          <a href="/projects/${encodeURIComponent(project.slug)}" class="project-link" data-project-id="${escapeHtml(project.slug)}" aria-label="Read ${escapeHtml(project.title)} case study"${tooltipId ? ` aria-describedby="${escapeHtml(tooltipId)}"` : ""}>
-            <div class="project-image"${tooltipId ? ' data-previewable="true"' : ""}>
+          <a href="/projects/${encodeURIComponent(project.slug)}" class="project-link" data-project-id="${escapeHtml(project.slug)}" aria-label="Read ${escapeHtml(project.title)} case study">
+            <div class="project-image">
               ${image}
-              ${imageTooltip}
             </div>
             <div class="project-content">
               <h2 class="project-title">${escapeHtml(project.title)}</h2>

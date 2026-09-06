@@ -213,8 +213,8 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "d5bb47c8cbb95a1e08f47ed75ba9cda2ad598d4b78627db976ffe83bb2d7cfbe",
-      "textHash": "31a21d9f765f725606f8a1b9211ae103ac5bb13f7481582001ab72d405e07627",
+      "bodyHash": "2cb860d76527ce298b23134d1c4121724621995c3343d78950302fc4a0ada130",
+      "textHash": "7334099d065af61acc1169925d758622fca676bc62c21df4ee1ff9e36517f9e4",
       "headings": [
         "h1:Projects",
         "h2:Questurian Frontend",
@@ -324,7 +324,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "2c6537661eeaceb00a24cfe9f4718756788b646c3f989a4349a5dd064eadb526",
+      "bodyHash": "93c2f4637b13b98137f9b9d634675ad9e9f5c63147489caa4056ae588957278c",
       "textHash": "0009caa9ff3635501d95ec2c7c183e26f4189dc9340116244d644ff4b339f1d0",
       "headings": [
         "h1:Minimal Portfolio",
@@ -370,15 +370,20 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "a24901af7e2acbc7dc434970567105d182f05cdc924258530f05590783487eca",
-      "textHash": "24fb59d45d66ab9716d08525f119e5c4d5f9f2cafb1d213592db4082d2253720",
+      "bodyHash": "bb840f419eb1cafa7f058bce606ca5ea10afc311e7362c816e610a229fa18fdb",
+      "textHash": "76e78a6492330b140d8a2fb5175b0ed5a441c4ae3396b70cef8868f0cb845c30",
       "headings": [
         "h1:Questurian Frontend",
-        "h2:Context",
-        "h2:What I built",
-        "h2:How it works",
-        "h2:Engineering decisions",
-        "h2:What this demonstrates"
+        "h2:Building a publication that behaves like a product",
+        "h2:My role and ownership",
+        "h2:Architecture at a glance",
+        "h2:Static publishing with targeted revalidation",
+        "h2:A deliberate frontend boundary",
+        "h2:Premium content without weakening SEO",
+        "h2:Maps that respond to the reader",
+        "h2:Performance shaped by real constraints",
+        "h2:SEO and accessibility as architecture",
+        "h2:What this Project demonstrates"
       ],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
       "images": [
@@ -393,17 +398,17 @@
       ],
       "seo": {
         "title": "Questurian Frontend | Alan Malpartida",
-        "description": "The public frontend for Questurian, built with TypeScript and CSS to turn structured travel content into location-first discovery.",
+        "description": "Questura's public frontend uses Next.js, React, and TypeScript for CMS publishing, Stripe memberships, technical SEO, and interactive Google Maps.",
         "canonical": "https://baseline.test/projects/questurian",
         "ogSiteName": "Alan Malpartida",
         "ogType": "website",
         "ogTitle": "Questurian Frontend | Alan Malpartida",
-        "ogDescription": "The public frontend for Questurian, built with TypeScript and CSS to turn structured travel content into location-first discovery.",
+        "ogDescription": "Questura's public frontend uses Next.js, React, and TypeScript for CMS publishing, Stripe memberships, technical SEO, and interactive Google Maps.",
         "ogUrl": "https://baseline.test/projects/questurian",
         "ogImage": "https://baseline.test/public/og.png",
         "twitterCard": "summary_large_image",
         "twitterTitle": "Questurian Frontend | Alan Malpartida",
-        "twitterDescription": "The public frontend for Questurian, built with TypeScript and CSS to turn structured travel content into location-first discovery.",
+        "twitterDescription": "Questura's public frontend uses Next.js, React, and TypeScript for CMS publishing, Stripe memberships, technical SEO, and interactive Google Maps.",
         "twitterImage": "https://baseline.test/public/og.png",
         "articlePublishedTime": null,
         "structuredData": []
@@ -458,7 +463,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "b74ab1c96dced7a88be9094a0af4ba0ea6c8afaf67fd89677ec6b94542c4eb58",
+      "bodyHash": "295064c6e066d069a6f908be0cb3cacc5aca25074178e4687dc7c929c7609800",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -486,7 +491,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "ffc33a89d1b2d21b89bff6b6c35ca76e7e4f19a3b88803337715132fe2237823",
+      "bodyHash": "3ef0495473236aad871431ddfb94ae6237ebbe43157e11fffa9a2acb1071ac2d",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -514,7 +519,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "f9a2efc5593219ef35739078ab39eb43eded1bbc366e948d1fb9490b7712017a",
+      "bodyHash": "50af986833d2c08bbbc1aac031248c5ff4713f07e1720ec89482973a9f1dd381",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -528,7 +533,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "0138152729cb83b23108ecf38495825ee5a463557b68611ce3d0cc1a58c5eea9",
+      "bodyHash": "912e5ec6ab01cc478ed3c1e675586fb72f9b7a472b75e4e46d8172a551d82944",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -704,8 +709,8 @@
     },
     {
       "path": "src/content/projects/questurian/content.md",
-      "bytes": 3529,
-      "sha256": "8f296a937b03a85aabc58529bbd0373e02f676cc6b6a1da68bcb8ce17d58ee8f"
+      "bytes": 10795,
+      "sha256": "4dd7f81ecd7fc06bbabb4a810f437dd5591f5b9bb9027145bc3eb3331f0e65c6"
     },
     {
       "path": "src/pages/about/content.html",
@@ -724,8 +729,8 @@
     },
     {
       "path": "src/pages/projects/content.html",
-      "bytes": 326,
-      "sha256": "39b2bbb5d54ee3f3a27761f0612eb3416b4f2fa1be0bd01708ab5269e7c51b92"
+      "bytes": 261,
+      "sha256": "de2efe72b3740e3e914715eb20c36cf91d667631b127ca65542f44257659e5ea"
     },
     {
       "path": "src/pages/shell.html",

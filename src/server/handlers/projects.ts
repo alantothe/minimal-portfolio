@@ -67,7 +67,7 @@ export function renderTechnologyBadges(
         const logos = icons
           .map(
             (icon) =>
-              `<svg class="technology-badge__logo" data-brand="${escapeHtml(icon.title)}" style="--technology-icon: #${icon.hex}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="${icon.path}"></path></svg>`
+              `<span class="technology-badge__logo-frame" style="--technology-icon: #${icon.hex}"><svg class="technology-badge__logo" data-brand="${escapeHtml(icon.title)}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="${icon.path}"></path></svg></span>`
           )
           .join("");
 
@@ -250,10 +250,10 @@ export function renderProjectArticle(project: ProjectDetail): string {
     <article class="project-case-study">
       <header class="project-article-header">
         <h1>${escapeHtml(metadata.title)}</h1>
+        ${description}
+        ${technologies}
       </header>
       ${media}
-      ${description}
-      ${technologies}
       <div class="project-case-study__body markdown-content">
         ${project.html}
       </div>

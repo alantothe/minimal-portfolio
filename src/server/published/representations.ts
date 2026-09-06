@@ -171,17 +171,25 @@ export function publishedSitemap(
   // SEO module for the home canonical is how this module gets that origin
   // without re-implementing its precedence rules.
   const origin = new URL(getCanonicalUrl({ kind: "home" }, requestUrl)).origin;
+  const homeUrl = new URL("/", `${origin}/`).toString();
+  const imageNamespace = manifest.homeImageUrl
+    ? ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"'
+    : "";
 
   const entries = Array.from(
     new Set(
       manifest.routes.map((route) => new URL(route, `${origin}/`).toString())
     )
   )
-    .map((url) => `  <url><loc>${escapeXml(url)}</loc></url>`)
+    .map((url) =>
+      url === homeUrl && manifest.homeImageUrl
+        ? `  <url><loc>${escapeXml(url)}</loc><image:image><image:loc>${escapeXml(manifest.homeImageUrl)}</image:loc></image:image></url>`
+        : `  <url><loc>${escapeXml(url)}</loc></url>`
+    )
     .join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"${imageNamespace}>
 ${entries}
 </urlset>`;
 }

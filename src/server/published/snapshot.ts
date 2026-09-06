@@ -209,14 +209,20 @@ function resolveImage(
   reference: MediaReference | null,
   role: MediaRole,
   assets: Map<string, MediaAsset>,
-  cloudName: string
+  cloudName: string,
+  seoSuffix?: string
 ): PublishedImage | null {
   if (!reference) return null;
 
   const asset = assets.get(reference.mediaAssetId);
   if (!asset) return null;
 
-  const rendered = renderMedia(asset, ROLE_VARIANTS[role], cloudName);
+  const rendered = renderMedia(
+    asset,
+    ROLE_VARIANTS[role],
+    cloudName,
+    seoSuffix
+  );
   if (!rendered) return null;
 
   return {
@@ -319,7 +325,13 @@ function buildHome(item: ContentItem, context: BuildContext): PublishedHome {
     bioHtml: toInlineHtml(
       renderField("home.bio", data.bioMarkdown, "short", markdown, findings)
     ),
-    portrait: resolveImage(data.portrait, "portrait", assets, cloudName),
+    portrait: resolveImage(
+      data.portrait,
+      "portrait",
+      assets,
+      cloudName,
+      `${data.displayName} portrait`
+    ),
     seo: resolveSeo(data.seo, assets, cloudName),
   };
 }

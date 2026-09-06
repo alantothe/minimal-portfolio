@@ -364,6 +364,7 @@ describe("discovery", () => {
 
     expect(manifest?.generation).toBe(site.state().generation!);
     expect(manifest?.routes).toContain("/projects/questurian");
+    expect(manifest?.homeImageUrl).toContain("/t_portfolio_avatar/");
   });
 
   test("returns nothing rather than an empty manifest when unavailable", () => {

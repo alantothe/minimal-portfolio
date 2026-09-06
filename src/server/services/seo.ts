@@ -26,6 +26,7 @@ export interface SeoMetadata {
   canonical: string;
   type: "website" | "article";
   image: string;
+  favicon: string;
   publishedTime?: string;
   structuredData?: Record<string, unknown>;
 }
@@ -185,6 +186,7 @@ export function buildSeoMetadata(
   const siteName = identity.siteName;
   const role = identity.role;
   const image = identity.sharingImage;
+  const favicon = identity.portraitImage;
   const person = personSchema(origin, identity);
 
   switch (input.kind) {
@@ -196,7 +198,13 @@ export function buildSeoMetadata(
         canonical,
         type: "website",
         image,
-        structuredData: person,
+        favicon,
+        structuredData: {
+          "@context": "https://schema.org",
+          "@type": "ProfilePage",
+          primaryImageOfPage: identity.portraitImage,
+          mainEntity: person,
+        },
       };
     case "about":
       return {
@@ -206,9 +214,11 @@ export function buildSeoMetadata(
         canonical,
         type: "website",
         image,
+        favicon,
         structuredData: {
           "@context": "https://schema.org",
           "@type": "ProfilePage",
+          primaryImageOfPage: identity.portraitImage,
           mainEntity: person,
         },
       };
@@ -223,6 +233,7 @@ export function buildSeoMetadata(
         canonical,
         type: "website",
         image,
+        favicon,
       };
     case "projects":
       return {
@@ -235,6 +246,7 @@ export function buildSeoMetadata(
         canonical,
         type: "website",
         image,
+        favicon,
       };
     case "blog-post":
       const publishedTime =
@@ -246,6 +258,7 @@ export function buildSeoMetadata(
         canonical,
         type: "article",
         image,
+        favicon,
         publishedTime,
         structuredData: {
           "@context": "https://schema.org",
@@ -270,6 +283,7 @@ export function buildSeoMetadata(
         canonical,
         type: "website",
         image,
+        favicon,
       };
   }
 }
@@ -292,6 +306,7 @@ export function renderSeoHead(metadata: SeoMetadata): string {
   const description = escapeHtml(metadata.description);
   const canonical = escapeHtml(metadata.canonical);
   const image = escapeHtml(metadata.image);
+  const favicon = escapeHtml(metadata.favicon);
   const publishedTime = metadata.publishedTime
     ? `\n    <meta property="article:published_time" content="${escapeHtml(metadata.publishedTime)}">`
     : "";
@@ -301,6 +316,8 @@ export function renderSeoHead(metadata: SeoMetadata): string {
 
   return `<title>${title}</title>
     <meta name="description" content="${description}">
+    <meta name="robots" content="max-image-preview:large">
+    <link rel="icon" href="${favicon}">
     <link rel="canonical" href="${canonical}">
     <meta property="og:site_name" content="${escapeHtml(metadata.siteName)}">
     <meta property="og:type" content="${metadata.type}">

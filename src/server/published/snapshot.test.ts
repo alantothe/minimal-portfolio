@@ -207,8 +207,9 @@ describe("media", () => {
     const url = built(db).home.portrait!.url;
 
     expect(url).toStartWith(
-      `https://res.cloudinary.com/${FIXTURE_CLOUD_NAME}/image/upload/t_portfolio_avatar/`
+      `https://res.cloudinary.com/${FIXTURE_CLOUD_NAME}/images/t_portfolio_avatar/`
     );
+    expect(url).toEndWith("/ada-lovelace-portrait.png");
   });
 
   test("a page still builds when its image cannot be rendered", () => {

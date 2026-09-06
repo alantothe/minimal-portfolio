@@ -45,6 +45,22 @@ describe("delivery URLs", () => {
     );
   });
 
+  test("can give an uploaded portrait a descriptive SEO suffix", () => {
+    const rendered = renderMedia(
+      asset(),
+      "portfolio_avatar",
+      CLOUD,
+      "Alan Malpartida portrait"
+    );
+
+    expect(rendered?.url).toBe(
+      "https://res.cloudinary.com/example-cloud/images" +
+        "/t_portfolio_avatar/v1700000000" +
+        "/portfolio/11111111-2222-3333-4444-555555555555" +
+        "/alan-malpartida-portrait.png"
+    );
+  });
+
   test("emits only the named transformation, never raw parameters", () => {
     for (const variant of Object.keys(MEDIA_VARIANTS) as MediaVariant[]) {
       const rendered = renderMedia(asset(), variant, CLOUD);

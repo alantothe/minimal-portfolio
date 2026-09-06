@@ -20,7 +20,7 @@ function getAttribute(html: string, selector: RegExp): string | null {
 function getStructuredData(html: string) {
   return Array.from(
     html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g),
-    match => JSON.parse(match[1]!),
+    (match) => JSON.parse(match[1]!)
   );
 }
 
@@ -42,34 +42,37 @@ describe("search metadata", () => {
     ["/about", "About Alan Malpartida"],
     ["/blog", "Alan Malpartida"],
     ["/projects", "Alan Malpartida"],
-    ["/blog/who-is-alan-malpartida-software-engineer-and-founder", "Who Is Alan Malpartida"],
+    [
+      "/blog/who-is-alan-malpartida-software-engineer-and-founder",
+      "Who Is Alan Malpartida",
+    ],
     ["/projects/minimal-portfolio", "Minimal Portfolio"],
   ])("%s has unique metadata and social tags", async (path, titleText) => {
     const response = await createRequestHandler().handleRequest(
-      new Request(`http://portfolio.test${path}`),
+      new Request(`http://portfolio.test${path}`)
     );
     const html = await response.text();
 
     expect(response.status).toBe(200);
     expect(getAttribute(html, /<title>([^<]+)<\/title>/)).toContain(titleText);
-    expect(getAttribute(
-      html,
-      /<meta name="description" content="([^"]+)">/,
-    )).not.toBeEmpty();
-    expect(getAttribute(
-      html,
-      /<link rel="canonical" href="([^"]+)">/,
-    )).toBe(`https://alan.example${path}`);
+    expect(
+      getAttribute(html, /<meta name="description" content="([^"]+)">/)
+    ).not.toBeEmpty();
+    expect(getAttribute(html, /<link rel="canonical" href="([^"]+)">/)).toBe(
+      `https://alan.example${path}`
+    );
     expect(html).toContain('<meta property="og:title"');
     expect(html).toContain('<meta property="og:description"');
     expect(html).toContain('<meta property="og:url"');
-    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
+    expect(html).toContain(
+      '<meta name="twitter:card" content="summary_large_image">'
+    );
   });
 
   test("pagination keeps its page in the canonical URL", async () => {
     const metadata = createSeoMetadata(
       { kind: "projects", page: 2 },
-      new URL("http://portfolio.test/projects?page=2"),
+      new URL("http://portfolio.test/projects?page=2")
     );
 
     expect(metadata.canonical).toBe("https://alan.example/projects?page=2");
@@ -77,7 +80,7 @@ describe("search metadata", () => {
 
   test("/home permanently redirects to the canonical home URL", async () => {
     const response = await createRequestHandler().handleRequest(
-      new Request("http://portfolio.test/home"),
+      new Request("http://portfolio.test/home")
     );
 
     expect(response.status).toBe(308);
@@ -85,21 +88,46 @@ describe("search metadata", () => {
   });
 
   test.each([
-    ["/", "Person"],
+    ["/", "ProfilePage"],
     ["/about", "ProfilePage"],
-    ["/blog/who-is-alan-malpartida-software-engineer-and-founder", "BlogPosting"],
+    [
+      "/blog/who-is-alan-malpartida-software-engineer-and-founder",
+      "BlogPosting",
+    ],
   ])("%s emits valid %s structured data", async (path, schemaType) => {
     const response = await createRequestHandler().handleRequest(
-      new Request(`http://portfolio.test${path}`),
+      new Request(`http://portfolio.test${path}`)
     );
     const schemas = getStructuredData(await response.text());
 
-    expect(schemas.some(schema => schema["@type"] === schemaType)).toBeTrue();
+    expect(schemas.some((schema) => schema["@type"] === schemaType)).toBeTrue();
+  });
+
+  test("home identifies the portrait as its primary image and favicon", async () => {
+    const response = await createRequestHandler().handleRequest(
+      new Request("http://portfolio.test/")
+    );
+    const html = await response.text();
+    const [profilePage] = getStructuredData(html);
+    const portrait = "https://alan.example/avatar.webp";
+
+    expect(profilePage["@type"]).toBe("ProfilePage");
+    expect(profilePage.primaryImageOfPage).toBe(portrait);
+    expect(profilePage.mainEntity).toMatchObject({
+      "@type": "Person",
+      name: "Alan Malpartida",
+      image: portrait,
+    });
+    expect(html).toContain(`<link rel="icon" href="${portrait}">`);
+    expect(html).toContain(
+      '<meta name="robots" content="max-image-preview:large">'
+    );
+    expect(html.match(/<link rel="icon"/g)).toHaveLength(1);
   });
 
   test("fragment responses include metadata for SPA navigation", async () => {
     const response = await createRequestHandler().handleRequest(
-      new Request("http://portfolio.test/api/page?name=about"),
+      new Request("http://portfolio.test/api/page?name=about")
     );
     const data = await response.json();
 
@@ -116,10 +144,7 @@ describe("search metadata", () => {
       process.env.SITE_URL = "http://example.com";
 
       expect(() =>
-        createSeoMetadata(
-          { kind: "home" },
-          new URL("http://attacker.example"),
-        ),
+        createSeoMetadata({ kind: "home" }, new URL("http://attacker.example"))
       ).toThrow("SITE_URL");
     } finally {
       if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
@@ -138,10 +163,7 @@ describe("search metadata", () => {
       delete process.env.SITE_URL;
 
       expect(() =>
-        createSeoMetadata(
-          { kind: "home" },
-          new URL("http://attacker.example"),
-        ),
+        createSeoMetadata({ kind: "home" }, new URL("http://attacker.example"))
       ).toThrow("SITE_URL");
     } finally {
       if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
@@ -166,19 +188,25 @@ describe("search metadata", () => {
 
       const metadata = createSeoMetadata(
         { kind: "home" },
-        new URL("https://portfolio.test"),
+        new URL("https://portfolio.test")
       );
       const schema = metadata.structuredData as Record<string, unknown>;
       const head = renderSeoHead(metadata);
 
       expect(metadata.title).toContain("Example Engineer");
       expect(metadata.image).toBe("https://alan.example/public/og.png");
-      expect(schema.name).toBe("Example Engineer");
-      expect(schema.image).toBe("https://cdn.example/profile.webp");
-      expect(schema.jobTitle).toBe("Principal Engineer");
-      expect(schema.sameAs).toEqual(["https://github.com/example"]);
+      expect(schema.primaryImageOfPage).toBe(
+        "https://cdn.example/profile.webp"
+      );
+      expect(schema.mainEntity).toMatchObject({
+        name: "Example Engineer",
+        image: "https://cdn.example/profile.webp",
+        jobTitle: "Principal Engineer",
+        sameAs: ["https://github.com/example"],
+      });
+      expect(metadata.favicon).toBe("https://cdn.example/profile.webp");
       expect(head).toContain(
-        '<meta property="og:site_name" content="Example Engineer">',
+        '<meta property="og:site_name" content="Example Engineer">'
       );
     } finally {
       Object.assign(homeConfig.author, previousAuthor);

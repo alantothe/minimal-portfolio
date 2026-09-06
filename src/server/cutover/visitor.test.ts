@@ -44,7 +44,11 @@ describe("published Visitor responses", () => {
 
     expect(response).not.toBeNull();
     expect(response!.status).toBe(200);
-    expect(await response!.text()).toContain("Ada Lovelace");
+    const html = await response!.text();
+    expect(html).toContain("Ada Lovelace");
+    expect(html).toMatch(
+      /<link rel="icon" href="[^"]+\/t_portfolio_avatar\/[^"]+">/
+    );
     expect(response!.headers.get("ETag")).toBeTruthy();
     expect(response!.headers.get("Cache-Control")).toBe("no-cache");
     expect(response!.headers.get("Content-Type")).toContain("text/html");
@@ -120,5 +124,20 @@ describe("published Visitor responses", () => {
 
     expect(response!.status).toBe(308);
     expect(response!.headers.get("Location")).toBe("/");
+  });
+
+  test("publishes the Home portrait in the image sitemap", async () => {
+    const response = await servePublishedVisitor(
+      new Request("https://example.test/sitemap.xml"),
+      fixtureSite(),
+      NO_ENRICHMENT
+    );
+    const xml = await response!.text();
+
+    expect(xml).toContain(
+      'xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"'
+    );
+    expect(xml).toContain("<image:image><image:loc>");
+    expect(xml).toContain("/t_portfolio_avatar/");
   });
 });

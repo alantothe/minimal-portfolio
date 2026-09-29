@@ -35,7 +35,7 @@ export const homeConfig = {
     email: "alanmalpartida@gmail.com",
 
     // GitHub username used by the activity popover
-    githubUsername: "alantothe",
+    githubUsername: "alanmalpartida",
 
     // Path to your avatar image
     // Recommended: Store in src/public/ and reference as "src/public/avatar.webp"
@@ -93,7 +93,7 @@ export const aboutConfig = {
       socialLinks: [
         {
           name: "Github",
-          url: "https://github.com/alantothe",
+          url: "https://github.com/alanmalpartida",
         },
       ],
     },

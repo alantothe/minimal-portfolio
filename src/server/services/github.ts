@@ -1,7 +1,3 @@
-interface GitHubCommitSearchResponse {
-  total_count: number;
-}
-
 interface CacheEntry {
   count: number;
   expiresAt: number;
@@ -152,16 +148,32 @@ export class GitHubCommitCounter {
     const year = now.getUTCFullYear();
     const month = now.getUTCMonth();
     const start = new Date(Date.UTC(year, month, 1));
-    const end = new Date(Date.UTC(year, month + 1, 0));
-    const formatDate = (date: Date) => date.toISOString().slice(0, 10);
-    const query = `author:${username} author-date:${formatDate(start)}..${formatDate(end)}`;
-    const url = `https://api.github.com/search/commits?q=${encodeURIComponent(query)}&per_page=1`;
-    const response = await this.fetchImpl(url, {
+    // Use GitHub's account contribution total. Search can return incomplete,
+    // unscoped results after an account rename.
+    const response = await this.fetchImpl("https://api.github.com/graphql", {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
         "X-GitHub-Api-Version": "2022-11-28",
       },
+      body: JSON.stringify({
+        query: `
+          query MonthlyCommits($username: String!, $from: DateTime!, $to: DateTime!) {
+            user(login: $username) {
+              contributionsCollection(from: $from, to: $to) {
+                totalCommitContributions
+              }
+            }
+          }
+        `,
+        variables: {
+          username,
+          from: start.toISOString(),
+          to: now.toISOString(),
+        },
+      }),
       signal: AbortSignal.timeout(this.timeoutMs),
     });
 
@@ -169,8 +181,18 @@ export class GitHubCommitCounter {
       throw new Error(`GitHub API error: ${response.status}`);
     }
 
-    const data = (await response.json()) as GitHubCommitSearchResponse;
-    return data.total_count;
+    const payload = (await response.json()) as GitHubContributionResponse;
+    const count =
+      payload.data?.user?.contributionsCollection?.totalCommitContributions;
+    if (
+      payload.errors?.length ||
+      typeof count !== "number" ||
+      !Number.isSafeInteger(count) ||
+      count < 0
+    ) {
+      throw new Error("GitHub monthly commit count unavailable");
+    }
+    return count;
   }
 }
 

@@ -51,7 +51,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "b80f63726b39698db82dd9d77dc745f7b36b8fbb241641f145d36ae61c50599e",
+      "bodyHash": "6e3fceef648a6c5436e8473d86ad18efb34bb6ed601039d436548202829e9ec1",
       "textHash": "c03825234a20eda8963b38ce9815de999a8e755a8aba6b413f84dcb71dafb989",
       "headings": ["h1:Alan Malpartida"],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
@@ -97,7 +97,7 @@
               "url": "https://baseline.test/",
               "image": "https://baseline.test/avatar.webp",
               "jobTitle": "Founding Engineer at Questurian",
-              "sameAs": ["https://github.com/alantothe"]
+              "sameAs": ["https://github.com/alanmalpartida"]
             }
           }
         ]
@@ -124,7 +124,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "e5c01c27dfc482e1f935b1f9a5ce7bad3f8b95c95643819ff3b72206d3371230",
+      "bodyHash": "8936298e24e8db46d1dcf614ab8498fa966b619211d88d91b87532cbeaed106c",
       "textHash": "fa5103bb69b66b6a2d38c880344b495481d459614ed8fb9191165ee05287e035",
       "headings": ["h1:About", "h1:About Questurian"],
       "internalLinks": ["/", "/about", "/blog", "/projects"],
@@ -162,7 +162,7 @@
               "url": "https://baseline.test/",
               "image": "https://baseline.test/avatar.webp",
               "jobTitle": "Founding Engineer at Questurian",
-              "sameAs": ["https://github.com/alantothe"]
+              "sameAs": ["https://github.com/alanmalpartida"]
             }
           }
         ]
@@ -273,7 +273,7 @@
       "contentType": "text/html",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "609c2b18897be0aadcb658d1ea6824609812b520b11e1cddad459d25dce44d0c",
+      "bodyHash": "25b1874b0350024e63ffad0d7c6df1bec6b33ae741744c87da23da82e8b5f2e5",
       "textHash": "031964e52f85f679464438a7f45eb53752bfd684c75436cb591ad5dcabe350cd",
       "headings": [
         "h1:Who Is Alan Malpartida - Software Engineer, Founder, and Builder",
@@ -427,7 +427,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "8ee4e0dbb30f0a73766c5b1f81bdf080cad4a0b12dccbce7d44fb4a4ccaf402f",
+      "bodyHash": "410be31a91503c1d0f6c593b590e606d18320c315b9092e43acbc3b1319107d5",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -441,7 +441,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "6bad1cea2b4ad4bc7b7887a1ff25c31273aa8d895cfa7be2d6e395aa5c23f3ac",
+      "bodyHash": "3f9a459dadf77589b8fccb17eed086fc244a331634e9d935e0a390dbd6b0d33e",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -511,7 +511,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "81d3298fdee6ba663576787e27bda3a13ce9610c42b95bb10aced4b741acdea1",
+      "bodyHash": "b242f97674bf6722efebc18c5ec8652e2da24485c1df0e137a326eebeb6123bc",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -525,7 +525,7 @@
       "contentType": "application/json",
       "cacheControl": "no-cache",
       "location": null,
-      "bodyHash": "e49feb2382f6045b1292dd821f85585a7c5a46f1736177eecd9730f3b64a4e9d",
+      "bodyHash": "22659e9f89f15ed4637d11daf5028ee50fdda189d691e00505fd8e8588a055fb",
       "textHash": null,
       "headings": [],
       "internalLinks": [],
@@ -700,18 +700,18 @@
   "content": [
     {
       "path": "src/config/index.ts",
-      "bytes": 5669,
-      "sha256": "03e58009d47224ee538036706575caf951e38d8c27583c9e3a9d2600a3415c69"
+      "bytes": 5679,
+      "sha256": "a67a66b29c2a220ad36551de8f848ce6b2e0404cc0be4b95a56a4af000ffbb67"
     },
     {
       "path": "src/content/blog/who-is-alan-malpartida-software-engineer-and-founder.md",
-      "bytes": 3170,
-      "sha256": "fc0ad49223c0da4f8473c802fa0a835d4d20a4a2984aa5bdd020ed820b87b665"
+      "bytes": 3175,
+      "sha256": "f868c04bc3a4925de88c45e03dd0b290415424c0e1fe5827b65b278cbba98fa0"
     },
     {
       "path": "src/content/projects/minimal-portfolio/content.md",
-      "bytes": 4928,
-      "sha256": "75dc06d660fd8d9622aed538711e67a6256c52f7b9d8899247730691bb8385b5"
+      "bytes": 4933,
+      "sha256": "dd2ee705e5ecf59ce802aa39caf3a8cdb2e87399662c50420dfcefc005ca3880"
     },
     {
       "path": "src/content/projects/questurian/content.md",

@@ -8,7 +8,7 @@ status: "Live portfolio"
 year: 2026
 order: 6
 date: 2026-07-27
-repository: https://github.com/alantothe/minimal-portfolio
+repository: https://github.com/alanmalpartida/minimal-portfolio
 stack:
   - Bun
   - TypeScript

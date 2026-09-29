@@ -88,7 +88,13 @@ describe("GitHub commit metric", () => {
       now: () => new Date("2026-07-27T12:00:00Z"),
       fetch: async () => {
         fetchCalls += 1;
-        return Response.json({ total_count: 263 });
+        return Response.json({
+          data: {
+            user: {
+              contributionsCollection: { totalCommitContributions: 263 },
+            },
+          },
+        });
       },
     });
 
@@ -128,7 +134,13 @@ describe("GitHub commit metric", () => {
         if (fetchCalls > 1) {
           return new Response(null, { status: 503 });
         }
-        return Response.json({ total_count: 263 });
+        return Response.json({
+          data: {
+            user: {
+              contributionsCollection: { totalCommitContributions: 263 },
+            },
+          },
+        });
       },
     });
 
